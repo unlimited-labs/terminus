@@ -301,7 +301,12 @@ Szczegóły: `.scratch/zapisy/issues/14-standardy-kodu-i-testy.md`.
 - Każdy formularz jest zbudowany na TanStack Form i walidowany schematem Zod;
   ten sam schemat waliduje dane po stronie serwera. Bez wyjątków dla "małych"
   formularzy.
-- Projekt wizualny: skill `frontend-design` przy budowie UI.
+- Projekt wizualny: kierunek "Przyjazny" (prototyp
+  `.scratch/zapisy/prototypes/kierunek-wizualny.html`, wariant C): tło
+  `#F4F3FF`, tekst `#1D1B3A` / `#6B6890`, linie `#E2DFF5`, akcent `#4B3FD6`,
+  zajęte `#ECEAFD`, wolne mięta `#17A673`, błędy `#C2255C`; krój Figtree;
+  zaokrąglenia 12 / 22 px; bilet z gradientem `#4B3FD6` → `#6D5BFF`. Bez
+  trybu ciemnego.
 - Interfejs po polsku.
 
 ## Wdrożenie
