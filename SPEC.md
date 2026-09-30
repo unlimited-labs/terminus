@@ -276,11 +276,13 @@ Szczegóły: `.scratch/zapisy/issues/14-standardy-kodu-i-testy.md`.
 - fallow (`.fallowrc.json`): nieużywany kod i zależności, duplikaty,
   cykle, granice warstw (`domain/` bez `server/`, Prismy i Reacta; Prisma
   tylko w `server/`).
+- react-doctor (`doctor.config.ts`, uruchamiany z `--no-telemetry`):
+  problemy w komponentach React (efekty, wydajność, dostępność).
 - Vitest: `domain/` test-first; testy na prawdziwej bazie przez
   Testcontainers (m.in. 50 równoległych zapisów na 5 slotów). Playwright:
   kilka kluczowych ścieżek (zapis zespołu, import CSV, tablica myszą
   i klawiaturą z "Cofnij", logowanie).
-- Bez CI i haków git: `pnpm check` (lint, format, typy, fallow, testy) i `pnpm
+- Bez CI i haków git: `pnpm check` (lint, format, typy, fallow, react-doctor, testy) i `pnpm
   release` (check + e2e, potem budowa i wysłanie obrazu). Bez progu pokrycia.
 
 - Każdy formularz jest zbudowany na TanStack Form i walidowany schematem Zod;

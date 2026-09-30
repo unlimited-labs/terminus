@@ -40,7 +40,7 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Wdrożenie na VPS](issues/11-wdrozenie-na-vps.md) — compose tylko z aplikacją za istniejącym NPMplus, osobna baza `zapisy` we wspólnym kontenerze PostgreSQL, obraz budowany lokalnie do `registry:2`, migracje i superadmin przy starcie, bez kopii zapasowych.
 - [Schemat bazy danych](issues/12-schemat-bazy-danych.md) — kod po angielsku (`Exam`, `Roster`, `RosterEntry`, `Slot`, `Enrollment`); `timestamptz` + `@date-fns/tz`; złożone klucze obce z `examId`; baza pilnuje unikalności i blokad usunięcia, kod pod blokadą — pojemności i nienachodzenia slotów.
 - [Architektura i układ plików](issues/13-architektura-i-uklad-plikow.md) — `routes/` cienkie, `domain/` czysta logika, `server/` baza pod blokadą; middleware + `getOwnedExam`; TanStack Query z pełnym stanem tablicy; operacje jako polecenia z "Cofnij"; osobna baza `zapisy` zamiast schematu; wersje przypięte (Prisma 7!).
-- [Standardy kodu i testy](issues/14-standardy-kodu-i-testy.md) — `oxlint` + `oxfmt` + fallow (granice warstw), TS strict; Vitest (domena test-first, baza przez Testcontainers), Playwright na kilka ścieżek; bez CI, `pnpm check` / `pnpm release`.
+- [Standardy kodu i testy](issues/14-standardy-kodu-i-testy.md) — `oxlint` + `oxfmt` + fallow (granice warstw) + react-doctor, TS strict; Vitest (domena test-first, baza przez Testcontainers), Playwright na kilka ścieżek; bez CI, `pnpm check` / `pnpm release`.
 
 ## Not yet specified
 
