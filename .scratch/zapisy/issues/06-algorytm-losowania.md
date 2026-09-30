@@ -6,9 +6,11 @@ Blocked by: 04, 05
 
 ## Question
 
-Ustalone: najpierw losowany jest dzień, potem slot w tym dniu. Jak dokładnie
-działa to z pojemnością i grupami? Które dni i sloty biorą udział w losowaniu
-dla grupy N osób (tylko te z co najmniej N wolnymi miejscami)? Czy sloty
-częściowo zajęte mają tę samą szansę co puste, czy wypełniamy po kolei? Co
-widzi student, gdy miejsca są, ale nie dla całej grupy? Jak zapewniamy, że
-dwa jednoczesne zapisy nie przepełnią slotu?
+Ustalone: najpierw losowany jest dzień, potem slot w tym dniu; slot jest wolny
+albo zajęty przez jeden zespół, więc wielkość zespołu nie wpływa na losowanie.
+Do rozstrzygnięcia: czy w losowaniu dnia biorą udział tylko dni z co najmniej
+jednym wolnym slotem; jak zapewniamy, że dwa jednoczesne zapisy nie dostaną
+tego samego slotu i że ten sam indeks nie zapisze się dwa razy (transakcja,
+poziom izolacji, ograniczenia unikalności, ponawianie); co widzi student,
+gdy przegra wyścig o ostatni slot; skąd bierze się losowość (czy wynik ma być
+odtwarzalny lub audytowalny).
