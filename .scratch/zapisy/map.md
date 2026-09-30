@@ -30,6 +30,7 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Zapis grupowy](issues/04-zapis-grupowy.md) — slot mieści jeden zespół (1 do maks. osób, ustawiane per zaliczenie); zapis to indeks + imię i nazwisko; błędny indeks odrzuca cały zapis; harmonogram z nazwiskami jest publiczny dla posiadaczy linku.
 - [Biblioteka przeciągnij-i-upuść](issues/03-biblioteka-przeciagnij-i-upusc.md) — `@dnd-kit/react` (0.x, przypięta wersja); zamiana kafelków i limit pojemności to własny kod w `onDragEnd`; shadcn/ui działa z TanStack Start.
 - [Generowanie slotów z okien](issues/05-generowanie-slotow-z-okien.md) — sloty to rekordy tworzone przy zapisaniu okna, okno nie zostaje w bazie; reszta z dzielenia przepada; bez przerw i bez nachodzenia; długość slotu w zaliczeniu to tylko wartość domyślna; usuwanie wolnych slotów pojedynczo lub całym dniem.
+- [Algorytm losowania](issues/06-algorytm-losowania.md) — zapisy na jedno zaliczenie idą po kolei pod blokadą wiersza zaliczenia; losowane tylko sloty, które się nie zaczęły; indeks z zapisem → odrzucenie z podaniem jego slotu; `crypto.randomInt`, bez audytu.
 
 ## Not yet specified
 

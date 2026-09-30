@@ -46,7 +46,8 @@ sobie konto prowadzącego.
 3. Którykolwiek indeks spoza listy albo już zapisany → cały zapis odrzucony,
    nic się nie zapisuje, komunikat wskazuje problematyczny indeks.
 4. Indeks jest na liście i nie ma zapisu → aplikacja losuje slot i pokazuje go.
-5. Indeks ma już zapis → aplikacja pokazuje ten sam slot, nigdy nie losuje ponownie.
+5. Indeks ma już zapis → cały zapis odrzucony jak w punkcie 3, a komunikat
+   podaje dzień i godzinę slotu tego indeksu; nigdy nie losuje ponownie.
 6. Brak wolnych miejsc → komunikat, bez zapisu.
 7. Student nie może zmienić ani usunąć zapisu.
 8. Zapisy są otwarte od utworzenia zaliczenia do wyczerpania miejsc; brak dat
@@ -66,11 +67,20 @@ dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
 
 - Najpierw losowany jest dzień (każdy dzień z wolnym miejscem ma tę samą
   szansę), potem slot w tym dniu (każdy wolny slot z tą samą szansą).
+- Losowane są tylko sloty, które jeszcze się nie zaczęły. Dzień z samymi
+  minionymi wolnymi slotami nie bierze udziału.
 - Slot jest wolny albo zajęty przez jeden zespół, więc wielkość zespołu nie
   wpływa na losowanie; niepełny zespół też zajmuje cały slot.
-- Sprawdzenie pojemności i zapis w jednej transakcji bazy + ograniczenie
-  unikalności (zaliczenie, indeks), żeby dwa jednoczesne wejścia nie przepełniły
-  slotu ani nie dały dwóch zapisów.
+- Współbieżność: transakcja zapisu zaczyna się od zablokowania wiersza
+  zaliczenia (`SELECT … FOR UPDATE`, izolacja `READ COMMITTED`), więc zapisy na
+  jedno zaliczenie wykonują się po kolei; losowanie i wstawienie zapisów dzieją
+  się pod blokadą. Operacje prowadzącego na tablicy biorą tę samą blokadę.
+  Ograniczenie unikalności (zaliczenie, indeks) w bazie jako ostatnia zapora.
+  Bez ponawiania.
+- Brak wolnych slotów w chwili, gdy zapis dostaje blokadę → komunikat, bez
+  zapisu.
+- Losowość: `crypto.randomInt`, bez ziarna; wynik nie jest odtwarzalny. Zapis
+  z losowania nie jest odróżniany od ręcznego.
 
 ## Wymagania — prowadzący
 

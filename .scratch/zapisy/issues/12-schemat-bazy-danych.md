@@ -12,3 +12,7 @@ zaliczenie–indeks, pojemność slotu, blokada usunięcia slotu z zapisami),
 a które kod? Jak przechowujemy daty i godziny slotów (strefa czasowa)? Jak
 tabele Better Auth łączą się z zaliczeniami? Czy grupa z zapisu grupowego ma
 własną tabelę?
+
+## Comments
+
+- Z zadania [Algorytm losowania](06-algorytm-losowania.md): zapisy serializuje blokada wiersza zaliczenia (`SELECT … FOR UPDATE`), więc pojemności slotu nie musi pilnować baza; unikalność (zaliczenie, indeks) zostaje. Losowanie pomija sloty, które już się zaczęły — strefa czasowa musi pozwolić porównać początek slotu z "teraz".
