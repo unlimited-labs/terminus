@@ -226,14 +226,32 @@ Zasada: gotowe biblioteki zamiast własnego kodu, gdzie tylko się da.
 | Daty | date-fns; pola natywne `<input type="date">` / `type="time"` |
 | CSV | papaparse |
 | Config | env walidowany przez t3-env |
-| Wdrożenie | Docker + docker compose na własnym VPS |
+| Wdrożenie | Obraz Docker budowany lokalnie, prywatny rejestr `registry:2`, docker compose (sama aplikacja) na VPS za istniejącym NPMplus, wspólny PostgreSQL |
 
 - Każdy formularz jest zbudowany na TanStack Form i walidowany schematem Zod;
   ten sam schemat waliduje dane po stronie serwera. Bez wyjątków dla "małych"
   formularzy.
 - Projekt wizualny: skill `frontend-design` przy budowie UI.
 - Interfejs po polsku.
-- Silnik bazy: PostgreSQL jako drugi kontener w compose.
+
+## Wdrożenie
+
+- Na VPS są już NPMplus (reverse proxy z SSL) i wspólny kontener PostgreSQL.
+  `compose.yaml` aplikacji ma tylko kontener aplikacji, bez wystawionych
+  portów, w zewnętrznej sieci Dockera z NPMplus i bazą.
+- Baza: wspólna, tabele aplikacji w schemacie `zapisy` (`?schema=zapisy`
+  w `DATABASE_URL`), zakładanym raz ręcznie (SQL w README). Kopie zapasowe
+  poza zakresem aplikacji.
+- IP klienta tylko z `X-Real-IP` ustawianego przez NPMplus (Better Auth
+  i limit prób).
+- Obraz: `docker buildx build --platform linux/amd64 --push` lokalnie, do
+  prywatnego `registry:2`, tag = wersja z gita, bez `latest`. VPS: `.env`
+  z `IMAGE_TAG` + `docker compose up -d`; wycofanie = poprzedni tag.
+- Start kontenera: `prisma migrate deploy` → skrypt pierwszego superadmina →
+  serwer. Obraz zawiera CLI Prisma i skrypt `reset-password`.
+- Env (t3-env): `IMAGE_TAG`, `DATABASE_URL`, `BETTER_AUTH_SECRET`,
+  `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME`, `PORT`
+  (3000), `TZ` (`Europe/Warsaw`). `.env.example` w repo.
 
 ## Świadomie pominięte
 

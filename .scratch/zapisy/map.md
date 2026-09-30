@@ -36,6 +36,7 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Strona studenta](issues/09-strona-studenta.md) — harmonogram jako plansza (dni = kolumny, przewijana w poziomie, kafelek rozwija pełny skład), formularz w panelu wysuwanym z dołu; wynik jako "bilet" z numerami indeksów; RODO zwinięte; minione sloty wyglądają zwyczajnie.
 - [Tablica zapisów prowadzącego](issues/10-tablica-zapisow-prowadzacego.md) — tabela slotów z panelem "Niezapisani" z lewej; tylko przeciąganie (osoba: przeniesienie, zamiana, usunięcie; zespół: przeniesienie albo zamiana); "Cofnij" zamiast potwierdzeń; klawiatura z dnd-kit.
 - [Grupy zajęciowe i import CSV](issues/16-grupy-zajeciowe-i-import-csv.md) — zaliczenie ma jedną lub kilka list indeksów (import CSV z uczelni, z nazwiskami); slot należy do listy, indeks losuje tylko ze slotów swojej listy; student wpisuje sam indeks; zmienia losowanie, stronę studenta i tablicę.
+- [Wdrożenie na VPS](issues/11-wdrozenie-na-vps.md) — compose tylko z aplikacją za istniejącym NPMplus, wspólny PostgreSQL (schemat `zapisy`), obraz budowany lokalnie do `registry:2`, migracje i superadmin przy starcie, bez kopii zapasowych.
 
 ## Not yet specified
 
