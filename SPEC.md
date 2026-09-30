@@ -267,6 +267,22 @@ Szczegóły: `.scratch/zapisy/issues/13-architektura-i-uklad-plikow.md`.
 - shadcn: `pnpm dlx shadcn@latest init -t start --base base`, w razie błędu
   #11015 instalacja ręczna.
 
+## Jakość i testy
+
+Szczegóły: `.scratch/zapisy/issues/14-standardy-kodu-i-testy.md`.
+
+- `oxlint` + `oxfmt` (Oxc, wersje przypięte; `oxfmt` w becie). TypeScript
+  `strict` + `noUncheckedIndexedAccess`. Kod po angielsku, pliki kebab-case.
+- fallow (`.fallowrc.json`): nieużywany kod i zależności, duplikaty,
+  cykle, granice warstw (`domain/` bez `server/`, Prismy i Reacta; Prisma
+  tylko w `server/`).
+- Vitest: `domain/` test-first; testy na prawdziwej bazie przez
+  Testcontainers (m.in. 50 równoległych zapisów na 5 slotów). Playwright:
+  kilka kluczowych ścieżek (zapis zespołu, import CSV, tablica myszą
+  i klawiaturą z "Cofnij", logowanie).
+- Bez CI i haków git: `pnpm check` (lint, format, typy, fallow, testy) i `pnpm
+  release` (check + e2e, potem budowa i wysłanie obrazu). Bez progu pokrycia.
+
 - Każdy formularz jest zbudowany na TanStack Form i walidowany schematem Zod;
   ten sam schemat waliduje dane po stronie serwera. Bez wyjątków dla "małych"
   formularzy.
