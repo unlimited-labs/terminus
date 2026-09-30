@@ -34,13 +34,15 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Konta prowadzących](issues/07-konta-prowadzacych.md) — pierwszy superadmin z env tworzony tylko gdy go nie ma; konta zakłada superadmin, bez wymuszonej zmiany hasła; kont się nie usuwa, tylko blokuje; superadmin nie widzi cudzych zaliczeń; awaryjny reset hasła poleceniem w kontenerze.
 - [Ochrona strony studenta](issues/08-ochrona-strony-studenta.md) — limit tylko nieudanych prób "nie ma na liście" na IP; trzy różne komunikaty; bez CAPTCHA; `noindex`; klauzula RODO oparta na AGH, do akceptacji IOD.
 - [Strona studenta](issues/09-strona-studenta.md) — harmonogram jako plansza (dni = kolumny, przewijana w poziomie, kafelek rozwija pełny skład), formularz w panelu wysuwanym z dołu; wynik jako "bilet" z numerami indeksów; RODO zwinięte; minione sloty wyglądają zwyczajnie.
+- [Tablica zapisów prowadzącego](issues/10-tablica-zapisow-prowadzacego.md) — tabela slotów z panelem "Niezapisani" z lewej; tylko przeciąganie (osoba: przeniesienie, zamiana, usunięcie; zespół: przeniesienie albo zamiana); "Cofnij" zamiast potwierdzeń; klawiatura z dnd-kit.
 
 ## Not yet specified
 
 - Zmiana maksymalnej wielkości zespołu po rozpoczęciu zapisów (co gdy istnieje
   już większy zespół). Zmianę długości slotu i usuwanie slotów rozstrzygnęło
   zadanie o generowaniu slotów.
-- Szczegóły "duplikuj zaliczenie" i formatu eksportu CSV.
+- Szczegóły "duplikuj zaliczenie" i formatu eksportu CSV (eksport — import
+  CSV i grupy zajęciowe mają własne zadanie).
 - Kierunek wizualny całości — wyjdzie z prototypów.
 - Końcowe złożenie `SPEC.md` i lista bibliotek z potwierdzonymi wersjami.
 

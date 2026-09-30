@@ -149,8 +149,13 @@ dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
 5. Przed udostępnieniem linku widać: liczba indeksów vs. łączna liczba miejsc,
    z ostrzeżeniem gdy miejsc jest mniej.
 6. Link do zaliczenia z przyciskiem "kopiuj".
-7. Widok zapisów: tablica slotów pogrupowana po dniach, w slotach kafelki
-   z indeksami; osobna kolumna "niezapisani"; liczba wolnych miejsc.
+7. Widok zapisów: tabela, wiersz = slot (dzień, godzina, zespół jako kafelki
+   z imieniem i nazwiskiem i indeksem), dni oddzielone linią; po lewej
+   przyklejony panel "Niezapisani" z wyszukiwarką; nad tabelą liczby
+   (zapisani / indeksy, wolne sloty, miejsca) i wyszukiwarka indeksu lub
+   nazwiska. Każda korekta kończy się komunikatem z "Cofnij", bez okien
+   potwierdzenia. Szczegóły i prototyp (wariant C):
+   `.scratch/zapisy/issues/10-tablica-zapisow-prowadzacego.md`.
 8. Korekty metodą przeciągnij-i-upuść:
    - upuszczenie na slot z wolnym miejscem → przeniesienie;
    - upuszczenie na innego studenta → zamiana slotów;
