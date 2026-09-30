@@ -56,6 +56,22 @@ sobie konto prowadzącego.
   może wystąpić w wielu zaliczeniach.
 - Tabele użytkowników i sesji — generowane przez Better Auth.
 
+Nazwy w kodzie (kod po angielsku, interfejs po polsku): Zaliczenie `Exam`,
+Lista indeksów `Roster`, Dozwolony indeks `RosterEntry`, numer indeksu
+`studentNumber`, Slot `Slot`, Zapis `Enrollment`, Zespół `team`, Okno
+`window`, Losowanie `draw`, Harmonogram `schedule`, Prowadzący `User`
+(superadmin = `role: "admin"`).
+
+Schemat Prisma (szkic, klucze, co pilnuje baza, a co kod):
+`.scratch/zapisy/issues/12-schemat-bazy-danych.md`. W skrócie: czas slotu
+jako `timestamptz`, przeliczany z czasu polskiego przez `@date-fns/tz`; link
+zaliczenia = `Exam.id` (UUID v4); `firstName` i `lastName` osobno; numer
+indeksu jako tekst; złożone klucze obce z `examId`; usunięcie slotu, wpisu
+listy lub listy z zapisem blokuje baza (`NoAction`); pojemność slotu,
+nienachodzenie slotów i zespół z jednej listy pilnuje kod pod blokadą
+zaliczenia; usunięcie zaliczenia kasuje wszystko kaskadowo (w interfejsie
+trzeba wpisać nazwę zaliczenia).
+
 ## Wymagania — student
 
 1. Wchodzi na unikalny link zaliczenia (`/z/<uuid>`). Nie ma publicznej listy zaliczeń.
@@ -223,7 +239,7 @@ Zasada: gotowe biblioteki zamiast własnego kodu, gdzie tylko się da.
 | Dane po stronie klienta | TanStack Query |
 | Komponenty UI | shadcn/ui w wariancie Base UI + Tailwind CSS v4 |
 | Przeciągnij-i-upuść | `@dnd-kit/react` (0.x, wersja przypięta) |
-| Daty | date-fns; pola natywne `<input type="date">` / `type="time"` |
+| Daty | date-fns + `@date-fns/tz` (czas polski ↔ UTC); pola natywne `<input type="date">` / `type="time"` |
 | CSV | papaparse |
 | Config | env walidowany przez t3-env |
 | Wdrożenie | Obraz Docker budowany lokalnie, prywatny rejestr `registry:2`, docker compose (sama aplikacja) na VPS za istniejącym NPMplus, wspólny PostgreSQL |

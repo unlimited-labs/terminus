@@ -12,3 +12,7 @@ testujemy i czym: losowanie i współbieżność zapisów na prawdziwej bazie,
 reguły przenoszenia i zamiany, testy end-to-end kluczowych ścieżek (student
 się zapisuje, prowadzący przenosi). Czy jest CI i co uruchamia? Haki przed
 commitem?
+
+## Comments
+
+- Z zadania [Schemat bazy danych](12-schemat-bazy-danych.md): kod po angielsku (modele, pola, zmienne, funkcje), po polsku tylko interfejs; mapowanie pojęć w `SPEC.md`.
