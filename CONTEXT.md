@@ -44,7 +44,11 @@ Osoba z kontem, która tworzy zaliczenia i zarządza wyłącznie własnymi.
 _Avoid_: Admin, wykładowca
 
 **Superadmin**:
-Prowadzący, który dodatkowo zakłada konta innym prowadzącym.
+Prowadzący, który dodatkowo zarządza kontami prowadzących (zakłada, blokuje, resetuje hasła); cudzych zaliczeń nie widzi.
+
+**Blokada konta**:
+Wyłączenie logowania prowadzącego bez usuwania jego zaliczeń; kont się nie usuwa.
+_Avoid_: Usunięcie konta
 
 **Student**:
 Osoba bez konta, rozpoznawana wyłącznie po numerze indeksu.

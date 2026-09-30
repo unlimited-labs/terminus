@@ -13,9 +13,23 @@ przedmiotów i zaliczeń, wielu prowadzących.
 
 - **Prowadzący** — własne konto (Better Auth, e-mail + hasło). Widzi i edytuje
   tylko swoje zaliczenia.
-- **Superadmin** — prowadzący z uprawnieniem do zakładania kont innym
-  prowadzącym (plugin `admin` z Better Auth). Pierwszy superadmin tworzony
-  z danych w env przy starcie.
+- **Superadmin** — prowadzący, który dodatkowo zarządza kontami prowadzących
+  (plugin `admin` z Better Auth). Nie widzi cudzych zaliczeń.
+  - Pierwszy superadmin: przy każdym starcie kontenera skrypt czyta
+    `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` i tworzy konto tylko wtedy,
+    gdy tego e-maila nie ma w bazie; istniejącego konta nie rusza.
+  - Zakłada konto (e-mail, imię i nazwisko, hasło przekazywane poza aplikacją,
+    bez wymuszonej zmiany), zmienia e-mail i nazwisko, ustawia nowe hasło
+    (wylogowuje wszystkie sesje tej osoby), blokuje i odblokowuje konto,
+    nadaje i odbiera uprawnienie superadmina. Nie może odebrać go sobie ani
+    zablokować siebie.
+  - Usuwania kont nie ma. Zablokowany prowadzący nie zaloguje się, jego
+    zaliczenia i linki działają dalej. Przepisywania zaliczeń na inne konto
+    nie ma.
+  - Utrata hasła bez innego superadmina: polecenie w kontenerze
+    `pnpm reset-password <email>`.
+- Każdy prowadzący zmienia własne hasło na stronie konta, podając obecne.
+  E-mail służy tylko do logowania; nie jest weryfikowany.
 - **Student** — bez konta; identyfikuje się samym numerem indeksu.
 
 Rejestracja publiczna jest wyłączona — inaczej każdy student mógłby założyć
