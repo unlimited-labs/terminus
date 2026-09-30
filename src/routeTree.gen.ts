@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
 import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
+import { Route as ZExamIdRouteImport } from './routes/z/$examId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedZaliczeniaExamIdIndexRouteImport } from './routes/_authed/zaliczenia.$examId.index'
 
@@ -41,6 +42,11 @@ const AuthedKontaRoute = AuthedKontaRouteImport.update({
   path: '/konta',
   getParentRoute: () => AuthedRoute,
 } as any)
+const ZExamIdRoute = ZExamIdRouteImport.update({
+  id: '/z/$examId',
+  path: '/z/$examId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
+  '/z/$examId': typeof ZExamIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
@@ -65,6 +72,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
+  '/z/$examId': typeof ZExamIdRoute
   '/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/zaliczenia/$examId': typeof AuthedZaliczeniaExamIdIndexRoute
@@ -75,6 +83,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
+  '/z/$examId': typeof ZExamIdRoute
   '/_authed/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_authed/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
@@ -86,17 +95,25 @@ export interface FileRouteTypes {
     | '/login'
     | '/haslo'
     | '/konta'
+    | '/z/$examId'
     | '/api/auth/$'
     | '/zaliczenia/$examId/'
   fileRoutesByTo: FileRoutesByTo
   to:
-    '/login' | '/haslo' | '/konta' | '/' | '/api/auth/$' | '/zaliczenia/$examId'
+    | '/login'
+    | '/haslo'
+    | '/konta'
+    | '/z/$examId'
+    | '/'
+    | '/api/auth/$'
+    | '/zaliczenia/$examId'
   id:
     | '__root__'
     | '/_authed'
     | '/login'
     | '/_authed/haslo'
     | '/_authed/konta'
+    | '/z/$examId'
     | '/_authed/'
     | '/api/auth/$'
     | '/_authed/zaliczenia/$examId/'
@@ -105,6 +122,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ZExamIdRoute: typeof ZExamIdRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -145,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedKontaRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/z/$examId': {
+      id: '/z/$examId'
+      path: '/z/$examId'
+      fullPath: '/z/$examId'
+      preLoaderRoute: typeof ZExamIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -182,6 +207,7 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  ZExamIdRoute: ZExamIdRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

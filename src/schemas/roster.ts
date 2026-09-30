@@ -2,7 +2,7 @@ import { z } from "zod"
 
 import { examIdSchema } from "./exam.ts"
 
-const studentNumber = z
+export const studentNumber = z
   .string()
   .trim()
   .regex(/^\d+$/, "Numer indeksu to same cyfry.")

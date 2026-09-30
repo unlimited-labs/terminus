@@ -71,3 +71,42 @@
     @apply font-sans;
   }
 }
+
+@theme {
+  --animate-slot-pulse: slot-pulse 1.2s ease-out 2;
+  @keyframes slot-pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgb(75 63 214 / 0.6);
+    }
+    100% {
+      box-shadow: 0 0 0 14px rgb(75 63 214 / 0);
+    }
+  }
+}
+
+/* Bilet: wycięcia po bokach na wysokości przerywanej linii (padding biletu = 1.25rem). */
+.ticket-cut {
+  position: relative;
+}
+.ticket-cut::before,
+.ticket-cut::after {
+  content: "";
+  position: absolute;
+  top: -12px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--card);
+}
+.ticket-cut::before {
+  left: calc(-1.25rem - 11px);
+}
+.ticket-cut::after {
+  right: calc(-1.25rem - 11px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slot-pulse {
+    animation: none;
+  }
+}

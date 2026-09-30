@@ -12,5 +12,9 @@ export default defineConfig({
       // TanStack Form obsługuje wysłanie w JS; preventDefault jest tu zamierzone.
       "react-doctor/no-prevent-default",
     ],
+    overrides: [
+      // Pola tablicy TanStack Form są sterowane stanem formularza; indeks to ich tożsamość.
+      { files: ["src/components/enroll-sheet.tsx"], rules: ["react-doctor/no-array-index-as-key"] },
+    ],
   },
 })
