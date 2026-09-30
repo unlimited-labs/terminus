@@ -191,7 +191,9 @@ linku.
    - Maksymalna wielkość zespołu ustawiana per zaliczenie; slot mieści jeden
      zespół.
    - Poprawka to nowe zaliczenie; przycisk "duplikuj zaliczenie" kopiuje nazwę
-     i ustawienia.
+     (z dopiskiem "(kopia)"), opis, ustawienia i — przy zaznaczonym polu
+     "Kopiuj listy indeksów" (domyślnie tak) — listy z nazwiskami. Bez slotów
+     i zapisów.
 5. Przed udostępnieniem linku widać osobno dla każdej listy: liczba indeksów
    vs. liczba miejsc w jej slotach, z ostrzeżeniem gdy miejsc jest mniej.
 6. Link do zaliczenia z przyciskiem "kopiuj".
@@ -218,7 +220,11 @@ linku.
    spoza list prowadzący najpierw dodaje ręcznie do listy (indeks + imię
    i nazwisko). Edycja imienia i nazwiska na kafelku zmienia wpis na liście.
    Operacje dostępne też z klawiatury.
-9. Eksport listy do CSV.
+9. Eksport do CSV (tylko właściciel): kolumny `data`, `od`, `do`, `lista`,
+   `indeks`, `nazwisko`, `imie`; wiersz na osobę, sortowanie po slocie
+   i nazwisku, niezapisani na końcu bez czasu, wolne sloty pominięte. Format
+   jak import: UTF-8 z BOM, `;`, pola w cudzysłowach. Plik
+   `<nazwa-zaliczenia>_<RRRR-MM-DD>.csv`.
 10. Edycja po starcie zapisów: dodawanie indeksów i slotów dozwolone; usunięcie
     slotu lub indeksu z istniejącym zapisem zablokowane, dopóki zapis nie
     zostanie przeniesiony lub usunięty. To samo dotyczy usunięcia całej listy

@@ -42,6 +42,7 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Architektura i układ plików](issues/13-architektura-i-uklad-plikow.md) — `routes/` cienkie, `domain/` czysta logika, `server/` baza pod blokadą; middleware + `getOwnedExam`; TanStack Query z pełnym stanem tablicy; operacje jako polecenia z "Cofnij"; osobna baza `zapisy` zamiast schematu; wersje przypięte (Prisma 7!).
 - [Standardy kodu i testy](issues/14-standardy-kodu-i-testy.md) — `oxlint` + `oxfmt` + fallow (granice warstw) + react-doctor, TS strict; Vitest (domena test-first, baza przez Testcontainers), Playwright na kilka ścieżek; bez CI, `pnpm check` / `pnpm release`.
 - [Edycja zaliczenia po starcie zapisów](issues/17-edycja-zaliczenia-po-starcie.md) — zmniejszenie maks. zespołu poniżej istniejącego zablokowane; zwiększenie tylko podnosi limit; godzinę pojedynczego slotu można edytować; zmiana listy slotu dozwolona.
+- [Duplikowanie zaliczenia i eksport CSV](issues/18-duplikowanie-i-eksport-csv.md) — kopia bez slotów i zapisów, listy indeksów opcjonalnie (domyślnie tak); eksport: wiersz na osobę, niezapisani na końcu, format jak import (UTF-8 BOM, `;`).
 
 ## Not yet specified
 
