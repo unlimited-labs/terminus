@@ -74,6 +74,17 @@ sobie konto prowadzącego.
     dopisuje go tylko prowadzący.
 11. Zamianę slotów student załatwia z prowadzącym poza aplikacją.
 
+12. Ochrona: limit 10 nieudanych prób "indeksu nie ma na liście" na 10 minut
+    z jednego IP (`rate-limiter-flexible`, w pamięci; IP z nagłówka reverse
+    proxy). Udane zapisy i "indeks ma już zapis" nie liczą się do limitu. Bez
+    CAPTCHA.
+13. Trzy różne komunikaty: indeksu nie ma na liście; indeks ma już zapis
+    (z dniem i godziną slotu); brak wolnych slotów.
+14. Strony `/z/…` mają `noindex` i nie mają podglądu linku z nazwiskami.
+15. Pod formularzem stała klauzula informacyjna RODO oparta na klauzuli AGH:
+    `docs/klauzula-informacyjna.md` (do akceptacji IOD AGH przed uruchomieniem).
+16. Dane nie są usuwane automatycznie; usuwa je prowadzący, kasując zaliczenie.
+
 Świadomie przyjęte ryzyko: kto zna cudzy indeks, może tę osobę zapisać pod
 dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
 
