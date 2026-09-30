@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client"
+  output              = "../src/generated/prisma"
+  importFileExtension = "ts"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Exam {
+  id                 String       @id @default(uuid())
+  ownerId            String
+  owner              User         @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  name               String
+  description        String
+  defaultSlotMinutes Int
+  maxTeamSize        Int
+  createdAt          DateTime     @default(now()) @db.Timestamptz
+  rosters            Roster[]
+  enrollments        Enrollment[]
+
+  @@index([ownerId])
+  @@map("exam")
+}
+
+model Roster {
+  id      String        @id @default(uuid())
+  examId  String
+  exam    Exam          @relation(fields: [examId], references: [id], onDelete: Cascade)
+  name    String
+  entries RosterEntry[]
+  slots   Slot[]
+
+  @@unique([examId, name])
+  @@unique([id, examId])
+  @@map("roster")
+}
+
+model RosterEntry {
+  examId        String
+  studentNumber String
+  rosterId      String
+  roster        Roster      @relation(fields: [rosterId, examId], references: [id, examId], onDelete: Cascade)
+  firstName     String
+  lastName      String
+  enrollment    Enrollment?
+
+  @@id([examId, studentNumber])
+  @@index([rosterId])
+  @@map("roster_entry")
+}
+
+model Slot {
+  id          String       @id @default(uuid())
+  examId      String
+  rosterId    String
+  roster      Roster       @relation(fields: [rosterId, examId], references: [id, examId], onDelete: Cascade)
+  startsAt    DateTime     @db.Timestamptz
+  endsAt      DateTime     @db.Timestamptz
+  enrollments Enrollment[]
+
+  @@unique([id, examId])
+  @@index([examId, startsAt])
+  @@map("slot")
+}
+
+// Zapis blokuje usunięcie wpisu listy i slotu (NoAction sprawdzane na końcu polecenia),
+// a kaskada z Exam kasuje zapisy w tym samym poleceniu.
+
+model Enrollment {
+  examId        String
+  exam          Exam        @relation(fields: [examId], references: [id], onDelete: Cascade)
+  studentNumber String
+  entry         RosterEntry @relation(fields: [examId, studentNumber], references: [examId, studentNumber], onDelete: NoAction)
+  slotId        String
+  slot          Slot        @relation(fields: [slotId, examId], references: [id, examId], onDelete: NoAction)
+  createdAt     DateTime    @default(now()) @db.Timestamptz
+
+  @@id([examId, studentNumber])
+  @@index([slotId])
+  @@map("enrollment")
+}
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  role          String?
+  banned        Boolean?  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  sessions      Session[]
+  accounts      Account[]
+  exams         Exam[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id             String   @id
+  expiresAt      DateTime
+  token          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  impersonatedBy String?
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}

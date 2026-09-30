@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/fallow/schema.json",
+  "entry": ["doctor.config.ts"],
+  "ignorePatterns": ["src/generated/**", ".scratch/**"],
+  "ignoreExports": [{ "file": "src/components/ui/**", "exports": ["*"] }],
+  "boundaries": {
+    "zones": [
+      { "name": "db", "patterns": ["src/server/db.ts", "src/generated/**"] },
+      { "name": "server", "patterns": ["src/server/**"] },
+      { "name": "domain", "patterns": ["src/domain/**"] },
+      { "name": "shared", "patterns": ["src/schemas/**", "src/messages.pl.ts"] },
+      { "name": "components", "patterns": ["src/components/**"] },
+      { "name": "routes", "patterns": ["src/routes/**"] }
+    ],
+    "rules": [
+      { "from": "db", "allow": ["db", "server"] },
+      { "from": "server", "allow": ["server", "db", "domain", "shared"] },
+      { "from": "domain", "allow": ["domain", "shared"] },
+      { "from": "shared", "allow": ["shared"] },
+      { "from": "components", "allow": ["components", "server", "domain", "shared"] },
+      { "from": "routes", "allow": ["routes", "components", "server", "domain", "shared"] }
+    ]
+  }
+}
