@@ -21,7 +21,12 @@
       }
     ]
   },
-  "ignorePatterns": ["src/routeTree.gen.ts", "src/generated/**", ".output/**"],
+  "ignorePatterns": [
+    "src/routeTree.gen.ts",
+    "src/generated/**",
+    "src/components/ui/**",
+    ".output/**"
+  ],
   "overrides": [
     {
       "files": ["src/server/**", "prisma.config.ts", "scripts/**", "tests/**"],

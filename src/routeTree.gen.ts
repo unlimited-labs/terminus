@@ -9,54 +9,141 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
+import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedZaliczeniaExamIdIndexRouteImport } from './routes/_authed/zaliczenia.$examId.index'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthedRoute = AuthedRouteImport.update({
+  id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedHasloRoute = AuthedHasloRouteImport.update({
+  id: '/haslo',
+  path: '/haslo',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedKontaRoute = AuthedKontaRouteImport.update({
+  id: '/konta',
+  path: '/konta',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedZaliczeniaExamIdIndexRoute =
+  AuthedZaliczeniaExamIdIndexRouteImport.update({
+    id: '/zaliczenia/$examId/',
+    path: '/zaliczenia/$examId/',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthedIndexRoute
+  '/login': typeof LoginRoute
+  '/haslo': typeof AuthedHasloRoute
+  '/konta': typeof AuthedKontaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/haslo': typeof AuthedHasloRoute
+  '/konta': typeof AuthedKontaRoute
+  '/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/zaliczenia/$examId': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
+  '/_authed': typeof AuthedRouteWithChildren
+  '/login': typeof LoginRoute
+  '/_authed/haslo': typeof AuthedHasloRoute
+  '/_authed/konta': typeof AuthedKontaRoute
+  '/_authed/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/haslo'
+    | '/konta'
+    | '/api/auth/$'
+    | '/zaliczenia/$examId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/api/auth/$'
-  id: '__root__' | '/' | '/api/auth/$'
+  to:
+    '/login' | '/haslo' | '/konta' | '/' | '/api/auth/$' | '/zaliczenia/$examId'
+  id:
+    | '__root__'
+    | '/_authed'
+    | '/login'
+    | '/_authed/haslo'
+    | '/_authed/konta'
+    | '/_authed/'
+    | '/api/auth/$'
+    | '/_authed/zaliczenia/$examId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
+  AuthedRoute: typeof AuthedRouteWithChildren
+  LoginRoute: typeof LoginRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed/': {
+      id: '/_authed/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/haslo': {
+      id: '/_authed/haslo'
+      path: '/haslo'
+      fullPath: '/haslo'
+      preLoaderRoute: typeof AuthedHasloRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/konta': {
+      id: '/_authed/konta'
+      path: '/konta'
+      fullPath: '/konta'
+      preLoaderRoute: typeof AuthedKontaRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -65,11 +152,36 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/zaliczenia/$examId/': {
+      id: '/_authed/zaliczenia/$examId/'
+      path: '/zaliczenia/$examId'
+      fullPath: '/zaliczenia/$examId/'
+      preLoaderRoute: typeof AuthedZaliczeniaExamIdIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
+interface AuthedRouteChildren {
+  AuthedHasloRoute: typeof AuthedHasloRoute
+  AuthedKontaRoute: typeof AuthedKontaRoute
+  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedZaliczeniaExamIdIndexRoute: typeof AuthedZaliczeniaExamIdIndexRoute
+}
+
+const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedHasloRoute: AuthedHasloRoute,
+  AuthedKontaRoute: AuthedKontaRoute,
+  AuthedIndexRoute: AuthedIndexRoute,
+  AuthedZaliczeniaExamIdIndexRoute: AuthedZaliczeniaExamIdIndexRoute,
+}
+
+const AuthedRouteWithChildren =
+  AuthedRoute._addFileChildren(AuthedRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
+  AuthedRoute: AuthedRouteWithChildren,
+  LoginRoute: LoginRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,8 +1,11 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import type { QueryClient } from "@tanstack/react-query"
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+
+import { Toaster } from "@/components/ui/sonner"
 
 import appCss from "../styles.css?url"
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -12,8 +15,8 @@ export const Route = createRootRoute({
     links: [{ rel: "stylesheet", href: appCss }],
   }),
   notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1>Nie znaleziono strony</h1>
+    <main className="mx-auto max-w-xl p-6 pt-16">
+      <h1 className="text-2xl font-extrabold">Nie znaleziono strony</h1>
     </main>
   ),
   shellComponent: RootDocument,
@@ -27,6 +30,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body>
         {children}
+        <Toaster position="bottom-center" />
         <Scripts />
       </body>
     </html>
