@@ -9,7 +9,7 @@ Pojedyncze wydarzenie zaliczeniowe jednego prowadzącego, z własną listą inde
 _Avoid_: Egzamin, przedmiot, termin
 
 **Slot**:
-Przedział czasu w konkretnym dniu w ramach zaliczenia, zajmowany przez jeden zespół.
+Przedział czasu w konkretnym dniu w ramach zaliczenia, należący do jednej listy indeksów i zajmowany przez jeden zespół.
 _Avoid_: Termin, okienko, godzina
 
 **Okno**:
@@ -17,11 +17,11 @@ Ciągły przedział czasu w konkretnym dniu podany przez prowadzącego, jednoraz
 _Avoid_: Zakres, blok
 
 **Lista indeksów**:
-Zbiór numerów indeksów uprawnionych do zapisu na dane zaliczenie.
+Nazwany zbiór indeksów (z imionami i nazwiskami) uprawnionych do zapisu na dane zaliczenie, zwykle jedna grupa zajęć z systemu uczelni; zaliczenie ma jedną lub kilka list, a indeks z listy losuje tylko ze slotów tej listy.
 _Avoid_: Lista studentów, grupa
 
 **Zapis**:
-Przypisanie jednego indeksu, wraz z imieniem i nazwiskiem, do jednego slotu w ramach zaliczenia; najwyżej jeden na indeks w zaliczeniu.
+Przypisanie jednego indeksu z listy indeksów do jednego slotu w ramach zaliczenia; najwyżej jeden na indeks w zaliczeniu.
 _Avoid_: Rezerwacja, rejestracja
 
 **Zespół**:

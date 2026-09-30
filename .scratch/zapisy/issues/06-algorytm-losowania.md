@@ -23,3 +23,7 @@ odtwarzalny lub audytowalny).
 - Indeks z istniejącym zapisem (także przy podwójnym kliknięciu): cały zapis odrzucony, komunikat wskazuje indeks i podaje dzień i godzinę jego slotu. Jedna reguła dla pojedynczych i zespołów. Rozstrzyga to sprzeczność punktów 3 i 5 w `SPEC.md`.
 - Losowość z `crypto.randomInt`, bez ziarna, wynik nieodtwarzalny. W bazie tylko czas zapisu; zapis z losowania nie jest odróżniany od ręcznego.
 - "Slot się jeszcze nie zaczął" zależy od strefy czasowej godzin slotów — rozstrzyga [Schemat bazy danych](12-schemat-bazy-danych.md).
+
+## Comments
+
+- Zmienione przez [Grupy zajęciowe i import CSV](16-grupy-zajeciowe-i-import-csv.md): losowanie bierze pod uwagę tylko sloty listy indeksów, na której jest indeks; zespół jest zawsze z jednej listy.

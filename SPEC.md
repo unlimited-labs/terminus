@@ -40,26 +40,33 @@ sobie konto prowadzącego.
 - **Zaliczenie** — właściciel (prowadzący), nazwa, opis/miejsce, UUID do linku,
   domyślna długość slotu, maksymalna wielkość zespołu (1 = zaliczenie
   indywidualne). Przedmiot to część nazwy, bez osobnej encji.
-- **Slot** — należy do zaliczenia; data, godzina od, godzina do. Mieści
-  dokładnie jeden zespół. Osobny rekord w bazie; sloty jednego zaliczenia nie
-  nachodzą na siebie.
+- **Lista indeksów** — należy do zaliczenia, ma nazwę (np. "g1"). Zaliczenie
+  ma jedną lub kilka list; każdy import CSV tworzy osobną listę albo
+  uzupełnia istniejącą.
+- **Slot** — należy do zaliczenia i do jednej listy indeksów; data, godzina
+  od, godzina do. Mieści dokładnie jeden zespół. Osobny rekord w bazie; sloty
+  jednego zaliczenia nie nachodzą na siebie (także sloty różnych list).
 - **Okno** — nie jest zapisywane; służy tylko do jednorazowego wygenerowania
   slotów.
 - **Zespół** — zapisy w tym samym slocie; nie jest osobną encją.
-- **Dozwolony indeks** — para (zaliczenie, indeks).
-- **Zapis** — (zaliczenie, indeks, imię i nazwisko, slot, czas zapisu). Unikalny na parę
-  (zaliczenie, indeks) — ten sam indeks może wystąpić w wielu zaliczeniach.
+- **Dozwolony indeks** — (lista indeksów, indeks, imię i nazwisko). Indeks jest
+  najwyżej na jednej liście w danym zaliczeniu.
+- **Zapis** — (zaliczenie, indeks, slot, czas zapisu); imię i nazwisko pochodzi
+  z listy indeksów. Unikalny na parę (zaliczenie, indeks) — ten sam indeks
+  może wystąpić w wielu zaliczeniach.
 - Tabele użytkowników i sesji — generowane przez Better Auth.
 
 ## Wymagania — student
 
 1. Wchodzi na unikalny link zaliczenia (`/z/<uuid>`). Nie ma publicznej listy zaliczeń.
-2. Podaje numer indeksu (same cyfry, dowolna długość) oraz imię i nazwisko.
-   Jeśli zaliczenie dopuszcza zespoły, może podać od 1 osoby do maksimum —
-   komplet danych dla każdej.
-3. Którykolwiek indeks spoza listy albo już zapisany → cały zapis odrzucony,
-   nic się nie zapisuje, komunikat wskazuje problematyczny indeks.
-4. Indeks jest na liście i nie ma zapisu → aplikacja losuje slot i pokazuje go.
+2. Podaje sam numer indeksu (same cyfry, dowolna długość); imię i nazwisko
+   aplikacja bierze z listy indeksów. Jeśli zaliczenie dopuszcza zespoły, może
+   podać od 1 do maksimum indeksów.
+3. Którykolwiek indeks spoza list, już zapisany albo z innej listy niż
+   pozostali członkowie zespołu → cały zapis odrzucony, nic się nie zapisuje,
+   komunikat wskazuje problematyczny indeks.
+4. Indeks jest na liście i nie ma zapisu → aplikacja losuje slot spośród
+   slotów tej listy i pokazuje go.
 5. Indeks ma już zapis → cały zapis odrzucony jak w punkcie 3, a komunikat
    podaje dzień i godzinę slotu tego indeksu; nigdy nie losuje ponownie.
 6. Brak wolnych miejsc → komunikat, bez zapisu.
@@ -69,7 +76,8 @@ sobie konto prowadzącego.
 
 9. Harmonogram: każdy, kto ma link, widzi wszystkie sloty (także wolne)
    z imionami i nazwiskami zapisanych, bez wpisywania indeksu. Numery indeksów
-   nie są pokazywane.
+   nie są pokazywane. Przy więcej niż jednej liście: przełącznik
+   "Wszystkie / g1 / g2" nad planszą i nazwa listy na kafelku slotu.
 10. Spóźniony członek zespołu losuje osobny slot; do istniejącego zespołu
     dopisuje go tylko prowadzący.
 11. Zamianę slotów student załatwia z prowadzącym poza aplikacją.
@@ -88,18 +96,22 @@ sobie konto prowadzącego.
     kolumny o stałej szerokości (przewijanie w poziomie, na starcie pierwszy
     dzień z wolnym slotem), sloty to kafelki z godziną i nazwiskiem pierwszej
     osoby "+n"; dotknięcie zajętego kafelka rozwija pełny skład. Formularz
-    w panelu wysuwanym z dołu po "Zapisz się" ("Dodaj osobę do zespołu" do
+    w panelu wysuwanym z dołu po "Zapisz się" (pola na numery indeksów,
+    "Dodaj osobę do zespołu" do
     maksimum, jeden "Losuj slot", zwinięta klauzula RODO). Wynik w panelu:
     dzień, godzina, miejsce, skład zespołu z numerami indeksów; potem
     "Pokaż na planszy" wyróżnia kafelek. Minione sloty wyglądają jak
     pozostałe, ale pusty miniony slot nie jest opisany jako "wolny".
     Szczegóły i prototyp (wariant B): `.scratch/zapisy/issues/09-strona-studenta.md`.
 
-Świadomie przyjęte ryzyko: kto zna cudzy indeks, może tę osobę zapisać pod
-dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
+Świadomie przyjęte ryzyko: kto zna cudzy indeks, może tę osobę zapisać i zobaczy
+jej imię i nazwisko na bilecie; nazwiska w harmonogramie widzi każdy posiadacz
+linku.
 
 ## Wymagania — losowanie
 
+- Losowanie bierze pod uwagę tylko sloty listy indeksów, na której jest
+  zapisywany indeks (cały zespół jest z jednej listy).
 - Najpierw losowany jest dzień (każdy dzień z wolnym miejscem ma tę samą
   szansę), potem slot w tym dniu (każdy wolny slot z tą samą szansą).
 - Losowane są tylko sloty, które jeszcze się nie zaczęły. Dzień z samymi
@@ -121,12 +133,30 @@ dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
 
 1. Logowanie e-mailem i hasłem.
 2. Lista własnych zaliczeń; tworzenie, edycja, usuwanie.
-3. Lista indeksów: wklejany tekst, jeden indeks w linii; duplikaty i puste linie
-   ignorowane, linie niebędące cyframi zgłaszane jako błąd.
+3. Listy indeksów: import pliku CSV w formacie eksportu uczelni (UTF-8 z BOM,
+   separator `;`, pola w cudzysłowach, kolumny `nazwisko`, `imie`, `imie2`,
+   `skreslony`, `rezygnacja`, `email`, `indeks`; czyta `papaparse`). Bez
+   wklejania tekstu. Do tego ręczne dodanie pojedynczego indeksu z imieniem
+   i nazwiskiem.
+   - Podgląd przed zapisem: nazwa listy podpowiedziana z nazwy pliku (np.
+     "g1", do zmiany), liczba osób, wiersze pominięte i błędne.
+   - Imię i nazwisko = `imie` + `nazwisko` (bez drugiego imienia).
+   - Pomijane: `skreslony = 1` lub `rezygnacja = 1`. Błędne (nieimportowane):
+     indeks nie z samych cyfr, indeks już na innej liście tego zaliczenia.
+     Brak kolumny `indeks`, `imie` lub `nazwisko` → cały plik odrzucony.
+   - Ponowny import do istniejącej listy: nowe indeksy dopisane, nazwiska
+     zaktualizowane; indeksy nieobecne w pliku zostają (wymienione
+     w podglądzie); `skreslony = 1` bez zapisu znika z listy, z zapisem zostaje
+     i jest oznaczony w podglądzie.
+   - Pierwszy import tworzy pierwszą listę; zaliczenie z jedną listą działa
+     bez żadnych widocznych "list".
 4. Sloty: prowadzący podaje datę i okno czasu (np. 9:00–12:00); aplikacja tnie
    okno na sloty i zapisuje je jako osobne rekordy. Okno nie zostaje w bazie.
    - Jedno wysłanie formularza to jedna data i jedno okno; po zapisaniu
      formularz zostaje otwarty z tymi samymi godzinami.
+   - Pole "Lista" (wymagane przy więcej niż jednej liście): wszystkie sloty
+     okna należą do wybranej listy. Listę pojedynczego slotu można zmienić.
+     Po dodaniu drugiej listy istniejące sloty zostają przy pierwszej.
    - Długość slotu: liczba całkowita minut, 1–480. Wartość w zaliczeniu jest
      domyślna dla formularza okna; jej zmiana nie rusza istniejących slotów,
      więc zaliczenie może mieć sloty różnej długości.
@@ -146,15 +176,18 @@ dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
      zespół.
    - Poprawka to nowe zaliczenie; przycisk "duplikuj zaliczenie" kopiuje nazwę
      i ustawienia.
-5. Przed udostępnieniem linku widać: liczba indeksów vs. łączna liczba miejsc,
-   z ostrzeżeniem gdy miejsc jest mniej.
+5. Przed udostępnieniem linku widać osobno dla każdej listy: liczba indeksów
+   vs. liczba miejsc w jej slotach, z ostrzeżeniem gdy miejsc jest mniej.
 6. Link do zaliczenia z przyciskiem "kopiuj".
 7. Widok zapisów: tabela, wiersz = slot (dzień, godzina, zespół jako kafelki
    z imieniem i nazwiskiem i indeksem), dni oddzielone linią; po lewej
    przyklejony panel "Niezapisani" z wyszukiwarką; nad tabelą liczby
    (zapisani / indeksy, wolne sloty, miejsca) i wyszukiwarka indeksu lub
    nazwiska. Każda korekta kończy się komunikatem z "Cofnij", bez okien
-   potwierdzenia. Szczegóły i prototyp (wariant C):
+   potwierdzenia. Przy więcej niż jednej liście: kolumna "Lista" przy slocie,
+   panel "Niezapisani" podzielony na listy, kafelek osoby w slocie cudzej
+   listy z dopiskiem nazwy jej listy; przenoszenie między listami dozwolone
+   bez ostrzeżenia. Szczegóły i prototyp (wariant C):
    `.scratch/zapisy/issues/10-tablica-zapisow-prowadzacego.md`.
 8. Korekty metodą przeciągnij-i-upuść:
    - upuszczenie na slot z wolnym miejscem → przeniesienie;
@@ -165,13 +198,15 @@ dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
    - przeciągnięcie całego zespołu → przeniesienie do wolnego slotu albo
      zamiana dwóch zespołów;
    - "pełny slot" oznacza zespół o maksymalnej wielkości.
-   Ręczny zapis wymaga kompletu: indeks + imię i nazwisko. Prowadzący może
-   edytować imię i nazwisko w każdym zapisie.
+   Ręczny zapis bierze imię i nazwisko z listy indeksów (bez pytania). Osobę
+   spoza list prowadzący najpierw dodaje ręcznie do listy (indeks + imię
+   i nazwisko). Edycja imienia i nazwiska na kafelku zmienia wpis na liście.
    Operacje dostępne też z klawiatury.
 9. Eksport listy do CSV.
 10. Edycja po starcie zapisów: dodawanie indeksów i slotów dozwolone; usunięcie
     slotu lub indeksu z istniejącym zapisem zablokowane, dopóki zapis nie
-    zostanie przeniesiony lub usunięty.
+    zostanie przeniesiony lub usunięty. To samo dotyczy usunięcia całej listy
+    indeksów.
 
 ## Stos techniczny
 

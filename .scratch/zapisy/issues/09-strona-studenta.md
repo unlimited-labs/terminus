@@ -31,3 +31,7 @@ Wybrany wariant B prototypu ("Plansza + wysuwany formularz"). Warianty A (formul
 - Brak wolnych slotów już przy wejściu: komunikat nad planszą, bez przycisku "Zapisz się".
 - Ponowne wejście nie ma osobnego ekranu: student wpisuje indeks jeszcze raz i dostaje "ma już zapis" ze swoim slotem.
 - Kolory i kroje z prototypu nie są decyzją; kierunek wizualny zostaje otwarty na mapie.
+
+## Comments
+
+- Zmienione przez [Grupy zajęciowe i import CSV](16-grupy-zajeciowe-i-import-csv.md): formularz ma tylko pola na numery indeksów (imię i nazwisko z listy); przy kilku listach nad planszą przełącznik "Wszystkie / g1 / g2" i nazwa listy na kafelku; nowy błąd: indeks z innej listy niż reszta zespołu.

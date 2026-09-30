@@ -37,3 +37,4 @@ Wybrany wariant C prototypu ("Tabela"), bez list "Przenieś do…" — wszystkie
 ## Comments
 
 - Wymaganie grup zajęciowych ([Grupy zajęciowe i import CSV](16-grupy-zajeciowe-i-import-csv.md)) doszło w trakcie. Prototyp go nie uwzględnia; reguły przenoszenia między slotami różnych grup rozstrzyga tamto zadanie.
+- Zmienione przez [Grupy zajęciowe i import CSV](16-grupy-zajeciowe-i-import-csv.md): ręczny zapis nie pyta o nazwisko (bierze je z listy), edycja nazwiska zmienia wpis na liście; kolumna "Lista", "Niezapisani" podzieleni na listy, przenoszenie między listami bez ostrzeżenia.
