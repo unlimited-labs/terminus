@@ -242,7 +242,30 @@ Zasada: gotowe biblioteki zamiast własnego kodu, gdzie tylko się da.
 | Daty | date-fns + `@date-fns/tz` (czas polski ↔ UTC); pola natywne `<input type="date">` / `type="time"` |
 | CSV | papaparse |
 | Config | env walidowany przez t3-env |
-| Wdrożenie | Obraz Docker budowany lokalnie, prywatny rejestr `registry:2`, docker compose (sama aplikacja) na VPS za istniejącym NPMplus, wspólny PostgreSQL |
+| Wdrożenie | Obraz Docker budowany lokalnie, prywatny rejestr `registry:2`, docker compose (sama aplikacja) na VPS za istniejącym NPMplus, osobna baza we wspólnym kontenerze PostgreSQL |
+
+Wersje przypięte dokładnie, bez `^` (`prisma@latest` w npm to 8.0.0-rc — przypiąć 7.x).
+
+## Architektura
+
+Szczegóły: `.scratch/zapisy/issues/13-architektura-i-uklad-plikow.md`.
+
+- `src/routes/` cienkie trasy; `src/domain/` czysta logika (losowanie,
+  reguły tablicy, cięcie okna, CSV) bez bazy i HTTP; `src/server/` dostęp do
+  bazy i auth (wczytaj → domena → zapisz, pod blokadą zaliczenia);
+  `src/components/`; `src/schemas/` (Zod).
+- Wzorce, gdy upraszczają: funkcyjny rdzeń + powłoka, wstrzykiwane "teraz"
+  i generator losowy, operacje tablicy jako polecenia z poleceniem odwrotnym
+  ("Cofnij"), błędy domeny jako wynik z kodem, jedna brama `getOwnedExam`.
+- Uprawnienia: middleware `requireUser` / `requireAdmin` na funkcjach
+  serwerowych + `getOwnedExam(userId, examId)`.
+- Dane: loadery + TanStack Query (`@tanstack/react-router-ssr-query`),
+  mutacje przez funkcje serwerowe; tablica optymistycznie, serwer zwraca pełny
+  stan; odświeżanie przy powrocie do karty i co 30 s; bez WebSocketów.
+- Komunikaty błędów domeny z jednego słownika `messages.pl.ts`; bez
+  biblioteki tłumaczeń.
+- shadcn: `pnpm dlx shadcn@latest init -t start --base base`, w razie błędu
+  #11015 instalacja ręczna.
 
 - Każdy formularz jest zbudowany na TanStack Form i walidowany schematem Zod;
   ten sam schemat waliduje dane po stronie serwera. Bez wyjątków dla "małych"
@@ -255,9 +278,10 @@ Zasada: gotowe biblioteki zamiast własnego kodu, gdzie tylko się da.
 - Na VPS są już NPMplus (reverse proxy z SSL) i wspólny kontener PostgreSQL.
   `compose.yaml` aplikacji ma tylko kontener aplikacji, bez wystawionych
   portów, w zewnętrznej sieci Dockera z NPMplus i bazą.
-- Baza: wspólna, tabele aplikacji w schemacie `zapisy` (`?schema=zapisy`
-  w `DATABASE_URL`), zakładanym raz ręcznie (SQL w README). Kopie zapasowe
-  poza zakresem aplikacji.
+- Baza: osobna baza danych `zapisy` z własnym użytkownikiem we wspólnym
+  kontenerze PostgreSQL, zakładana raz ręcznie (SQL w README); tabele
+  w `public` tej bazy (Prisma 7 z `@prisma/adapter-pg` ignoruje `?schema=`).
+  Kopie zapasowe poza zakresem aplikacji.
 - IP klienta tylko z `X-Real-IP` ustawianego przez NPMplus (Better Auth
   i limit prób).
 - Obraz: `docker buildx build --platform linux/amd64 --push` lokalnie, do

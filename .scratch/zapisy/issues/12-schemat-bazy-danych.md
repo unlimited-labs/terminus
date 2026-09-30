@@ -21,7 +21,7 @@ własną tabelę?
 - Imię i nazwisko: dwa pola `firstName`, `lastName`. Numer indeksu: tekst z samych cyfr (Zod).
 - Baza pilnuje: unikalności (zaliczenie, indeks) na listach i w zapisach, unikalnej nazwy listy w zaliczeniu, spójności zaliczenia przez złożone klucze obce, blokady usunięcia slotu / wpisu listy / listy z zapisem (`onDelete: NoAction`, sprawdzane na końcu polecenia). Kod pod blokadą zaliczenia pilnuje: pojemności slotu, nienachodzenia slotów, zespołu z jednej listy, końca slotu po początku.
 - Usunięcie zaliczenia kaskadowo kasuje listy, wpisy, sloty i zapisy (w interfejsie wymaga wpisania nazwy zaliczenia). Usunięcie listy kasuje jej wpisy i sloty, chyba że któryś ma zapis. Konto prowadzącego: `onDelete: Restrict` (kont się nie usuwa).
-- Zespół nie ma tabeli. Tabele Better Auth (`User` z polami pluginu `admin`, `Session`, `Account`, `Verification`) generuje `auth generate` do tego samego pliku schematu; wszystko w schemacie PostgreSQL `zapisy`. Dokładne nazwy tabel (`@@map`) przy budowie.
+- Zespół nie ma tabeli. Tabele Better Auth (`User` z polami pluginu `admin`, `Session`, `Account`, `Verification`) generuje `auth generate` do tego samego pliku schematu; wszystko w osobnej bazie danych `zapisy` (zmiana z [Architektura i układ plików](13-architektura-i-uklad-plikow.md); wcześniej schemat `zapisy`). Dokładne nazwy tabel (`@@map`) przy budowie.
 
 Szkic przyjęty:
 

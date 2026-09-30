@@ -37,8 +37,9 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Strona studenta](issues/09-strona-studenta.md) — harmonogram jako plansza (dni = kolumny, przewijana w poziomie, kafelek rozwija pełny skład), formularz w panelu wysuwanym z dołu; wynik jako "bilet" z numerami indeksów; RODO zwinięte; minione sloty wyglądają zwyczajnie.
 - [Tablica zapisów prowadzącego](issues/10-tablica-zapisow-prowadzacego.md) — tabela slotów z panelem "Niezapisani" z lewej; tylko przeciąganie (osoba: przeniesienie, zamiana, usunięcie; zespół: przeniesienie albo zamiana); "Cofnij" zamiast potwierdzeń; klawiatura z dnd-kit.
 - [Grupy zajęciowe i import CSV](issues/16-grupy-zajeciowe-i-import-csv.md) — zaliczenie ma jedną lub kilka list indeksów (import CSV z uczelni, z nazwiskami); slot należy do listy, indeks losuje tylko ze slotów swojej listy; student wpisuje sam indeks; zmienia losowanie, stronę studenta i tablicę.
-- [Wdrożenie na VPS](issues/11-wdrozenie-na-vps.md) — compose tylko z aplikacją za istniejącym NPMplus, wspólny PostgreSQL (schemat `zapisy`), obraz budowany lokalnie do `registry:2`, migracje i superadmin przy starcie, bez kopii zapasowych.
+- [Wdrożenie na VPS](issues/11-wdrozenie-na-vps.md) — compose tylko z aplikacją za istniejącym NPMplus, osobna baza `zapisy` we wspólnym kontenerze PostgreSQL, obraz budowany lokalnie do `registry:2`, migracje i superadmin przy starcie, bez kopii zapasowych.
 - [Schemat bazy danych](issues/12-schemat-bazy-danych.md) — kod po angielsku (`Exam`, `Roster`, `RosterEntry`, `Slot`, `Enrollment`); `timestamptz` + `@date-fns/tz`; złożone klucze obce z `examId`; baza pilnuje unikalności i blokad usunięcia, kod pod blokadą — pojemności i nienachodzenia slotów.
+- [Architektura i układ plików](issues/13-architektura-i-uklad-plikow.md) — `routes/` cienkie, `domain/` czysta logika, `server/` baza pod blokadą; middleware + `getOwnedExam`; TanStack Query z pełnym stanem tablicy; operacje jako polecenia z "Cofnij"; osobna baza `zapisy` zamiast schematu; wersje przypięte (Prisma 7!).
 
 ## Not yet specified
 

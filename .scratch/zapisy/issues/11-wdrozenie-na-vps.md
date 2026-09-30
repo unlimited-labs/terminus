@@ -14,7 +14,7 @@ i dostarczany jest obraz (build na VPS czy rejestr)?
 ## Answer
 
 - Na VPS działają już: NPMplus (reverse proxy z certyfikatami SSL) i osobny kontener PostgreSQL wspólny dla wielu aplikacji. `compose.yaml` aplikacji zawiera tylko kontener aplikacji — bez proxy, bez bazy, bez kopii zapasowych.
-- Baza: wspólna baza w istniejącym kontenerze. Tabele aplikacji w osobnym schemacie PostgreSQL `zapisy` (`?schema=zapisy` w `DATABASE_URL`), żeby migracje Prisma nie widziały cudzych tabel. Założenie schematu (i najlepiej osobnego użytkownika z prawami tylko do niego) raz ręcznie, SQL w README. Wersję PostgreSQL sprawdzić przy wdrożeniu względem wymagań Prisma 7.
+- Baza: ~~wspólna baza, schemat `zapisy`~~ — zmienione w [Architektura i układ plików](13-architektura-i-uklad-plikow.md): osobna baza danych `zapisy` z własnym użytkownikiem w istniejącym, wspólnym kontenerze PostgreSQL; tabele w `public` tej bazy (Prisma 7 z `@prisma/adapter-pg` ignoruje `?schema=`). Założenie bazy i użytkownika raz ręcznie, SQL w README. Prisma 7 obsługuje PostgreSQL 9.6–18.
 - Kopie zapasowe bazy: poza zakresem aplikacji (świadomie pominięte; odpowiada za nie właściciel wspólnej bazy).
 - Sieć: aplikacja nie wystawia portów; dołącza do zewnętrznej sieci Dockera z NPMplus i bazą; NPMplus łączy się z nią po nazwie kontenera. Nazwy sieci w `compose.yaml` na VPS.
 - IP klienta tylko z nagłówka `X-Real-IP` ustawianego przez NPMplus (Better Auth: `advanced.ipAddress.ipAddressHeaders: ["x-real-ip"]`; ten sam nagłówek dla limitu prób na stronie studenta). Przy wdrożeniu sprawdzić, że NPMplus nadpisuje ten nagłówek.
