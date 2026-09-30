@@ -44,11 +44,11 @@ i budowę aplikacji można zacząć w osobnej sesji. Budowa nie należy do tej m
 - [Edycja zaliczenia po starcie zapisów](issues/17-edycja-zaliczenia-po-starcie.md) — zmniejszenie maks. zespołu poniżej istniejącego zablokowane; zwiększenie tylko podnosi limit; godzinę pojedynczego slotu można edytować; zmiana listy slotu dozwolona.
 - [Duplikowanie zaliczenia i eksport CSV](issues/18-duplikowanie-i-eksport-csv.md) — kopia bez slotów i zapisów, listy indeksów opcjonalnie (domyślnie tak); eksport: wiersz na osobę, niezapisani na końcu, format jak import (UTF-8 BOM, `;`).
 - [Kierunek wizualny](issues/19-kierunek-wizualny.md) — wariant "Przyjazny": jasny fiolet, indygo `#4B3FD6`, mięta dla wolnych slotów, Figtree, duże zaokrąglenia, bilet z gradientem; bez trybu ciemnego.
+- [Złożenie specyfikacji](issues/20-zlozenie-specyfikacji.md) — `SPEC.md` jako jeden dokument gotowy do budowy, z wersjami z npm (TypeScript 6.0.3, Prisma 7.10.0) i kolejnością budowy. Cel mapy osiągnięty.
 
 ## Not yet specified
 
-- (pusto — resztę mgły zamieniono w zadania: edycja zaliczenia po starcie,
-  duplikowanie i eksport CSV, kierunek wizualny, złożenie specyfikacji)
+- (pusto)
 
 ## Out of scope
 
