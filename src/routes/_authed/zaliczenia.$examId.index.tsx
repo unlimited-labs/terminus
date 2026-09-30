@@ -8,7 +8,10 @@ import { examQuery } from "@/server/exams"
 
 export const Route = createFileRoute("/_authed/zaliczenia/$examId/")({
   loader: async ({ context, params }) => {
-    const exam = await context.queryClient.ensureQueryData(examQuery(params.examId))
+    const exam = await context.queryClient.query({
+      ...examQuery(params.examId),
+      staleTime: "static",
+    })
     if (!exam) throw notFound()
     return { title: exam.name }
   },

@@ -17,6 +17,7 @@ import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
 import { Route as ZExamIdRouteImport } from './routes/z/$examId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedZaliczeniaExamIdIndexRouteImport } from './routes/_authed/zaliczenia.$examId.index'
+import { Route as AuthedZaliczeniaExamIdTablicaRouteImport } from './routes/_authed/zaliczenia.$examId.tablica'
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
@@ -58,6 +59,12 @@ const AuthedZaliczeniaExamIdIndexRoute =
     path: '/zaliczenia/$examId/',
     getParentRoute: () => AuthedRoute,
   } as any)
+const AuthedZaliczeniaExamIdTablicaRoute =
+  AuthedZaliczeniaExamIdTablicaRouteImport.update({
+    id: '/zaliczenia/$examId/tablica',
+    path: '/zaliczenia/$examId/tablica',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
@@ -66,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/konta': typeof AuthedKontaRoute
   '/z/$examId': typeof ZExamIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/zaliczenia/$examId/tablica': typeof AuthedZaliczeniaExamIdTablicaRoute
   '/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +83,7 @@ export interface FileRoutesByTo {
   '/z/$examId': typeof ZExamIdRoute
   '/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/zaliczenia/$examId/tablica': typeof AuthedZaliczeniaExamIdTablicaRoute
   '/zaliczenia/$examId': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRoutesById {
@@ -86,6 +95,7 @@ export interface FileRoutesById {
   '/z/$examId': typeof ZExamIdRoute
   '/_authed/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/_authed/zaliczenia/$examId/tablica': typeof AuthedZaliczeniaExamIdTablicaRoute
   '/_authed/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/konta'
     | '/z/$examId'
     | '/api/auth/$'
+    | '/zaliczenia/$examId/tablica'
     | '/zaliczenia/$examId/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/z/$examId'
     | '/'
     | '/api/auth/$'
+    | '/zaliczenia/$examId/tablica'
     | '/zaliczenia/$examId'
   id:
     | '__root__'
@@ -116,6 +128,7 @@ export interface FileRouteTypes {
     | '/z/$examId'
     | '/_authed/'
     | '/api/auth/$'
+    | '/_authed/zaliczenia/$examId/tablica'
     | '/_authed/zaliczenia/$examId/'
   fileRoutesById: FileRoutesById
 }
@@ -184,6 +197,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedZaliczeniaExamIdIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/zaliczenia/$examId/tablica': {
+      id: '/_authed/zaliczenia/$examId/tablica'
+      path: '/zaliczenia/$examId/tablica'
+      fullPath: '/zaliczenia/$examId/tablica'
+      preLoaderRoute: typeof AuthedZaliczeniaExamIdTablicaRouteImport
+      parentRoute: typeof AuthedRoute
+    }
   }
 }
 
@@ -191,6 +211,7 @@ interface AuthedRouteChildren {
   AuthedHasloRoute: typeof AuthedHasloRoute
   AuthedKontaRoute: typeof AuthedKontaRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedZaliczeniaExamIdTablicaRoute: typeof AuthedZaliczeniaExamIdTablicaRoute
   AuthedZaliczeniaExamIdIndexRoute: typeof AuthedZaliczeniaExamIdIndexRoute
 }
 
@@ -198,6 +219,7 @@ const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHasloRoute: AuthedHasloRoute,
   AuthedKontaRoute: AuthedKontaRoute,
   AuthedIndexRoute: AuthedIndexRoute,
+  AuthedZaliczeniaExamIdTablicaRoute: AuthedZaliczeniaExamIdTablicaRoute,
   AuthedZaliczeniaExamIdIndexRoute: AuthedZaliczeniaExamIdIndexRoute,
 }
 

@@ -9,7 +9,7 @@ import {
   rosterRefSchema,
 } from "../schemas/roster.ts"
 
-import { withExamLock, type Tx } from "./exam-lock.ts"
+import { withExamLock, type Tx } from "./exam-lock.server.ts"
 import { requireUser } from "./session.ts"
 
 async function planImport(tx: Tx, examId: string, rosterName: string, csv: string) {

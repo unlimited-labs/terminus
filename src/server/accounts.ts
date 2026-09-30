@@ -12,8 +12,8 @@ import {
   updateAccountSchema,
 } from "../schemas/account.ts"
 
-import { auth } from "./auth.ts"
-import { db } from "./db.ts"
+import { auth } from "./auth.server.ts"
+import { db } from "./db.server.ts"
 import { requireAdmin } from "./session.ts"
 
 const isUniqueViolation = (e: unknown) =>

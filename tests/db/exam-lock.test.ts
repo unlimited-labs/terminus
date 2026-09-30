@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { withExamLock } from "@/server/exam-lock"
+import { withExamLock } from "@/server/exam-lock.server"
 
 import { createExam } from "./fixtures"
 

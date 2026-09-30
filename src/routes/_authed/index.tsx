@@ -9,7 +9,7 @@ import { useResultMutation } from "@/components/use-result-mutation"
 import { createExam, examsQuery } from "@/server/exams"
 
 export const Route = createFileRoute("/_authed/")({
-  loader: ({ context }) => context.queryClient.ensureQueryData(examsQuery()),
+  loader: ({ context }) => context.queryClient.query({ ...examsQuery(), staleTime: "static" }),
   head: () => ({ meta: [{ title: "Moje zaliczenia — Zapisy" }] }),
   component: ExamList,
 })

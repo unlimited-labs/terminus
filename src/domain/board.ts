@@ -124,3 +124,49 @@ export function changedPeople<P extends BoardPerson>(
     return !o || o.slotId !== p.slotId || o.firstName !== p.firstName || o.lastName !== p.lastName
   })
 }
+
+/** Co przeciągnięto i na co upuszczono na tablicy. */
+export type DragRef =
+  | { kind: "person"; studentNumber: string }
+  | { kind: "team"; slotId: string }
+  | { kind: "slot"; slotId: string }
+  | { kind: "pool" }
+
+/** Tłumaczy upuszczenie na polecenie tablicy; `null` = nic do zrobienia. */
+export function dropCommand(
+  source: DragRef,
+  target: DragRef,
+  people: BoardPerson[],
+): BoardCommand | null {
+  const slotOf = (n: string) => people.find((p) => p.studentNumber === n)?.slotId ?? null
+  if (source.kind === "person") {
+    if (target.kind === "pool")
+      return { kind: "move", studentNumber: source.studentNumber, toSlotId: null }
+    if (target.kind === "slot") {
+      return { kind: "move", studentNumber: source.studentNumber, toSlotId: target.slotId }
+    }
+    if (target.kind === "person" && target.studentNumber !== source.studentNumber) {
+      return { kind: "swapPeople", a: source.studentNumber, b: target.studentNumber }
+    }
+    return null
+  }
+  if (source.kind !== "team") return null
+  const to =
+    target.kind === "slot"
+      ? target.slotId
+      : target.kind === "person"
+        ? slotOf(target.studentNumber)
+        : null
+  return to && to !== source.slotId ? { kind: "swapSlots", a: source.slotId, b: to } : null
+}
+
+/** Identyfikatory elementów tablicy w dnd-kit: `p:`/`pt:` osoba, `s:` slot, `t:` zespół, `pool`. */
+export function parseDragId(id: string | number): DragRef | undefined {
+  const [prefix, value] = String(id).split(/:(.*)/)
+  if (prefix === "pool") return { kind: "pool" }
+  if (!value) return undefined
+  if (prefix === "p" || prefix === "pt") return { kind: "person", studentNumber: value }
+  if (prefix === "s") return { kind: "slot", slotId: value }
+  if (prefix === "t") return { kind: "team", slotId: value }
+  return undefined
+}

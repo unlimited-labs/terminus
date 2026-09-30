@@ -5,7 +5,7 @@ import { warsawDay } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import { dayRefSchema, slotRefSchema, updateSlotSchema, windowSchema } from "../schemas/slot.ts"
 
-import { withExamLock, type Tx } from "./exam-lock.ts"
+import { withExamLock, type Tx } from "./exam-lock.server.ts"
 import { requireUser } from "./session.ts"
 
 async function overlapError(tx: Tx, examId: string, added: Interval[], ignoreId?: string) {

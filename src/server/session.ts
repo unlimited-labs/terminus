@@ -1,7 +1,7 @@
 import { createMiddleware, createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 
-import { auth } from "./auth.ts"
+import { auth } from "./auth.server.ts"
 
 async function currentUser() {
   const session = await auth.api.getSession({ headers: getRequestHeaders() })

@@ -2,7 +2,7 @@ import { randomInt } from "node:crypto"
 
 import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
 
-import { withExamLock } from "./exam-lock.ts"
+import { withExamLock } from "./exam-lock.server.ts"
 
 export type Ticket = {
   startsAt: Date

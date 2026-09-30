@@ -22,7 +22,7 @@ export const Route = createFileRoute("/_authed/konta")({
   beforeLoad: ({ context }) => {
     if (!context.user.isAdmin) throw redirect({ to: "/" })
   },
-  loader: ({ context }) => context.queryClient.ensureQueryData(accountsQuery()),
+  loader: ({ context }) => context.queryClient.query({ ...accountsQuery(), staleTime: "static" }),
   head: () => ({ meta: [{ title: "Konta — Zapisy" }] }),
   component: Accounts,
 })

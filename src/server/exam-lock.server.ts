@@ -1,6 +1,6 @@
 import type { Prisma } from "../generated/prisma/client.ts"
 
-import { db } from "./db.ts"
+import { db } from "./db.server.ts"
 
 export type Tx = Prisma.TransactionClient
 

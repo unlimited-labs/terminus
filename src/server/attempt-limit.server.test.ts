@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { isBlocked, recordFailure } from "./attempt-limit"
+import { isBlocked, recordFailure } from "./attempt-limit.server"
 
 test("po 10 nieudanych próbach z jednego IP blokada; inne IP bez blokady", async () => {
   for (let i = 0; i < 9; i++) await recordFailure("1.1.1.1")

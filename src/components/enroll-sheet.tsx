@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { formatDayTime } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { enrollmentSchema } from "@/schemas/enrollment"
-import type { Ticket as TicketData } from "@/server/enrollment"
+import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/schedule"
 
 type Outcome = Awaited<ReturnType<typeof enroll>>

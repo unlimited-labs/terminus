@@ -1,7 +1,7 @@
 import { expect, test } from "vitest"
 
-import { db } from "@/server/db"
-import { enrollTeam } from "@/server/enrollment"
+import { db } from "@/server/db.server"
+import { enrollTeam } from "@/server/enrollment.server"
 
 import { createExam, inDays } from "./fixtures"
 

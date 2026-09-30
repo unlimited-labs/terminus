@@ -7,13 +7,16 @@ import { EnrollSheet } from "@/components/enroll-sheet"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
 import { isFreeSlot } from "@/domain/schedule"
-import type { Ticket } from "@/server/enrollment"
+import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery } from "@/server/schedule"
 
 export const Route = createFileRoute("/z/$examId")({
   loader: async ({ context, params }) => {
     if (!z.uuid().safeParse(params.examId).success) throw notFound()
-    const schedule = await context.queryClient.ensureQueryData(scheduleQuery(params.examId))
+    const schedule = await context.queryClient.query({
+      ...scheduleQuery(params.examId),
+      staleTime: "static",
+    })
     if (!schedule) throw notFound()
     return { title: schedule.name }
   },

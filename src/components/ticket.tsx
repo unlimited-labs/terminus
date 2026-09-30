@@ -1,5 +1,5 @@
 import { formatDayTime, warsawTime } from "@/domain/time"
-import type { Ticket as TicketData } from "@/server/enrollment"
+import type { Ticket as TicketData } from "@/server/enrollment.server"
 
 export function Ticket({ ticket, place }: { ticket: TicketData; place: string }) {
   const [day] = formatDayTime(ticket.startsAt).split(",")

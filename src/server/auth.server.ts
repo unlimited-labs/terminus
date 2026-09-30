@@ -3,8 +3,8 @@ import { betterAuth } from "better-auth"
 import { admin } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
-import { db } from "./db.ts"
-import { env } from "./env.ts"
+import { db } from "./db.server.ts"
+import { env } from "./env.server.ts"
 
 export const auth = betterAuth({
   secret: env.BETTER_AUTH_SECRET,

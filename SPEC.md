@@ -355,7 +355,7 @@ src/
   znaleziono". `beforeLoad` tylko przekierowuje.
 - Dane: TanStack Query zintegrowane z routerem przez
   `@tanstack/react-router-ssr-query` (`setupRouterSsrQueryIntegration({ router, queryClient })`);
-  loadery `context.queryClient.ensureQueryData(...)`; zmiany przez
+  loadery `context.queryClient.query({ ...opcje, staleTime: "static" })`; zmiany przez
   `useMutation` → funkcje serwerowe. Bez WebSocketów.
 - Formularze: każdy na TanStack Form, walidowany schematem Zod; ten sam
   schemat waliduje dane na serwerze. Bez wyjątków dla małych formularzy.

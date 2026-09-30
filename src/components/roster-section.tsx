@@ -20,7 +20,7 @@ import { useResultMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { errorMessage } from "@/messages.pl"
 import { addEntrySchema } from "@/schemas/roster"
-import type { ExamDetail } from "@/server/exams"
+import type { ExamDetail } from "@/server/exam-state.server"
 import {
   addRosterEntry,
   applyRosterImport,
@@ -183,6 +183,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) void load(file)
+            e.target.value = ""
           }}
         />
       </div>

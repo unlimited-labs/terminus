@@ -1,6 +1,13 @@
 import { describe, expect, test } from "vitest"
 
-import { applyCommand, changedPeople, type BoardCommand, type BoardState } from "./board"
+import {
+  applyCommand,
+  changedPeople,
+  dropCommand,
+  parseDragId,
+  type BoardCommand,
+  type BoardState,
+} from "./board"
 
 const state: BoardState = {
   maxTeamSize: 2,
@@ -124,4 +131,52 @@ test("changedPeople zwraca osoby ze zmienionym slotem lub nazwiskiem", () => {
   const result = applyCommand(state, { kind: "swapPeople", a: "1", b: "3" })
   if (!result.ok) throw new Error(result.code)
   expect(changedPeople(state, result.state).map((p) => p.studentNumber)).toEqual(["1", "3"])
+})
+
+const person = (studentNumber: string) => ({ kind: "person", studentNumber }) as const
+const slot = (slotId: string) => ({ kind: "slot", slotId }) as const
+const team = (slotId: string) => ({ kind: "team", slotId }) as const
+
+test("parseDragId", () => {
+  expect(parseDragId("pt:123")).toEqual(person("123"))
+  expect(parseDragId("s:a-b")).toEqual(slot("a-b"))
+  expect(parseDragId("t:x")).toEqual(team("x"))
+  expect(parseDragId("pool")).toEqual({ kind: "pool" })
+  expect(parseDragId("?")).toBeUndefined()
+})
+
+describe("dropCommand", () => {
+  test("osoba → slot / osoba / Niezapisani", () => {
+    expect(dropCommand(person("1"), slot("s2"), state.people)).toEqual({
+      kind: "move",
+      studentNumber: "1",
+      toSlotId: "s2",
+    })
+    expect(dropCommand(person("1"), person("3"), state.people)).toEqual({
+      kind: "swapPeople",
+      a: "1",
+      b: "3",
+    })
+    expect(dropCommand(person("1"), { kind: "pool" }, state.people)).toEqual({
+      kind: "move",
+      studentNumber: "1",
+      toSlotId: null,
+    })
+    expect(dropCommand(person("1"), person("1"), state.people)).toBeNull()
+  })
+
+  test("zespół → slot albo na osobę w innym slocie", () => {
+    expect(dropCommand(team("s1"), slot("s3"), state.people)).toEqual({
+      kind: "swapSlots",
+      a: "s1",
+      b: "s3",
+    })
+    expect(dropCommand(team("s1"), person("3"), state.people)).toEqual({
+      kind: "swapSlots",
+      a: "s1",
+      b: "s2",
+    })
+    expect(dropCommand(team("s1"), person("2"), state.people)).toBeNull()
+    expect(dropCommand(team("s1"), { kind: "pool" }, state.people)).toBeNull()
+  })
 })

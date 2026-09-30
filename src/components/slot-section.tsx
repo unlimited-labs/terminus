@@ -8,7 +8,7 @@ import { useResultMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, warsawDay, warsawTime } from "@/domain/time"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
-import type { ExamDetail } from "@/server/exams"
+import type { ExamDetail } from "@/server/exam-state.server"
 import { addSlotWindow, deleteFreeSlotsOfDay, deleteSlot, updateSlot } from "@/server/slots"
 
 type Slot = ExamDetail["slots"][number]

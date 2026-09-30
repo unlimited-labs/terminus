@@ -4,6 +4,13 @@ import { useId } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
@@ -98,20 +105,23 @@ function SelectField({
   return (
     <div className="grid gap-1.5">
       <Label htmlFor={id}>{label}</Label>
-      <select
-        id={id}
+      <Select
         name={field.name}
+        items={options}
         value={field.state.value}
-        onBlur={field.handleBlur}
-        onChange={(e) => field.handleChange(e.target.value)}
-        className="h-9 rounded-lg border border-input bg-card px-3 text-sm"
+        onValueChange={(value) => field.handleChange(value ?? "")}
       >
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger id={id} onBlur={field.handleBlur} className="h-9 w-full bg-card">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <FieldErrors id={`${id}-errors`} />
     </div>
   )

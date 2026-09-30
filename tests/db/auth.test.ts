@@ -2,8 +2,8 @@ import { execFileSync } from "node:child_process"
 
 import { expect, test } from "vitest"
 
-import { auth } from "@/server/auth"
-import { db } from "@/server/db"
+import { auth } from "@/server/auth.server"
+import { db } from "@/server/db.server"
 
 test("createUser działa przy wyłączonej rejestracji, a publiczny sign-up jest zablokowany", async () => {
   const { user } = await auth.api.createUser({

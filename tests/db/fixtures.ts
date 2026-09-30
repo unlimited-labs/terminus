@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { db } from "@/server/db"
+import { db } from "@/server/db.server"
 
 type ExamFixture = {
   maxTeamSize?: number

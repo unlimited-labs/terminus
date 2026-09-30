@@ -1,4 +1,4 @@
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useResultMutation } from "@/components/use-result-mutation"
-import { deleteExam, updateExam, type ExamDetail } from "@/server/exams"
+import type { ExamDetail } from "@/server/exam-state.server"
+import { deleteExam, updateExam } from "@/server/exams"
 
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
@@ -33,7 +34,7 @@ function ExamLink({ examId }: { examId: string }) {
   )
 }
 
-function CapacitySummary({ exam }: { exam: ExamDetail }) {
+export function CapacitySummary({ exam }: { exam: ExamDetail }) {
   const single = exam.rosters.length === 1
   return (
     <ul className="grid gap-1 text-sm">
@@ -93,6 +94,13 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
                 : `zespoły do ${exam.maxTeamSize} os.`}
             </p>
             <ExamLink examId={exam.id} />
+            <Link
+              to="/zaliczenia/$examId/tablica"
+              params={{ examId: exam.id }}
+              className="font-semibold text-primary"
+            >
+              Tablica zapisów →
+            </Link>
             <CapacitySummary exam={exam} />
           </>
         )}

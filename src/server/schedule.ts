@@ -5,9 +5,9 @@ import { getRequestHeader } from "@tanstack/react-start/server"
 import { examIdSchema } from "../schemas/exam.ts"
 import { enrollmentSchema } from "../schemas/enrollment.ts"
 
-import { isBlocked, recordFailure } from "./attempt-limit.ts"
-import { db } from "./db.ts"
-import { enrollTeam, type EnrollmentOutcome } from "./enrollment.ts"
+import { isBlocked, recordFailure } from "./attempt-limit.server.ts"
+import { db } from "./db.server.ts"
+import { enrollTeam, type EnrollmentOutcome } from "./enrollment.server.ts"
 
 /** Publiczny harmonogram: sloty z imionami i nazwiskami, bez numerów indeksów. */
 const getSchedule = createServerFn()

@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto"
 
-import { auth } from "../src/server/auth.ts"
-import { db } from "../src/server/db.ts"
+import { auth } from "../src/server/auth.server.ts"
+import { db } from "../src/server/db.server.ts"
 
 const email = process.argv[2]
 if (!email) {

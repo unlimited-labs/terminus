@@ -12,7 +12,7 @@
     "zones": [
       {
         "name": "db",
-        "patterns": ["src/server/db.ts", "src/generated/**"]
+        "patterns": ["src/server/db.server.ts", "src/generated/**"]
       },
       {
         "name": "server",
