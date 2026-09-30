@@ -223,6 +223,13 @@ linku.
     slotu lub indeksu z istniejącym zapisem zablokowane, dopóki zapis nie
     zostanie przeniesiony lub usunięty. To samo dotyczy usunięcia całej listy
     indeksów.
+    - Maksymalnej wielkości zespołu nie da się zmniejszyć poniżej największego
+      istniejącego zespołu (komunikat wymienia te sloty). Zwiększenie tylko
+      podnosi limit; niepełne zespoły nie są uzupełniane automatycznie.
+    - Nazwa, opis i miejsce zmieniają się od razu wszędzie.
+    - Listę slotu można zmienić także przy zapisach.
+    - Godzinę pojedynczego slotu można edytować (także przy zapisach) z tymi
+      samymi sprawdzeniami co okno. Przesuwania całego dnia nie ma.
 
 ## Stos techniczny
 
