@@ -84,6 +84,16 @@ sobie konto prowadzącego.
 15. Pod formularzem stała klauzula informacyjna RODO oparta na klauzuli AGH:
     `docs/klauzula-informacyjna.md` (do akceptacji IOD AGH przed uruchomieniem).
 16. Dane nie są usuwane automatycznie; usuwa je prowadzący, kasując zaliczenie.
+17. Układ strony, najpierw pod telefon: harmonogram jako plansza — dni to
+    kolumny o stałej szerokości (przewijanie w poziomie, na starcie pierwszy
+    dzień z wolnym slotem), sloty to kafelki z godziną i nazwiskiem pierwszej
+    osoby "+n"; dotknięcie zajętego kafelka rozwija pełny skład. Formularz
+    w panelu wysuwanym z dołu po "Zapisz się" ("Dodaj osobę do zespołu" do
+    maksimum, jeden "Losuj slot", zwinięta klauzula RODO). Wynik w panelu:
+    dzień, godzina, miejsce, skład zespołu z numerami indeksów; potem
+    "Pokaż na planszy" wyróżnia kafelek. Minione sloty wyglądają jak
+    pozostałe, ale pusty miniony slot nie jest opisany jako "wolny".
+    Szczegóły i prototyp (wariant B): `.scratch/zapisy/issues/09-strona-studenta.md`.
 
 Świadomie przyjęte ryzyko: kto zna cudzy indeks, może tę osobę zapisać pod
 dowolnym nazwiskiem; nazwiska w harmonogramie widzi każdy posiadacz linku.
