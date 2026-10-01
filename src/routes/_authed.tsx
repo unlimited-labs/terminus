@@ -25,7 +25,7 @@ function AuthedLayout() {
       <header className="border-b bg-card">
         <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm">
           <Link to="/" className="font-extrabold">
-            Zapisy na zaliczenia
+            Terminus
           </Link>
           <Link
             to="/"

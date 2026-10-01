@@ -16,7 +16,7 @@ export const Route = createFileRoute("/_authed/zaliczenia/$examId/")({
     return { title: exam.name }
   },
   head: ({ loaderData }) => ({
-    meta: [{ title: `${loaderData?.title ?? "Zaliczenie"} — Zapisy` }],
+    meta: [{ title: `${loaderData?.title ?? "Zaliczenie"} — Terminus` }],
   }),
   component: ExamPage,
 })

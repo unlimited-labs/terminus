@@ -6,7 +6,7 @@ const read = (command: string) => execSync(command, { encoding: "utf8" }).trim()
 
 const image = process.env.IMAGE
 if (!image) {
-  console.error("Ustaw IMAGE, np. IMAGE=registry.example.com/zapisy-app pnpm release")
+  console.error("Ustaw IMAGE, np. IMAGE=registry.wimiip.eu/terminus pnpm release")
   process.exit(1)
 }
 if (read("git status --porcelain")) {

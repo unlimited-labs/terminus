@@ -1,4 +1,4 @@
-# Zapisy na zaliczenia
+# Terminus — zapisy na zaliczenia
 
 Prowadzący tworzy zaliczenie, importuje listy indeksów i definiuje sloty; student
 wchodzi na link zaliczenia, podaje numer indeksu (swój albo zespołu) i dostaje
@@ -45,11 +45,11 @@ Tabele powstają w schemacie `public` tej bazy przy starcie kontenera aplikacji
 ## Wdrożenie
 
 Na VPS są tylko `compose.yaml` i `.env` (wzór: `.env.example`). Aplikacja nie
-wystawia portów; NPMplus łączy się z nią po nazwie kontenera `zapisy-app`, port
+wystawia portów; NPMplus łączy się z nią po nazwie kontenera `terminus`, port
 3000, w zewnętrznej sieci `PROXY_NETWORK`. Baza jest osiągalna w sieci
 `DB_NETWORK`.
 
-1. Lokalnie: `IMAGE=rejestr.example.com/zapisy-app pnpm release` — wypisze tag.
+1. Lokalnie: `IMAGE=registry.wimiip.eu/terminus pnpm release` — wypisze tag.
 2. Na VPS: `IMAGE_TAG=<tag>` w `.env`, potem `docker compose up -d`.
 3. Wycofanie: poprzedni tag w `.env` i `docker compose up -d`.
 

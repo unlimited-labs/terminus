@@ -1,4 +1,4 @@
-# Zapisy na zaliczenia — specyfikacja
+# Terminus — zapisy na zaliczenia: specyfikacja
 
 Status: gotowa do budowy (2026-09-30). Słownik pojęć: `CONTEXT.md`. Historia
 decyzji i ich uzasadnienia: `.scratch/zapisy/map.md` i zadania w

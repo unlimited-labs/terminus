@@ -10,7 +10,7 @@ import { createExam, examsQuery } from "@/server/exams"
 
 export const Route = createFileRoute("/_authed/")({
   loader: ({ context }) => context.queryClient.query({ ...examsQuery(), staleTime: "static" }),
-  head: () => ({ meta: [{ title: "Moje zaliczenia — Zapisy" }] }),
+  head: () => ({ meta: [{ title: "Moje zaliczenia — Terminus" }] }),
   component: ExamList,
 })
 

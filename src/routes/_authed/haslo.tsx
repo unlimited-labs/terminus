@@ -8,7 +8,7 @@ import { authErrorMessage } from "@/messages.pl"
 import { changePasswordSchema } from "@/schemas/auth"
 
 export const Route = createFileRoute("/_authed/haslo")({
-  head: () => ({ meta: [{ title: "Zmiana hasła — Zapisy" }] }),
+  head: () => ({ meta: [{ title: "Zmiana hasła — Terminus" }] }),
   component: ChangePassword,
 })
 

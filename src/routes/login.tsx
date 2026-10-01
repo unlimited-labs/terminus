@@ -15,7 +15,7 @@ export const Route = createFileRoute("/login")({
   beforeLoad: async () => {
     if (await getSessionUser()) throw redirect({ to: "/" })
   },
-  head: () => ({ meta: [{ title: "Logowanie — Zapisy" }] }),
+  head: () => ({ meta: [{ title: "Logowanie — Terminus" }] }),
   component: Login,
 })
 
@@ -40,7 +40,8 @@ function Login() {
     <main className="mx-auto grid min-h-svh max-w-sm content-center p-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl font-extrabold">Zapisy na zaliczenia</CardTitle>
+          <CardTitle className="text-2xl font-extrabold">Terminus</CardTitle>
+          <p className="text-muted-foreground">Zapisy na zaliczenia</p>
         </CardHeader>
         <CardContent>
           <form.AppForm>

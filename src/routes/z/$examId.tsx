@@ -23,7 +23,7 @@ export const Route = createFileRoute("/z/$examId")({
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: loaderData?.title ?? "Zapisy" },
+      { title: loaderData?.title ?? "Terminus" },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),

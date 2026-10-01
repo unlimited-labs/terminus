@@ -1,4 +1,4 @@
-# Zapisy na zaliczenia
+# Terminus — zapisy na zaliczenia
 
 Przydzielanie studentom losowych slotów czasowych na zaliczenia prowadzone przez wielu prowadzących.
 

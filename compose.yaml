@@ -2,7 +2,7 @@
 services:
   app:
     image: ${IMAGE:?ustaw IMAGE}:${IMAGE_TAG:?ustaw IMAGE_TAG}
-    container_name: zapisy-app
+    container_name: terminus
     restart: unless-stopped
     env_file: .env
     networks: [proxy, db]
