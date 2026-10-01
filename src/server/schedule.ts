@@ -61,11 +61,14 @@ export const scheduleQuery = (examId: string) =>
     refetchInterval: 30_000,
   })
 
+let warnedNoIp = false
+
 export const enroll = createServerFn({ method: "POST" })
   .validator(enrollmentSchema)
   .handler(async ({ data }): Promise<EnrollmentOutcome | { ok: false; code: "RATE_LIMITED" }> => {
     const ip = getRequestHeader("x-real-ip")
-    if (!ip && process.env.NODE_ENV === "production") {
+    if (!ip && !warnedNoIp && process.env.NODE_ENV === "production") {
+      warnedNoIp = true
       console.warn(
         "Brak nagłówka X-Real-IP: limit prób jest wspólny dla wszystkich (sprawdź reverse proxy).",
       )
