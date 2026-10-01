@@ -64,9 +64,14 @@ export const scheduleQuery = (examId: string) =>
 export const enroll = createServerFn({ method: "POST" })
   .validator(enrollmentSchema)
   .handler(async ({ data }): Promise<EnrollmentOutcome | { ok: false; code: "RATE_LIMITED" }> => {
-    const ip = getRequestHeader("x-real-ip") ?? "unknown"
-    if (await isBlocked(ip)) return { ok: false, code: "RATE_LIMITED" }
+    const ip = getRequestHeader("x-real-ip")
+    if (!ip && process.env.NODE_ENV === "production") {
+      console.warn(
+        "Brak nagłówka X-Real-IP: limit prób jest wspólny dla wszystkich (sprawdź reverse proxy).",
+      )
+    }
+    if (await isBlocked(ip ?? "unknown")) return { ok: false, code: "RATE_LIMITED" }
     const outcome = await enrollTeam(data.examId, data.studentNumbers)
-    if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") await recordFailure(ip)
+    if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") await recordFailure(ip ?? "unknown")
     return outcome
   })
