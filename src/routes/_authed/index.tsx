@@ -39,7 +39,13 @@ function ExamList() {
           </CardHeader>
           <CardContent>
             <ExamForm
-              defaultValues={{ name: "", description: "", defaultSlotMinutes: 15, maxTeamSize: 1 }}
+              defaultValues={{
+                name: "",
+                description: "",
+                defaultSlotMinutes: 15,
+                maxTeamSize: 1,
+                fields: [],
+              }}
               submitLabel="Utwórz"
               onSubmit={create.mutateAsync}
             />

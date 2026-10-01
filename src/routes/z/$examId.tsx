@@ -69,6 +69,7 @@ function StudentPage() {
         title={action}
         submitLabel={anyFree ? "Losuj slot" : "Sprawdź"}
         maxTeamSize={anyFree ? schedule.maxTeamSize : 1}
+        fields={anyFree ? schedule.fields : []}
         open={open}
         onOpenChange={setOpen}
         ticket={mine?.ticket ?? null}

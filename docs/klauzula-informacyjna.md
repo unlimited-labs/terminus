@@ -29,7 +29,7 @@ i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/W
 2. dane kontaktowe Inspektora Ochrony Danych Osobowych dostępne są w sekcji
    „Kontakt” na stronie internetowej agh.edu.pl/uczelnia/kontakt, e-mail:
    iodo(at)agh.edu.pl, tel.: 12 617 53 25;
-3. Pani/Pana dane osobowe (numer albumu, imię i nazwisko) przetwarzane będą
+3. Pani/Pana dane osobowe (numer albumu, imię i nazwisko oraz informacje wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą
    w celu organizacji zaliczenia, w tym przydziału terminu zaliczenia, w ramach
    realizacji procesu kształcenia na studiach, w trybie art. 6 ust. 1 lit. c
    RODO, na podstawie Ustawy z dnia 20 lipca 2018 r. Prawo o szkolnictwie wyższym

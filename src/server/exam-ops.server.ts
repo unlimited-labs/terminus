@@ -5,6 +5,7 @@ import type { examSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
 import { withExamLock } from "./exam-lock.server.ts"
+import { parseFields } from "./exam-state.server.ts"
 
 /** Poprawka = nowe zaliczenie: ustawienia i (opcjonalnie) listy z nazwiskami, bez slotów i zapisów. */
 export function copyExam(examId: string, ownerId: string, copyRosters: boolean) {
@@ -21,6 +22,7 @@ export function copyExam(examId: string, ownerId: string, copyRosters: boolean) 
         description: source.description,
         defaultSlotMinutes: source.defaultSlotMinutes,
         maxTeamSize: source.maxTeamSize,
+        fields: parseFields(source.fields),
       },
     })
     if (!copyRosters) return copy.id

@@ -156,7 +156,15 @@ interfejsu i komunikaty.
 
 - Lista własnych zaliczeń; tworzenie, edycja, usuwanie, duplikowanie.
 - Pola: nazwa, opis/miejsce, domyślna długość slotu (minuty, 1–480),
-  maksymalna wielkość zespołu.
+  maksymalna wielkość zespołu oraz do 5 dodatkowych pól tekstowych dla
+  studenta (nazwa, np. "Tytuł projektu", i znacznik "wymagane").
+- Dodatkowe pola (2026-10-01): wypełnia student przy zapisie, raz na zespół
+  (wartości wspólne dla zespołu/slotu; brak wymaganego = zapis odrzucony,
+  komunikat "Uzupełnij: …"). Widoczne na bilecie, na tablicy prowadzącego
+  (✎ poprawia odpowiedzi zespołu) i jako kolumny eksportu CSV; nie w publicznym
+  harmonogramie. Osoba dołączana na tablicy do istniejącego zespołu przejmuje
+  jego odpowiedzi; przeniesiony cały zespół zachowuje swoje. Duplikat kopiuje
+  definicje pól.
 - Link zaliczenia z przyciskiem "kopiuj".
 - Przed udostępnieniem linku, osobno dla każdej listy: liczba indeksów vs.
   liczba miejsc w jej slotach, z ostrzeżeniem, gdy miejsc jest mniej.
@@ -279,6 +287,7 @@ model Exam {
   description        String
   defaultSlotMinutes Int
   maxTeamSize        Int
+  fields             Json     @default("[]")  // [{ id, label, required }]
   createdAt          DateTime @default(now())
 }
 
@@ -314,6 +323,7 @@ model Enrollment {
   studentNumber String   // [examId, studentNumber] -> RosterEntry, onDelete: NoAction
   slotId        String   // [slotId, examId] -> Slot, onDelete: NoAction
   createdAt     DateTime @default(now())
+  answers       Json     @default("{}")   // id pola → tekst, wspólne dla zespołu
   @@id([examId, studentNumber])
 }
 ```

@@ -1,24 +1,29 @@
 import { randomInt } from "node:crypto"
 
 import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
+import { checkAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
 
 import { withExamLock } from "./exam-lock.server.ts"
+import { parseFields } from "./exam-state.server.ts"
 
 export type Ticket = {
   startsAt: Date
   endsAt: Date
   team: { studentNumber: string; firstName: string; lastName: string }[]
+  answers: { label: string; value: string }[]
 }
 
 export type EnrollmentOutcome =
   | { ok: true; slotId: string; ticket: Ticket }
   | Exclude<EnrollmentPlan, { ok: true }>
+  | Exclude<AnswersCheck, { ok: true }>
   | { ok: false; code: "NOT_FOUND" }
 
 /** Zapis zespołu z losowaniem slotu; sprawdzenia, losowanie i wstawienie pod blokadą zaliczenia. */
 export async function enrollTeam(
   examId: string,
   studentNumbers: string[],
+  rawAnswers: Answers = {},
   now = new Date(),
 ): Promise<EnrollmentOutcome> {
   const outcome = await withExamLock(examId, null, async (tx): Promise<EnrollmentOutcome> => {
@@ -26,6 +31,7 @@ export async function enrollTeam(
       where: { id: examId },
       select: {
         maxTeamSize: true,
+        fields: true,
         enrollments: { select: { studentNumber: true, slotId: true } },
         rosters: {
           select: {
@@ -47,9 +53,18 @@ export async function enrollTeam(
       randomInt,
     )
     if (!plan.ok) return plan
+    const fields = parseFields(exam.fields)
+    const checked = checkAnswers(fields, rawAnswers)
+    if (!checked.ok) return checked
+    const { answers } = checked
 
     await tx.enrollment.createMany({
-      data: studentNumbers.map((studentNumber) => ({ examId, studentNumber, slotId: plan.slotId })),
+      data: studentNumbers.map((studentNumber) => ({
+        examId,
+        studentNumber,
+        slotId: plan.slotId,
+        answers,
+      })),
     })
     const [slot, team] = await Promise.all([
       tx.slot.findUniqueOrThrow({
@@ -62,7 +77,10 @@ export async function enrollTeam(
         orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       }),
     ])
-    return { ok: true, slotId: plan.slotId, ticket: { ...slot, team } }
+    const shown = fields
+      .filter((f) => answers[f.id])
+      .map((f) => ({ label: f.label, value: answers[f.id]! }))
+    return { ok: true, slotId: plan.slotId, ticket: { ...slot, team, answers: shown } }
   })
   return outcome ?? { ok: false, code: "NOT_FOUND" }
 }

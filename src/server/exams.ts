@@ -90,6 +90,6 @@ export const exportExamCsv = createServerFn()
     return {
       ok: true,
       fileName: exportFileName(exam.name, new Date()),
-      csv: buildExportCsv(exam.slots, people),
+      csv: buildExportCsv(exam.slots, people, exam.fields),
     }
   })

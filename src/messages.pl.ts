@@ -1,5 +1,6 @@
 import type { BoardErrorCode } from "./domain/board.ts"
 import type { EnrollmentPlan } from "./domain/draw.ts"
+import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import { formatDayTime, warsawTime } from "./domain/time.ts"
 
@@ -8,6 +9,7 @@ type Failure<T> = T extends { ok: false } ? Omit<T, "ok"> : never
 export type AppError =
   | Failure<EnrollmentPlan>
   | Failure<WindowCut>
+  | Failure<AnswersCheck>
   | { code: BoardErrorCode }
   | { code: "SLOT_OVERLAP"; startsAt: Date; endsAt: Date }
   | { code: "MISSING_COLUMNS"; columns: string[] }
@@ -46,6 +48,8 @@ export function errorMessage(e: AppError): string {
         .join(" ")
     case "DIFFERENT_ROSTER":
       return `Indeks z innej grupy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
+    case "MISSING_ANSWER":
+      return `Uzupełnij: ${list(e.labels)}.`
     case "NO_FREE_SLOTS":
       return "Brak wolnych slotów. Skontaktuj się z prowadzącym."
     case "RATE_LIMITED":

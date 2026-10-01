@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { examIdSchema } from "./exam.ts"
+import { answersSchema, examIdSchema } from "./exam.ts"
 import { studentNumber } from "./roster.ts"
 
 const personName = z.string().trim().min(1).max(100)
@@ -18,3 +18,5 @@ const boardCommandSchema = z.discriminatedUnion("kind", [
 ])
 
 export const boardInputSchema = examIdSchema.extend({ command: boardCommandSchema })
+
+export const slotAnswersSchema = examIdSchema.extend({ slotId: z.uuid(), answers: answersSchema })

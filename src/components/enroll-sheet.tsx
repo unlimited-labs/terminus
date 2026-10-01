@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { formatDayTime } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { enrollmentSchema } from "@/schemas/enrollment"
+import type { Answers, ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/schedule"
 
@@ -22,6 +23,7 @@ export function EnrollSheet({
   title,
   submitLabel,
   maxTeamSize,
+  fields,
   open,
   onOpenChange,
   ticket,
@@ -33,6 +35,7 @@ export function EnrollSheet({
   title: string
   submitLabel: string
   maxTeamSize: number
+  fields: ExamField[]
   open: boolean
   onOpenChange: (open: boolean) => void
   ticket: TicketData | null
@@ -55,6 +58,7 @@ export function EnrollSheet({
             <EnrollForm
               examId={examId}
               maxTeamSize={maxTeamSize}
+              fields={fields}
               submitLabel={submitLabel}
               onEnrolled={onEnrolled}
             />
@@ -71,20 +75,22 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 function EnrollForm({
   examId,
   maxTeamSize,
+  fields,
   submitLabel,
   onEnrolled,
 }: {
   examId: string
   maxTeamSize: number
+  fields: ExamField[]
   submitLabel: string
   onEnrolled: (slotId: string, ticket: TicketData) => void
 }) {
   const team = maxTeamSize > 1
   const queryClient = useQueryClient()
   const draw = useMutation({
-    mutationFn: async (studentNumbers: string[]) => {
+    mutationFn: async (input: { studentNumbers: string[]; answers: Answers }) => {
       const [outcome] = await Promise.all([
-        enroll({ data: { examId, studentNumbers } }),
+        enroll({ data: { examId, ...input } }),
         wait(MIN_DRAW_MS),
       ])
       return outcome
@@ -95,13 +101,17 @@ function EnrollForm({
     onSettled: () => queryClient.invalidateQueries({ queryKey: ["schedule", examId] }),
   })
   const form = useAppForm({
-    defaultValues: { examId, studentNumbers: [""] },
+    defaultValues: {
+      examId,
+      studentNumbers: [""],
+      answers: Object.fromEntries(fields.map((f) => [f.id, ""])),
+    },
     validators: { onSubmit: enrollmentSchema },
-    onSubmit: ({ value }) => draw.mutateAsync(enrollmentSchema.parse(value).studentNumbers),
+    onSubmit: ({ value }) => draw.mutateAsync(enrollmentSchema.parse(value)),
     onSubmitInvalid: () => draw.reset(),
   })
   const failure = draw.data && !draw.data.ok ? draw.data : null
-  const submitted = draw.variables?.length ?? 0
+  const submitted = draw.variables?.studentNumbers.length ?? 0
   const flagged = new Set(failure ? flaggedNumbers(failure, submitted) : [])
 
   if (draw.isPending) {
@@ -148,6 +158,13 @@ function EnrollForm({
             </div>
           )}
         </form.Field>
+        {fields.map((f) => (
+          <form.AppField key={f.id} name={`answers.${f.id}`}>
+            {(field) => (
+              <field.TextField label={f.required ? f.label : `${f.label} (opcjonalnie)`} />
+            )}
+          </form.AppField>
+        ))}
         <form.SubmitButton>{submitLabel}</form.SubmitButton>
         <PrivacyNotice />
       </form.Form>

@@ -6,6 +6,7 @@ import { toast } from "sonner"
 import { boardPlugins } from "@/components/board-accessibility"
 import { SlotRow, UnenrolledPanel } from "@/components/board-parts"
 import { CapacitySummary } from "@/components/exam-settings"
+import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
 import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
 import { formatDayShort, warsawDay } from "@/domain/time"
@@ -145,6 +146,16 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                       rosterOf={(id) => rosterName.get(id)}
                       highlight={highlight}
                       onCommand={run}
+                      extra={
+                        exam.fields.length > 0 && slot.answers && taken.has(slot.id) ? (
+                          <SlotAnswers
+                            examId={exam.id}
+                            slotId={slot.id}
+                            fields={exam.fields}
+                            answers={slot.answers}
+                          />
+                        ) : null
+                      }
                     />
                   )
                 })}

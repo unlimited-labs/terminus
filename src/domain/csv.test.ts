@@ -159,3 +159,25 @@ test("buildExportCsv: sortuje po slocie i nazwisku, niezapisani na końcu, wolne
       ].join("\r\n"),
   )
 })
+
+test("buildExportCsv: dodatkowe pola zespołu jako kolumny po imieniu", () => {
+  const slots = [
+    {
+      id: "s1",
+      startsAt: new Date("2026-10-05T07:00:00Z"),
+      endsAt: new Date("2026-10-05T07:30:00Z"),
+      answers: { title: "Robot" },
+    },
+  ]
+  const people = [
+    { studentNumber: "1", firstName: "Jan", lastName: "Żak", rosterName: "g1", slotId: "s1" },
+  ]
+  const fields = [
+    { id: "title", label: "Tytuł projektu" },
+    { id: "notes", label: "Uwagi" },
+  ]
+  expect(buildExportCsv(slots, people, fields).split("\r\n")).toEqual([
+    `﻿"data";"od";"do";"lista";"indeks";"nazwisko";"imie";"Tytuł projektu";"Uwagi"`,
+    `"2026-10-05";"09:00";"09:30";"g1";"1";"Żak";"Jan";"Robot";""`,
+  ])
+})

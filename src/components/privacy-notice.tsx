@@ -23,7 +23,8 @@ export function PrivacyNotice() {
           53 25;
         </li>
         <li>
-          Pani/Pana dane osobowe (numer albumu, imię i nazwisko) przetwarzane będą w celu
+          Pani/Pana dane osobowe (numer albumu, imię i nazwisko oraz informacje wpisane w
+          dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą w celu
           organizacji zaliczenia, w tym przydziału terminu zaliczenia, w ramach realizacji procesu
           kształcenia na studiach, w trybie art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20
           lipca 2018 r. Prawo o szkolnictwie wyższym i nauce;

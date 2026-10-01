@@ -85,6 +85,7 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
               description: exam.description,
               defaultSlotMinutes: exam.defaultSlotMinutes,
               maxTeamSize: exam.maxTeamSize,
+              fields: exam.fields,
             }}
             submitLabel="Zapisz"
             onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
@@ -98,6 +99,14 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
                 ? "zaliczenie indywidualne"
                 : `zespoły do ${exam.maxTeamSize} os.`}
             </p>
+            {exam.fields.length > 0 && (
+              <p className="text-sm">
+                Pola dla studenta:{" "}
+                {exam.fields
+                  .map((f) => (f.required ? f.label : `${f.label} (opcjonalne)`))
+                  .join(", ")}
+              </p>
+            )}
             <ExamLink examId={exam.id} />
             <Link
               to="/zaliczenia/$examId/tablica"

@@ -8,6 +8,7 @@ import { enrollmentSchema } from "../schemas/enrollment.ts"
 import { isBlocked, recordFailure } from "./attempt-limit.server.ts"
 import { db } from "./db.server.ts"
 import { enrollTeam, type EnrollmentOutcome } from "./enrollment.server.ts"
+import { parseFields } from "./exam-state.server.ts"
 
 /** Publiczny harmonogram: sloty z imionami i nazwiskami, bez numerów indeksów. */
 const getSchedule = createServerFn()
@@ -19,6 +20,7 @@ const getSchedule = createServerFn()
         name: true,
         description: true,
         maxTeamSize: true,
+        fields: true,
         owner: { select: { name: true } },
         rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
       },
@@ -43,6 +45,7 @@ const getSchedule = createServerFn()
       description: exam.description,
       ownerName: exam.owner.name,
       maxTeamSize: exam.maxTeamSize,
+      fields: parseFields(exam.fields),
       rosters: exam.rosters,
       now: new Date(),
       slots: slots.map(({ enrollments, ...slot }) => ({
@@ -74,7 +77,7 @@ export const enroll = createServerFn({ method: "POST" })
       )
     }
     if (await isBlocked(ip ?? "unknown")) return { ok: false, code: "RATE_LIMITED" }
-    const outcome = await enrollTeam(data.examId, data.studentNumbers)
+    const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers)
     if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") await recordFailure(ip ?? "unknown")
     return outcome
   })

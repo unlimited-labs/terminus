@@ -197,6 +197,7 @@ export function SlotRow({
   rosterOf,
   highlight,
   onCommand,
+  extra,
 }: {
   slot: Slot
   team: Person[]
@@ -206,6 +207,7 @@ export function SlotRow({
   rosterOf: (rosterId: string) => string | undefined
   highlight: (p: Person) => boolean
   onCommand: (command: BoardCommand) => void
+  extra?: React.ReactNode
 }) {
   const label = `slot ${dayLabel ?? ""} ${warsawTime(slot.startsAt)}`.replace(/\s+/g, " ")
   const { attach, attachHandle, tone } = useSlotDnd(slot, team, maxTeamSize, label)
@@ -240,6 +242,7 @@ export function SlotRow({
           highlight={highlight}
           onCommand={onCommand}
         />
+        {extra}
       </td>
     </tr>
   )

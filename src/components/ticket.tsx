@@ -11,6 +11,16 @@ export function Ticket({ ticket, place }: { ticket: TicketData; place: string })
         <span className="text-2xl opacity-80">–{warsawTime(ticket.endsAt)}</span>
       </p>
       {place && <p className="whitespace-pre-line opacity-90">{place}</p>}
+      {ticket.answers.length > 0 && (
+        <dl className="mt-3 grid gap-1 text-sm">
+          {ticket.answers.map((a) => (
+            <div key={a.label}>
+              <dt className="inline opacity-80">{a.label}: </dt>
+              <dd className="inline font-semibold">{a.value}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       <ul className="ticket-cut mt-4 grid gap-1 border-t-2 border-dashed border-white/45 pt-3">
         {ticket.team.map((p) => (
           <li key={p.studentNumber} className="flex justify-between gap-4">

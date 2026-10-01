@@ -2,6 +2,14 @@ import { z } from "zod"
 
 export const examIdSchema = z.object({ examId: z.uuid() })
 
+export const examFieldSchema = z.object({
+  id: z.string().min(1).max(40),
+  label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, "Najwyżej 60 znaków."),
+  required: z.boolean(),
+})
+
+export const answersSchema = z.record(z.string(), z.string().max(500, "Najwyżej 500 znaków."))
+
 export const examSchema = z.object({
   name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200),
   description: z.string().trim().max(2000),
@@ -15,6 +23,7 @@ export const examSchema = z.object({
     .int("Podaj liczbę całkowitą.")
     .min(1, "Zespół ma co najmniej 1 osobę.")
     .max(20, "Zespół może mieć najwyżej 20 osób."),
+  fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
 })
 
 export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string() })

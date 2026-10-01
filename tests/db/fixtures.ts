@@ -4,11 +4,12 @@ import { db } from "@/server/db.server"
 
 type ExamFixture = {
   maxTeamSize?: number
+  fields?: { id: string; label: string; required: boolean }[]
   rosters: Record<string, { students: string[]; slots: Date[] }>
 }
 
 /** Zaliczenie z listami, wpisami i slotami (każdy slot 30 min); zwraca identyfikatory. */
-export async function createExam({ maxTeamSize = 1, rosters }: ExamFixture) {
+export async function createExam({ maxTeamSize = 1, fields = [], rosters }: ExamFixture) {
   const owner = await db.user.create({
     data: { id: randomUUID(), name: "Prowadzący", email: `${randomUUID()}@example.com` },
   })
@@ -19,6 +20,7 @@ export async function createExam({ maxTeamSize = 1, rosters }: ExamFixture) {
       description: "Sala 1",
       defaultSlotMinutes: 30,
       maxTeamSize,
+      fields,
     },
   })
   const rosterIds: Record<string, string> = {}

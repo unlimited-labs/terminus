@@ -129,7 +129,7 @@ export function exportFileName(examName: string, now: Date): string {
   return `${examName.replace(/[\\/:*?"<>|]/g, "-")}_${warsawDay(now)}.csv`
 }
 
-type ExportSlot = { id: string; startsAt: Date; endsAt: Date }
+type ExportSlot = { id: string; startsAt: Date; endsAt: Date; answers?: Record<string, string> }
 type ExportPerson = {
   studentNumber: string
   firstName: string
@@ -138,8 +138,12 @@ type ExportPerson = {
   slotId: string | null
 }
 
-/** Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu. */
-export function buildExportCsv(slots: ExportSlot[], people: ExportPerson[]): string {
+/** Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu; potem kolumny dodatkowych pól. */
+export function buildExportCsv(
+  slots: ExportSlot[],
+  people: ExportPerson[],
+  fields: { id: string; label: string }[] = [],
+): string {
   const slotById = new Map(slots.map((s) => [s.id, s]))
   const start = (p: ExportPerson) =>
     p.slotId ? slotById.get(p.slotId)!.startsAt.getTime() : Number.POSITIVE_INFINITY
@@ -155,12 +159,25 @@ export function buildExportCsv(slots: ExportSlot[], people: ExportPerson[]): str
         p.studentNumber,
         p.lastName,
         p.firstName,
+        ...fields.map((f) => slot?.answers?.[f.id] ?? ""),
       ]
     })
   return (
     "﻿" +
     Papa.unparse(
-      { fields: ["data", "od", "do", "lista", "indeks", "nazwisko", "imie"], data: rows },
+      {
+        fields: [
+          "data",
+          "od",
+          "do",
+          "lista",
+          "indeks",
+          "nazwisko",
+          "imie",
+          ...fields.map((f) => f.label),
+        ],
+        data: rows,
+      },
       { delimiter: ";", quotes: true, newline: "\r\n" },
     )
   )

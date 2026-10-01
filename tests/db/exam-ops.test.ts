@@ -9,6 +9,7 @@ import { createExam, inDays } from "./fixtures"
 test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na życzenie", async () => {
   const { examId, ownerId } = await createExam({
     maxTeamSize: 3,
+    fields: [{ id: "t", label: "Temat", required: true }],
     rosters: {
       g1: { students: ["1", "2"], slots: [inDays(1)] },
       g2: { students: ["3"], slots: [] },
@@ -21,7 +22,12 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
     where: { id: copyId },
     include: { rosters: { include: { entries: true } }, enrollments: true },
   })
-  expect(copy).toMatchObject({ name: "Kolokwium (kopia)", description: "Sala 1", maxTeamSize: 3 })
+  expect(copy).toMatchObject({
+    name: "Kolokwium (kopia)",
+    description: "Sala 1",
+    maxTeamSize: 3,
+    fields: [{ id: "t", label: "Temat", required: true }],
+  })
   expect(
     copy.rosters
       .map((r) => [r.name, r.entries.length])
@@ -46,7 +52,7 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
     rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1), inDays(2)] } },
   })
   await enrollTeam(examId, ["1", "2"])
-  const settings = { name: "Nowa", description: "Sala 9", defaultSlotMinutes: 45 }
+  const settings = { name: "Nowa", description: "Sala 9", defaultSlotMinutes: 45, fields: [] }
 
   expect(await updateExamSettings(examId, ownerId, { ...settings, maxTeamSize: 1 })).toMatchObject({
     ok: false,

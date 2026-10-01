@@ -1,5 +1,5 @@
 generator client {
-  provider = "prisma-client"
+  provider            = "prisma-client"
   output              = "../src/generated/prisma"
   importFileExtension = "ts"
 }
@@ -16,6 +16,8 @@ model Exam {
   description        String
   defaultSlotMinutes Int
   maxTeamSize        Int
+  /// Dodatkowe pola wypełniane przez studenta przy zapisie: [{ id, label, required }].
+  fields             Json         @default("[]")
   createdAt          DateTime     @default(now()) @db.Timestamptz
   rosters            Roster[]
   enrollments        Enrollment[]
@@ -76,6 +78,8 @@ model Enrollment {
   slotId        String
   slot          Slot        @relation(fields: [slotId, examId], references: [id, examId], onDelete: NoAction)
   createdAt     DateTime    @default(now()) @db.Timestamptz
+  /// Wartości dodatkowych pól zaliczenia (id pola → tekst); takie same dla całego zespołu.
+  answers       Json        @default("{}")
 
   @@id([examId, studentNumber])
   @@index([slotId])
