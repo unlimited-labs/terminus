@@ -17,5 +17,7 @@ if (read("git status --porcelain")) {
 const tag = read("git describe --tags --always")
 run("pnpm check")
 run("pnpm e2e")
-run(`docker buildx build --platform linux/amd64 -t ${image}:${tag} --push .`)
-console.log(`Wysłano ${image}:${tag}. Na VPS: IMAGE_TAG=${tag} w .env, potem docker compose up -d`)
+run(`docker buildx build --platform linux/amd64 -t ${image}:${tag} -t ${image}:latest --push .`)
+console.log(
+  `Wysłano ${image}:${tag} (i :latest). Na VPS: IMAGE_TAG=${tag} w .env, potem docker compose up -d`,
+)

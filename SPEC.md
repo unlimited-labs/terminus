@@ -492,7 +492,7 @@ Node 24 (LTS) w obrazie i lokalnie; menedżer pakietów pnpm.
   ręcznie (SQL w README); tabele w `public` tej bazy. Kopie zapasowe poza
   zakresem aplikacji.
 - Obraz: `docker buildx build --platform linux/amd64 --push` lokalnie, do
-  prywatnego `registry:2`; tag = wersja z gita, bez `latest`. Na VPS tylko
+  prywatnego `registry:2`; tag = wersja z gita, plus `latest` na ostatni release. Na VPS tylko
   `compose.yaml` i `.env`; wdrożenie = `IMAGE_TAG` w `.env` +
   `docker compose up -d`; wycofanie = poprzedni tag.
 - Start kontenera: `prisma migrate deploy` → skrypt pierwszego superadmina →
