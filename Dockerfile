@@ -1,5 +1,6 @@
 # Obraz budowany w kontenerze Linuksa (moduły natywne muszą pasować do platformy docelowej).
 FROM node:24-slim AS build
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -10,6 +11,7 @@ COPY . .
 RUN pnpm build
 
 FROM node:24-slim
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 ENV COREPACK_HOME=/opt/corepack
 RUN mkdir -p /opt/corepack && corepack enable && corepack prepare pnpm@12.8.1 --activate && pnpm --version && chmod -R a+rX /opt/corepack
