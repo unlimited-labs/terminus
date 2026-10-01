@@ -1,0 +1,26 @@
+# Lokalny development: sama baza (aplikacja przez `pnpm dev` na hoście).
+# Start: `pnpm db:up`, stop: `pnpm db:down`. Dane w wolumenie zapisy-dev-db.
+name: zapisy-dev
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: zapisy-dev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: zapisy
+      POSTGRES_PASSWORD: zapisy
+      POSTGRES_DB: zapisy
+    ports:
+      - "55432:5432"
+    volumes:
+      - db:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zapisy -d zapisy"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+volumes:
+  db:
+    name: zapisy-dev-db

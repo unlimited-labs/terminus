@@ -9,8 +9,7 @@ wylosowany slot. Specyfikacja: `SPEC.md`, słownik pojęć: `CONTEXT.md`.
 Wymagane: Node 24, pnpm 12, Docker (baza i testy na Testcontainers).
 
 ```sh
-docker run -d --name zapisy-pg -e POSTGRES_USER=zapisy -e POSTGRES_PASSWORD=zapisy \
-  -e POSTGRES_DB=zapisy -p 55432:5432 postgres:18-alpine
+pnpm db:up                    # PostgreSQL z compose.dev.yaml na localhost:55432 (zapisy/zapisy)
 cp .env.example .env          # DATABASE_URL=postgresql://zapisy:zapisy@localhost:55432/zapisy, sekret, ADMIN_*
 pnpm install
 pnpm exec prisma migrate dev  # schemat bazy
@@ -20,6 +19,7 @@ pnpm dev                      # http://localhost:3000
 
 | Polecenie                     | Co robi                                                                                                  |
 | ----------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `pnpm db:up` / `pnpm db:down` | lokalna baza deweloperska (`compose.dev.yaml`, dane w wolumenie `zapisy-dev-db`)                         |
 | `pnpm check`                  | oxlint, oxfmt, tsc, fallow, react-doctor, testy jednostkowe i bazodanowe, build                          |
 | `pnpm e2e`                    | Playwright na zbudowanej aplikacji i świeżej bazie w kontenerze                                          |
 | `pnpm release`                | `check` + `e2e`, potem obraz `linux/amd64` z tagiem z gita, wysłany do rejestru (`IMAGE=… pnpm release`) |

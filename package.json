@@ -15,7 +15,9 @@
     "test": "vitest run",
     "check": "oxlint --type-aware && oxfmt --check && tsc --noEmit && fallow && react-doctor --no-telemetry && vitest run && vite build --logLevel error",
     "e2e": "playwright test",
-    "release": "node scripts/release.ts"
+    "release": "node scripts/release.ts",
+    "db:up": "docker compose -f compose.dev.yaml up -d --wait",
+    "db:down": "docker compose -f compose.dev.yaml down"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
