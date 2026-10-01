@@ -1,10 +1,26 @@
-import { useCallback, useState } from "react"
+import { useState } from "react"
 
 import { isFreeSlot } from "@/domain/schedule"
-import { formatDayShort, warsawDay, warsawTime } from "@/domain/time"
+import { formatDayShort, formatDayTime, warsawDay, warsawTime } from "@/domain/time"
 import type { Schedule } from "@/server/schedule"
 
 type Slot = Schedule["slots"][number]
+
+const HOUR = 3_600_000
+const MIN_SLOT_PX = 40
+
+const TONES = {
+  mine: "bg-primary text-primary-foreground",
+  taken: "bg-taken",
+  free: "border-2 border-free bg-card text-free",
+  past: "bg-card text-muted-foreground",
+}
+
+function tone(slot: Slot, now: Date, mine: boolean): keyof typeof TONES {
+  if (mine) return "mine"
+  if (slot.team.length > 0) return "taken"
+  return isFreeSlot(slot, now) ? "free" : "past"
+}
 
 export function ScheduleBoard({
   schedule,
@@ -16,16 +32,15 @@ export function ScheduleBoard({
   pulse: boolean
 }) {
   const [rosterId, setRosterId] = useState<string | null>(null)
+  const [chosenDay, setChosenDay] = useState<string | null>(null)
   const multi = schedule.rosters.length > 1
-  const rosterName = new Map(schedule.rosters.map((r) => [r.id, r.name]))
   const visible = schedule.slots.filter((s) => rosterId === null || s.rosterId === rosterId)
   const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt)).values()]
-  const firstFreeDay = days.findIndex((d) => d.some((s) => isFreeSlot(s, schedule.now)))
-
-  const scrollToFirstFree = useCallback((el: HTMLDivElement | null) => {
-    const target = el?.querySelector<HTMLElement>("[data-first-free]")
-    if (el && target) el.scrollLeft = target.offsetLeft - el.offsetLeft
-  }, [])
+  const firstFree = Math.max(
+    0,
+    days.findIndex((d) => d.some((s) => isFreeSlot(s, schedule.now))),
+  )
+  const day = days.find((d) => warsawDay(d[0]!.startsAt) === chosenDay) ?? days[firstFree] ?? []
 
   return (
     <section aria-label="Harmonogram" className="grid gap-3">
@@ -45,31 +60,34 @@ export function ScheduleBoard({
         </div>
       )}
       <Legend />
-      <div ref={scrollToFirstFree} className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2">
-        {days.map((slots, i) => (
-          <div
-            key={warsawDay(slots[0]!.startsAt)}
-            data-first-free={i === firstFreeDay || undefined}
-            className="w-36 shrink-0 snap-start"
-          >
-            <h3 className="mb-2 text-sm font-bold capitalize">
-              {formatDayShort(slots[0]!.startsAt)}
-            </h3>
-            <ul className="grid gap-2">
-              {slots.map((slot) => (
-                <SlotTile
-                  key={slot.id}
-                  slot={slot}
-                  now={schedule.now}
-                  mine={slot.id === mySlotId}
-                  pulse={pulse && slot.id === mySlotId}
-                  rosterName={multi ? rosterName.get(slot.rosterId) : undefined}
-                />
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
+      {days.length > 1 && (
+        <div role="tablist" aria-label="Dni" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+          {days.map((d) => (
+            <button
+              key={warsawDay(d[0]!.startsAt)}
+              type="button"
+              role="tab"
+              aria-selected={d === day}
+              onClick={() => setChosenDay(warsawDay(d[0]!.startsAt))}
+              className="grid shrink-0 rounded-xl border bg-card px-4 py-2 text-left aria-selected:border-primary aria-selected:bg-primary aria-selected:text-primary-foreground"
+            >
+              <span className="font-bold capitalize">{formatDayShort(d[0]!.startsAt)}</span>
+              <span className="text-xs opacity-80 tabular-nums">
+                wolne: {d.filter((s) => isFreeSlot(s, schedule.now)).length}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      {day[0] && (
+        <DayTimeline
+          slots={day}
+          now={schedule.now}
+          mySlotId={mySlotId}
+          pulse={pulse}
+          rosterName={multi ? new Map(schedule.rosters.map((r) => [r.id, r.name])) : null}
+        />
+      )}
     </section>
   )
 }
@@ -90,65 +108,104 @@ function Legend() {
   )
 }
 
-function tileTone(slot: Slot, now: Date, mine: boolean) {
-  if (mine) return "bg-primary text-primary-foreground"
-  if (slot.team.length > 0) return "bg-taken"
-  if (isFreeSlot(slot, now)) return "border-2 border-free bg-card text-free"
-  return "bg-card text-muted-foreground"
-}
-
-function teamLabel(slot: Slot, now: Date) {
-  const [first, ...rest] = slot.team
-  if (first) return rest.length > 0 ? `${first.lastName} +${rest.length}` : first.lastName
-  return isFreeSlot(slot, now) ? "wolny" : " "
-}
-
-function SlotTile({
-  slot,
+function DayTimeline({
+  slots,
   now,
-  mine,
+  mySlotId,
   pulse,
   rosterName,
 }: {
-  slot: Slot
+  slots: Slot[]
   now: Date
-  mine: boolean
+  mySlotId: string | null
+  pulse: boolean
+  rosterName: Map<string, string> | null
+}) {
+  const start = Math.floor(slots[0]!.startsAt.getTime() / HOUR) * HOUR
+  const end = Math.ceil(slots.at(-1)!.endsAt.getTime() / HOUR) * HOUR
+  const shortest = Math.min(...slots.map((s) => s.endsAt.getTime() - s.startsAt.getTime())) / 60_000
+  const pxPerMinute = Math.max(2.4, MIN_SLOT_PX / shortest)
+  const y = (t: number) => ((t - start) / 60_000) * pxPerMinute
+  const hours = Array.from({ length: (end - start) / HOUR + 1 }, (_, i) => start + i * HOUR)
+
+  return (
+    <div className="grid gap-2">
+      <h2 className="text-lg font-extrabold first-letter:uppercase">
+        {formatDayTime(slots[0]!.startsAt).split(",")[0]}
+      </h2>
+      <div className="relative" style={{ height: y(end) }}>
+        {hours.map((h) => (
+          <div key={h} aria-hidden className="absolute inset-x-0 flex gap-2" style={{ top: y(h) }}>
+            <span className="w-11 -translate-y-1/2 text-right text-xs text-muted-foreground tabular-nums">
+              {warsawTime(new Date(h))}
+            </span>
+            <span className="mt-px h-px flex-1 bg-border" />
+          </div>
+        ))}
+        <ul>
+          {slots.map((slot) => (
+            <SlotBlock
+              key={slot.id}
+              slot={slot}
+              kind={tone(slot, now, slot.id === mySlotId)}
+              pulse={pulse && slot.id === mySlotId}
+              rosterName={rosterName?.get(slot.rosterId)}
+              top={y(slot.startsAt.getTime()) + 1}
+              height={y(slot.endsAt.getTime()) - y(slot.startsAt.getTime()) - 2}
+            />
+          ))}
+        </ul>
+      </div>
+    </div>
+  )
+}
+
+function SlotBlock({
+  slot,
+  kind,
+  pulse,
+  rosterName,
+  top,
+  height,
+}: {
+  slot: Slot
+  kind: keyof typeof TONES
   pulse: boolean
   rosterName?: string
+  top: number
+  height: number
 }) {
   const [open, setOpen] = useState(false)
-  const className = `block w-full rounded-lg px-2.5 py-2 text-left text-[15px] leading-snug ${tileTone(slot, now, mine)} ${pulse ? "animate-slot-pulse" : ""}`
+  const names = slot.team.map((p) => `${p.firstName} ${p.lastName}`).join(", ")
+  const label = kind === "free" ? "wolny" : kind === "past" ? "" : names
+  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${TONES[kind]} ${
+    open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
+  } ${pulse ? "animate-slot-pulse" : ""}`
   const body = (
     <>
-      <span className="flex items-baseline justify-between gap-1">
-        <span className="font-extrabold tabular-nums">{warsawTime(slot.startsAt)}</span>
-        {rosterName && <span className="text-xs opacity-75">{rosterName}</span>}
-      </span>
-      <span className="block truncate">{teamLabel(slot, now)}</span>
-      {open && (
-        <span className="mt-1 grid border-t border-current/20 pt-1 text-sm">
-          {slot.team.map((p) => (
-            <span key={`${p.lastName} ${p.firstName}`}>
-              {p.firstName} {p.lastName}
-            </span>
-          ))}
-        </span>
-      )}
+      <span className="font-extrabold tabular-nums">{warsawTime(slot.startsAt)}</span>
+      <span className={open ? "min-w-0" : "min-w-0 truncate"}>{label}</span>
+      {rosterName && <span className="ml-auto shrink-0 text-xs opacity-75">{rosterName}</span>}
     </>
   )
+  const style = open ? { top, minHeight: height } : { top, height }
   return (
     <li>
       {slot.team.length > 0 ? (
         <button
           type="button"
           aria-expanded={open}
+          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}: ${names}`}
           onClick={() => setOpen(!open)}
           className={className}
+          style={style}
         >
           {body}
         </button>
       ) : (
-        <div className={className}>{body}</div>
+        <div className={className} style={style}>
+          {body}
+        </div>
       )}
     </li>
   )

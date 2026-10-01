@@ -64,11 +64,14 @@ interfejsu i komunikaty.
 - Każdy, kto ma link, widzi wszystkie sloty (także wolne) z imionami
   i nazwiskami zapisanych, bez wpisywania indeksu. Numery indeksów nie są
   pokazywane. Nie ma publicznej listy zaliczeń.
-- Plansza (najpierw pod telefon): dni to kolumny o stałej szerokości,
-  przewijane w poziomie; na starcie widoczny pierwszy dzień z wolnym slotem.
-  Kafelek slotu: godzina początku + nazwisko pierwszej osoby z dopiskiem
-  "+n"; wolny kafelek opisany "wolny". Dotknięcie zajętego kafelka rozwija
-  w miejscu pełny skład zespołu.
+- Oś czasu (najpierw pod telefon; wybrana z prototypu 2026-10-01, gałąź
+  `prototyp-harmonogram`): nad nią zakładki dni z liczbą wolnych slotów (przy
+  jednym dniu bez zakładek), na starcie wybrany pierwszy dzień z wolnym slotem.
+  Godziny pełne po lewej, sloty jako bloki o wysokości proporcjonalnej do
+  długości (najkrótszy slot dnia co najmniej 40 px), przerwy między oknami
+  widoczne. Blok: godzina początku + imiona i nazwiska zespołu (ucięte, gdy
+  się nie mieszczą); wolny blok opisany "wolny". Dotknięcie zajętego bloku
+  rozwija w miejscu pełny skład zespołu.
 - Legenda: wolny, zajęty, Twój.
 - Minione sloty wyglądają jak pozostałe, ale pusty miniony slot nie jest
   opisany jako "wolny" (nie da się go wylosować).

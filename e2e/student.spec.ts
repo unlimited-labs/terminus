@@ -23,7 +23,7 @@ test("zapis zespołu, bilet, a ponowne wejście pokazuje ten sam slot", async ({
 
   await page.getByRole("button", { name: "Pokaż na planszy" }).click()
   await expect(page.getByRole("button", { name: "Twój slot" })).toBeVisible()
-  await expect(page.getByRole("button", { name: new RegExp(`${time}.*Ekiert \\+1`) })).toBeVisible()
+  await expect(page.getByRole("button", { name: new RegExp(`^${time}.*Ewa Ekiert`) })).toBeVisible()
 
   await page.reload()
   await page.getByRole("button", { name: "Zapisz się" }).click()
