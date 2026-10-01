@@ -108,8 +108,12 @@ interfejsu i komunikaty.
   4. Student nie zmienia ani nie usuwa zapisu. Zmianę slotu załatwia
      z prowadzącym poza aplikacją. Spóźniony członek zespołu losuje osobny
      slot; do istniejącego zespołu dopisuje go tylko prowadzący.
-  5. Zapisy otwarte od utworzenia zaliczenia do wyczerpania miejsc; bez dat
-     otwarcia i zamknięcia.
+  5. Zapisy otwarte od startu zapisów (data i godzina w ustawieniach
+     zaliczenia, czas polski; puste = od utworzenia) do wyczerpania miejsc; bez
+     daty zamknięcia. Przed startem harmonogram jest widoczny, nad nim komunikat
+     "Zapisy ruszają <dzień, godzina>", bez przycisku zapisu; serwer odrzuca
+     zapis (NOT_OPEN_YET). Strona odświeża się co 30 s, więc przycisk pojawia
+     się sam.
 - Komunikaty nad polami, pole z problematycznym indeksem podświetlone.
   Osobne komunikaty dla: indeksu nie ma na liście, indeks ma już zapis,
   indeks z innej listy, brak wolnych slotów, limit prób, brak danych, ten sam
@@ -288,6 +292,7 @@ model Exam {
   defaultSlotMinutes Int
   maxTeamSize        Int
   fields             Json     @default("[]")  // [{ id, label, required }]
+  enrollmentOpensAt  DateTime? @db.Timestamptz  // start zapisów; null = od razu
   createdAt          DateTime @default(now())
 }
 
@@ -528,7 +533,7 @@ Pierwsze kroki sprawdzają założenia, na których stoi reszta:
 
 - Konta studentów, e-maile, powiadomienia, przypomnienia; reset hasła mailem.
 - Zamiana slotów przez studentów; lista rezerwowa.
-- Osobna encja "przedmiot"; daty otwarcia i zamknięcia zapisów.
+- Osobna encja "przedmiot"; data zamknięcia zapisów.
 - Wklejanie list indeksów tekstem.
 - Usuwanie kont prowadzących; przepisywanie zaliczeń na inne konto;
   wgląd superadmina w cudze zaliczenia.
