@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -64,11 +65,15 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
   return (
     <Card>
       <CardHeader className="flex flex-wrap items-center gap-2">
-        <CardTitle className="text-2xl font-extrabold">{exam.name}</CardTitle>
-        <div className="ml-auto flex gap-2">
+        <CardTitle className="text-2xl font-extrabold">
+          <h1>{exam.name}</h1>
+        </CardTitle>
+        <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? "Anuluj" : "Edytuj"}
           </Button>
+          <ExportButton examId={exam.id} />
+          <DuplicateButton examId={exam.id} />
           <DeleteExamButton exam={exam} />
         </div>
       </CardHeader>

@@ -1,9 +1,11 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import type { Result } from "../messages.pl.ts"
-import { deleteExamSchema, examIdSchema, examSchema } from "../schemas/exam.ts"
+import { buildExportCsv, exportFileName } from "../domain/csv.ts"
+import { deleteExamSchema, duplicateExamSchema, examIdSchema, examSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
+import { copyExam, updateExamSettings } from "./exam-ops.server.ts"
 import { withExamLock } from "./exam-lock.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
@@ -53,21 +55,7 @@ export const updateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(examSchema.extend(examIdSchema.shape))
   .handler(async ({ data: { examId, ...data }, context }): Promise<Result> => {
-    const result = await withExamLock(examId, context.user.id, async (tx): Promise<Result> => {
-      const teams = await tx.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
-      const tooBig = teams.filter((t) => t._count > data.maxTeamSize).map((t) => t.slotId)
-      if (tooBig.length > 0) {
-        const slots = await tx.slot.findMany({
-          where: { id: { in: tooBig } },
-          orderBy: { startsAt: "asc" },
-          select: { startsAt: true },
-        })
-        return { ok: false, code: "TEAM_SIZE_BELOW_EXISTING", slots: slots.map((s) => s.startsAt) }
-      }
-      await tx.exam.update({ where: { id: examId }, data })
-      return { ok: true }
-    })
-    return result ?? { ok: false, code: "NOT_FOUND" }
+    return updateExamSettings(examId, context.user.id, data)
   })
 
 export const deleteExam = createServerFn({ method: "POST" })
@@ -81,4 +69,27 @@ export const deleteExam = createServerFn({ method: "POST" })
       return { ok: true }
     })
     return result ?? { ok: false, code: "NOT_FOUND" }
+  })
+
+export const duplicateExam = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(duplicateExamSchema)
+  .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
+    const examId = await copyExam(data.examId, context.user.id, data.copyRosters)
+    return examId ? { ok: true, examId } : { ok: false, code: "NOT_FOUND" }
+  })
+
+export const exportExamCsv = createServerFn()
+  .middleware([requireUser])
+  .validator(examIdSchema)
+  .handler(async ({ data, context }): Promise<Result<{ fileName: string; csv: string }>> => {
+    if (!(await getOwnedExam(context.user.id, data.examId))) return { ok: false, code: "NOT_FOUND" }
+    const exam = (await loadExam(data.examId))!
+    const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
+    const people = exam.people.map((p) => ({ ...p, rosterName: rosterName.get(p.rosterId) ?? "" }))
+    return {
+      ok: true,
+      fileName: exportFileName(exam.name, new Date()),
+      csv: buildExportCsv(exam.slots, people),
+    }
   })

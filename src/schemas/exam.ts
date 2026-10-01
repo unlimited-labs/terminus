@@ -18,3 +18,5 @@ export const examSchema = z.object({
 })
 
 export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string() })
+
+export const duplicateExamSchema = examIdSchema.extend({ copyRosters: z.boolean() })
