@@ -19,8 +19,9 @@ type Failure = Extract<Outcome, { ok: false }>
 export function EnrollSheet({
   examId,
   place,
+  title,
+  submitLabel,
   maxTeamSize,
-  lookupOnly,
   open,
   onOpenChange,
   ticket,
@@ -29,8 +30,9 @@ export function EnrollSheet({
 }: {
   examId: string
   place: string
+  title: string
+  submitLabel: string
   maxTeamSize: number
-  lookupOnly: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   ticket: TicketData | null
@@ -41,9 +43,7 @@ export function EnrollSheet({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="top-auto bottom-0 left-0 max-h-[88svh] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-b-none p-5 text-base sm:max-w-none data-open:zoom-in-100 data-open:slide-in-from-bottom-10">
         <div className="mx-auto grid w-full max-w-xl gap-4">
-          <DialogTitle className="text-xl font-extrabold">
-            {ticket ? "Twój slot" : lookupOnly ? "Sprawdź swój slot" : "Zapisz się"}
-          </DialogTitle>
+          <DialogTitle className="text-xl font-extrabold">{title}</DialogTitle>
           {ticket ? (
             <>
               <Ticket ticket={ticket} place={place} />
@@ -54,8 +54,8 @@ export function EnrollSheet({
           ) : (
             <EnrollForm
               examId={examId}
-              maxTeamSize={lookupOnly ? 1 : maxTeamSize}
-              submitLabel={lookupOnly ? "Sprawdź" : "Losuj slot"}
+              maxTeamSize={maxTeamSize}
+              submitLabel={submitLabel}
               onEnrolled={onEnrolled}
             />
           )}

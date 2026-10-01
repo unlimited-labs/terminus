@@ -38,6 +38,7 @@ function StudentPage() {
   if (!schedule) return null
 
   const anyFree = schedule.slots.some((s) => isFreeSlot(s, schedule.now))
+  const action = mine ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot"
 
   return (
     <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
@@ -59,14 +60,15 @@ function StudentPage() {
       <ScheduleBoard schedule={schedule} mySlotId={mine?.slotId ?? null} pulse={pulse} />
       <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
         <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-          {mine ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot"}
+          {action}
         </Button>
       </div>
       <EnrollSheet
         examId={examId}
         place={schedule.description}
-        maxTeamSize={schedule.maxTeamSize}
-        lookupOnly={!anyFree}
+        title={action}
+        submitLabel={anyFree ? "Losuj slot" : "Sprawdź"}
+        maxTeamSize={anyFree ? schedule.maxTeamSize : 1}
         open={open}
         onOpenChange={setOpen}
         ticket={mine?.ticket ?? null}
