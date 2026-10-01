@@ -8,6 +8,10 @@ export const E2E = {
 
 export const STATE_FILE = "e2e/.state.json"
 
-export const e2eStateSchema = z.object({ boardExamId: z.uuid(), studentExamId: z.uuid() })
+export const e2eStateSchema = z.object({
+  boardExamId: z.uuid(),
+  studentExamId: z.uuid(),
+  fullExamId: z.uuid(),
+})
 
 export type E2EState = z.infer<typeof e2eStateSchema>

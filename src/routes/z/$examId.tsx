@@ -57,17 +57,16 @@ function StudentPage() {
         </p>
       )}
       <ScheduleBoard schedule={schedule} mySlotId={mine?.slotId ?? null} pulse={pulse} />
-      {(anyFree || mine) && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
-          <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-            {mine ? "Twój slot" : "Zapisz się"}
-          </Button>
-        </div>
-      )}
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
+        <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
+          {mine ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot"}
+        </Button>
+      </div>
       <EnrollSheet
         examId={examId}
         place={schedule.description}
         maxTeamSize={schedule.maxTeamSize}
+        lookupOnly={!anyFree}
         open={open}
         onOpenChange={setOpen}
         ticket={mine?.ticket ?? null}

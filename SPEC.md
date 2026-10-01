@@ -100,7 +100,8 @@ interfejsu i komunikaty.
      nikogo nie zapisano. Ponowne wejście studenta nie ma osobnego ekranu —
      wpisuje indeks jeszcze raz.
   3. Brak wolnych slotów → komunikat, bez zapisu. Gdy brak wolnych slotów już
-     przy wejściu: komunikat nad planszą, bez przycisku "Zapisz się".
+     przy wejściu: komunikat nad planszą, a zamiast "Zapisz się" przycisk
+     "Sprawdź swój slot" (ten sam panel; zapisany indeks dostaje swój slot).
   4. Student nie zmienia ani nie usuwa zapisu. Zmianę slotu załatwia
      z prowadzącym poza aplikacją. Spóźniony członek zespołu losuje osobny
      slot; do istniejącego zespołu dopisuje go tylko prowadzący.
@@ -306,7 +307,7 @@ model Slot {
 }
 
 model Enrollment {
-  examId        String
+  examId        String   // Exam onDelete: Cascade (kasuje zapisy w tym samym poleceniu)
   studentNumber String   // [examId, studentNumber] -> RosterEntry, onDelete: NoAction
   slotId        String   // [slotId, examId] -> Slot, onDelete: NoAction
   createdAt     DateTime @default(now())

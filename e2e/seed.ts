@@ -74,6 +74,17 @@ export async function seed(): Promise<E2EState> {
     [at(6, 10), at(6, 10, 20)],
     [],
   )
+  const fullExamId = await createExam(
+    owner.id,
+    "Pełne E2E",
+    1,
+    [
+      ["700001", "Hanna", "Hak"],
+      ["700002", "Igor", "Iwan"],
+    ],
+    [at(7, 8)],
+    [["700001", 0]],
+  )
   await db.$disconnect()
-  return { boardExamId, studentExamId }
+  return { boardExamId, studentExamId, fullExamId }
 }

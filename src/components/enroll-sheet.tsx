@@ -20,6 +20,7 @@ export function EnrollSheet({
   examId,
   place,
   maxTeamSize,
+  lookupOnly,
   open,
   onOpenChange,
   ticket,
@@ -29,6 +30,7 @@ export function EnrollSheet({
   examId: string
   place: string
   maxTeamSize: number
+  lookupOnly: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   ticket: TicketData | null
@@ -40,7 +42,7 @@ export function EnrollSheet({
       <DialogContent className="top-auto bottom-0 left-0 max-h-[88svh] max-w-none translate-x-0 translate-y-0 overflow-y-auto rounded-b-none p-5 text-base sm:max-w-none data-open:zoom-in-100 data-open:slide-in-from-bottom-10">
         <div className="mx-auto grid w-full max-w-xl gap-4">
           <DialogTitle className="text-xl font-extrabold">
-            {ticket ? "Twój slot" : "Zapisz się"}
+            {ticket ? "Twój slot" : lookupOnly ? "Sprawdź swój slot" : "Zapisz się"}
           </DialogTitle>
           {ticket ? (
             <>
@@ -50,7 +52,12 @@ export function EnrollSheet({
               </Button>
             </>
           ) : (
-            <EnrollForm examId={examId} maxTeamSize={maxTeamSize} onEnrolled={onEnrolled} />
+            <EnrollForm
+              examId={examId}
+              maxTeamSize={lookupOnly ? 1 : maxTeamSize}
+              submitLabel={lookupOnly ? "Sprawdź" : "Losuj slot"}
+              onEnrolled={onEnrolled}
+            />
           )}
         </div>
       </DialogContent>
@@ -64,10 +71,12 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 function EnrollForm({
   examId,
   maxTeamSize,
+  submitLabel,
   onEnrolled,
 }: {
   examId: string
   maxTeamSize: number
+  submitLabel: string
   onEnrolled: (slotId: string, ticket: TicketData) => void
 }) {
   const team = maxTeamSize > 1
@@ -139,7 +148,7 @@ function EnrollForm({
             </div>
           )}
         </form.Field>
-        <form.SubmitButton>Losuj slot</form.SubmitButton>
+        <form.SubmitButton>{submitLabel}</form.SubmitButton>
         <PrivacyNotice />
       </form.Form>
     </form.AppForm>

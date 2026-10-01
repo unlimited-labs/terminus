@@ -41,3 +41,20 @@ test("indeksu nie ma na liście — komunikat i podświetlone pole", async ({ pa
   await expect(page.getByRole("alert")).toContainText("Tego indeksu nie ma na liście")
   await expect(page.getByLabel("Osoba 1 — numer indeksu")).toHaveAttribute("aria-invalid", "true")
 })
+
+test("brak wolnych slotów: zapisany indeks sprawdza swój slot, niezapisany dostaje komunikat", async ({
+  page,
+}) => {
+  await page.goto(`/z/${state().fullExamId}`)
+  await expect(page.getByText("Brak wolnych slotów.")).toBeVisible()
+  await expect(page.getByRole("button", { name: "Zapisz się" })).toHaveCount(0)
+
+  await page.getByRole("button", { name: "Sprawdź swój slot" }).click()
+  await page.getByLabel("Numer indeksu").fill("700001")
+  await page.getByRole("button", { name: "Sprawdź", exact: true }).click()
+  await expect(page.getByRole("alert")).toContainText("Masz już zapis")
+
+  await page.getByLabel("Numer indeksu").fill("700002")
+  await page.getByRole("button", { name: "Sprawdź", exact: true }).click()
+  await expect(page.getByRole("alert")).toContainText("Brak wolnych slotów")
+})
