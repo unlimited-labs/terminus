@@ -2,10 +2,15 @@ import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import type { Result } from "../messages.pl.ts"
 import { buildExportCsv, exportFileName } from "../domain/csv.ts"
-import { deleteExamSchema, duplicateExamSchema, examIdSchema, examSchema } from "../schemas/exam.ts"
+import {
+  deleteExamSchema,
+  duplicateExamSchema,
+  examFormSchema,
+  examIdSchema,
+} from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
-import { copyExam, updateExamSettings } from "./exam-ops.server.ts"
+import { copyExam, examRecord, updateExamSettings } from "./exam-ops.server.ts"
 import { withExamLock } from "./exam-lock.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
@@ -45,15 +50,15 @@ export const examQuery = (examId: string) =>
 
 export const createExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(examSchema)
+  .validator(examFormSchema)
   .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
-    const exam = await db.exam.create({ data: { ...data, ownerId: context.user.id } })
+    const exam = await db.exam.create({ data: { ...examRecord(data), ownerId: context.user.id } })
     return { ok: true, examId: exam.id }
   })
 
 export const updateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(examSchema.extend(examIdSchema.shape))
+  .validator(examFormSchema.and(examIdSchema))
   .handler(async ({ data: { examId, ...data }, context }): Promise<Result> => {
     return updateExamSettings(examId, context.user.id, data)
   })

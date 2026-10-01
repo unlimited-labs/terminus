@@ -48,6 +48,8 @@ export function errorMessage(e: AppError): string {
         .join(" ")
     case "DIFFERENT_ROSTER":
       return `Indeks z innej grupy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
+    case "NOT_OPEN_YET":
+      return `Zapisy ruszają ${formatDayTime(e.opensAt)}.`
     case "MISSING_ANSWER":
       return `Uzupełnij: ${list(e.labels)}.`
     case "NO_FREE_SLOTS":

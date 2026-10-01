@@ -58,3 +58,13 @@ test("brak wolnych slotów: zapisany indeks sprawdza swój slot, niezapisany dos
   await page.getByRole("button", { name: "Sprawdź", exact: true }).click()
   await expect(page.getByRole("alert")).toContainText("Brak wolnych slotów")
 })
+
+test("przed startem zapisów: harmonogram i komunikat z datą, bez przycisku zapisu", async ({
+  page,
+}) => {
+  await page.goto(`/z/${state().futureExamId}`)
+  await expect(page.getByRole("status")).toContainText("Zapisy ruszają")
+  await expect(page.getByRole("status")).toContainText("12:00")
+  await expect(page.getByRole("button", { name: "Zapisz się" })).toHaveCount(0)
+  await expect(page.locator("li", { hasText: "09:00" })).toContainText("wolny")
+})

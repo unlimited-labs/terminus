@@ -12,9 +12,17 @@ async function createExam(
   students: [string, string, string][],
   slots: Date[],
   enrolled: [string, number][],
+  enrollmentOpensAt: Date | null = null,
 ) {
   const exam = await db.exam.create({
-    data: { ownerId, name, description: "Sala 1.23", defaultSlotMinutes: 20, maxTeamSize },
+    data: {
+      ownerId,
+      name,
+      description: "Sala 1.23",
+      defaultSlotMinutes: 20,
+      maxTeamSize,
+      enrollmentOpensAt,
+    },
   })
   const roster = await db.roster.create({ data: { examId: exam.id, name: "g1" } })
   await db.rosterEntry.createMany({
@@ -85,6 +93,15 @@ export async function seed(): Promise<E2EState> {
     [at(7, 8)],
     [["700001", 0]],
   )
+  const futureExamId = await createExam(
+    owner.id,
+    "Przyszłe E2E",
+    1,
+    [["800001", "Jan", "Jutro"]],
+    [at(8, 9)],
+    [],
+    at(1, 12),
+  )
   await db.$disconnect()
-  return { boardExamId, studentExamId, fullExamId }
+  return { boardExamId, studentExamId, fullExamId, futureExamId }
 }

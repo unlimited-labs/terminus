@@ -18,6 +18,8 @@ model Exam {
   maxTeamSize        Int
   /// Dodatkowe pola wypełniane przez studenta przy zapisie: [{ id, label, required }].
   fields             Json         @default("[]")
+  /// Start zapisów; null = od razu po utworzeniu.
+  enrollmentOpensAt  DateTime?    @db.Timestamptz
   createdAt          DateTime     @default(now()) @db.Timestamptz
   rosters            Roster[]
   enrollments        Enrollment[]

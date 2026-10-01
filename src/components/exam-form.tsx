@@ -2,7 +2,7 @@ import type { z } from "zod"
 
 import { useAppForm } from "@/components/form"
 import { Button } from "@/components/ui/button"
-import { examSchema } from "@/schemas/exam"
+import { examFormSchema, type examSchema } from "@/schemas/exam"
 
 type ExamValues = z.infer<typeof examSchema>
 
@@ -17,8 +17,8 @@ export function ExamForm({
 }) {
   const form = useAppForm({
     defaultValues,
-    validators: { onSubmit: examSchema },
-    onSubmit: ({ value }) => onSubmit(examSchema.parse(value)),
+    validators: { onSubmit: examFormSchema },
+    onSubmit: ({ value }) => onSubmit(examFormSchema.parse(value)),
   })
   return (
     <form.AppForm>
@@ -45,6 +45,19 @@ export function ExamForm({
             )}
           </form.AppField>
         </div>
+        <fieldset className="grid gap-2">
+          <legend className="mb-1 text-sm font-semibold">
+            Start zapisów (puste = od razu po utworzeniu)
+          </legend>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <form.AppField name="opensDate">
+              {(field) => <field.TextField label="Data" type="date" />}
+            </form.AppField>
+            <form.AppField name="opensTime">
+              {(field) => <field.TextField label="Godzina" type="time" />}
+            </form.AppField>
+          </div>
+        </fieldset>
         <form.Field name="fields" mode="array">
           {(list) => (
             <fieldset className="grid gap-3">

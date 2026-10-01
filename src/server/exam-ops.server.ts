@@ -1,5 +1,6 @@
 import type { z } from "zod"
 
+import { warsawDateTime } from "../domain/slots.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
@@ -23,6 +24,7 @@ export function copyExam(examId: string, ownerId: string, copyRosters: boolean) 
         defaultSlotMinutes: source.defaultSlotMinutes,
         maxTeamSize: source.maxTeamSize,
         fields: parseFields(source.fields),
+        enrollmentOpensAt: source.enrollmentOpensAt,
       },
     })
     if (!copyRosters) return copy.id
@@ -66,8 +68,16 @@ export async function updateExamSettings(
       })
       return { ok: false, code: "TEAM_SIZE_BELOW_EXISTING", slots: slots.map((s) => s.startsAt) }
     }
-    await tx.exam.update({ where: { id: examId }, data })
+    await tx.exam.update({ where: { id: examId }, data: examRecord(data) })
     return { ok: true }
   })
   return result ?? { ok: false, code: "NOT_FOUND" }
+}
+
+/** Wartości formularza zaliczenia → kolumny tabeli (start zapisów w czasie polskim). */
+export function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof examSchema>) {
+  return {
+    ...rest,
+    enrollmentOpensAt: opensDate && opensTime ? warsawDateTime(opensDate, opensTime) : null,
+  }
 }

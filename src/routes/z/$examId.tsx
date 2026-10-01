@@ -7,8 +7,9 @@ import { EnrollSheet } from "@/components/enroll-sheet"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
 import { isFreeSlot } from "@/domain/schedule"
+import { formatDayTime } from "@/domain/time"
 import type { Ticket } from "@/server/enrollment.server"
-import { scheduleQuery } from "@/server/schedule"
+import { scheduleQuery, type Schedule } from "@/server/schedule"
 
 export const Route = createFileRoute("/z/$examId")({
   loader: async ({ context, params }) => {
@@ -29,6 +30,38 @@ export const Route = createFileRoute("/z/$examId")({
   component: StudentPage,
 })
 
+function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boolean }) {
+  if (schedule.opensAt && schedule.opensAt > schedule.now) {
+    return (
+      <p role="status" className="rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
+        Zapisy ruszają <strong>{formatDayTime(schedule.opensAt)}</strong>. Strona odświeży się sama.
+      </p>
+    )
+  }
+  if (anyFree) return null
+  return (
+    <p
+      role="status"
+      className="rounded-lg border-l-4 border-destructive bg-destructive/10 px-3 py-2"
+    >
+      Brak wolnych slotów. Skontaktuj się z prowadzącym.
+    </p>
+  )
+}
+
+/** Co oferuje panel: zapis z losowaniem, a przy braku wolnych slotów tylko sprawdzenie swojego. */
+function entryMode(schedule: Schedule, enrolled: boolean) {
+  const anyFree = schedule.slots.some((s) => isFreeSlot(s, schedule.now))
+  return {
+    anyFree,
+    open: !schedule.opensAt || schedule.opensAt <= schedule.now,
+    action: enrolled ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot",
+    submitLabel: anyFree ? "Losuj slot" : "Sprawdź",
+    maxTeamSize: anyFree ? schedule.maxTeamSize : 1,
+    fields: anyFree ? schedule.fields : [],
+  }
+}
+
 function StudentPage() {
   const { examId } = Route.useParams()
   const { data: schedule } = useSuspenseQuery(scheduleQuery(examId))
@@ -37,8 +70,7 @@ function StudentPage() {
   const [pulse, setPulse] = useState(false)
   if (!schedule) return null
 
-  const anyFree = schedule.slots.some((s) => isFreeSlot(s, schedule.now))
-  const action = mine ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot"
+  const mode = entryMode(schedule, mine !== null)
 
   return (
     <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
@@ -49,27 +81,22 @@ function StudentPage() {
         )}
         <p className="text-muted-foreground">Prowadzący: {schedule.ownerName}</p>
       </header>
-      {!anyFree && !mine && (
-        <p
-          role="status"
-          className="rounded-lg border-l-4 border-destructive bg-destructive/10 px-3 py-2"
-        >
-          Brak wolnych slotów. Skontaktuj się z prowadzącym.
-        </p>
-      )}
+      {!mine && <EntryNotice schedule={schedule} anyFree={mode.anyFree} />}
       <ScheduleBoard schedule={schedule} mySlotId={mine?.slotId ?? null} pulse={pulse} />
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
-        <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-          {action}
-        </Button>
-      </div>
+      {mode.open && (
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
+          <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
+            {mode.action}
+          </Button>
+        </div>
+      )}
       <EnrollSheet
         examId={examId}
         place={schedule.description}
-        title={action}
-        submitLabel={anyFree ? "Losuj slot" : "Sprawdź"}
-        maxTeamSize={anyFree ? schedule.maxTeamSize : 1}
-        fields={anyFree ? schedule.fields : []}
+        title={mode.action}
+        submitLabel={mode.submitLabel}
+        maxTeamSize={mode.maxTeamSize}
+        fields={mode.fields}
         open={open}
         onOpenChange={setOpen}
         ticket={mine?.ticket ?? null}

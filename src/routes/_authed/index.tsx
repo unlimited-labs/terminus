@@ -45,6 +45,8 @@ function ExamList() {
                 defaultSlotMinutes: 15,
                 maxTeamSize: 1,
                 fields: [],
+                opensDate: "",
+                opensTime: "",
               }}
               submitLabel="Utwórz"
               onSubmit={create.mutateAsync}

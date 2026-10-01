@@ -2,6 +2,8 @@ import { warsawDay } from "./time.ts"
 
 export type EnrollmentData = {
   maxTeamSize: number
+  /** Start zapisów; `null` = otwarte od razu. */
+  opensAt?: Date | null
   entries: { studentNumber: string; rosterId: string }[]
   slots: { id: string; rosterId: string; startsAt: Date }[]
   enrollments: { studentNumber: string; slotId: string }[]
@@ -11,6 +13,7 @@ export type EnrollmentPlan =
   | { ok: true; slotId: string }
   | { ok: false; code: "NO_INPUT" | "NO_FREE_SLOTS" }
   | { ok: false; code: "TEAM_TOO_LARGE"; maxTeamSize: number }
+  | { ok: false; code: "NOT_OPEN_YET"; opensAt: Date }
   | {
       ok: false
       code: "DUPLICATE_NUMBER" | "NOT_ON_ROSTER" | "DIFFERENT_ROSTER"
@@ -31,6 +34,8 @@ export function planEnrollment(
   now: Date,
   randomInt: RandomInt,
 ): EnrollmentPlan {
+  if (data.opensAt && data.opensAt > now)
+    return { ok: false, code: "NOT_OPEN_YET", opensAt: data.opensAt }
   if (studentNumbers.length === 0) return { ok: false, code: "NO_INPUT" }
   if (studentNumbers.length > data.maxTeamSize) {
     return { ok: false, code: "TEAM_TOO_LARGE", maxTeamSize: data.maxTeamSize }

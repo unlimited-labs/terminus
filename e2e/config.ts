@@ -12,6 +12,7 @@ export const e2eStateSchema = z.object({
   boardExamId: z.uuid(),
   studentExamId: z.uuid(),
   fullExamId: z.uuid(),
+  futureExamId: z.uuid(),
 })
 
 export type E2EState = z.infer<typeof e2eStateSchema>

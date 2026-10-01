@@ -75,3 +75,15 @@ describe("enrollTeam", () => {
     })
   })
 })
+
+test("przed startem zapisów zapis jest odrzucany, potem przechodzi", async () => {
+  const { examId } = await createExam({
+    rosters: { g1: { students: ["31"], slots: [inDays(3)] } },
+  })
+  const opensAt = new Date(Date.now() + 60 * 60_000)
+  await db.exam.update({ where: { id: examId }, data: { enrollmentOpensAt: opensAt } })
+  expect(await enrollTeam(examId, ["31"])).toEqual({ ok: false, code: "NOT_OPEN_YET", opensAt })
+  expect(await enrollTeam(examId, ["31"], {}, new Date(opensAt.getTime() + 1))).toMatchObject({
+    ok: true,
+  })
+})

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { useResultMutation } from "@/components/use-result-mutation"
+import { formatDayTime, warsawDay, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { deleteExam, updateExam } from "@/server/exams"
 
@@ -86,6 +87,8 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
               defaultSlotMinutes: exam.defaultSlotMinutes,
               maxTeamSize: exam.maxTeamSize,
               fields: exam.fields,
+              opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
+              opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
             }}
             submitLabel="Zapisz"
             onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
@@ -98,6 +101,11 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
               {exam.maxTeamSize === 1
                 ? "zaliczenie indywidualne"
                 : `zespoły do ${exam.maxTeamSize} os.`}
+            </p>
+            <p className="text-sm">
+              {exam.enrollmentOpensAt
+                ? `Start zapisów: ${formatDayTime(exam.enrollmentOpensAt)}`
+                : "Zapisy otwarte od utworzenia zaliczenia"}
             </p>
             {exam.fields.length > 0 && (
               <p className="text-sm">

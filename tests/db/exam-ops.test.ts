@@ -53,17 +53,23 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
   })
   await enrollTeam(examId, ["1", "2"])
   const settings = { name: "Nowa", description: "Sala 9", defaultSlotMinutes: 45, fields: [] }
+  const opens = { opensDate: "2030-01-07", opensTime: "08:30" }
 
-  expect(await updateExamSettings(examId, ownerId, { ...settings, maxTeamSize: 1 })).toMatchObject({
+  expect(
+    await updateExamSettings(examId, ownerId, { ...settings, ...opens, maxTeamSize: 1 }),
+  ).toMatchObject({
     ok: false,
     code: "TEAM_SIZE_BELOW_EXISTING",
   })
-  expect(await updateExamSettings(examId, ownerId, { ...settings, maxTeamSize: 2 })).toEqual({
+  expect(
+    await updateExamSettings(examId, ownerId, { ...settings, ...opens, maxTeamSize: 2 }),
+  ).toEqual({
     ok: true,
   })
   expect(await db.exam.findUnique({ where: { id: examId } })).toMatchObject({
     ...settings,
     maxTeamSize: 2,
+    enrollmentOpensAt: new Date("2030-01-07T07:30:00Z"),
   })
   const slots = await db.slot.findMany({ where: { examId } })
   expect(slots.every((s) => s.endsAt.getTime() - s.startsAt.getTime() === 30 * 60_000)).toBe(true)

@@ -42,6 +42,7 @@ export async function loadExam(examId: string) {
     ownerName: exam.owner.name,
     defaultSlotMinutes: exam.defaultSlotMinutes,
     maxTeamSize: exam.maxTeamSize,
+    enrollmentOpensAt: exam.enrollmentOpensAt,
     fields: parseFields(exam.fields),
     rosters: exam.rosters,
     slots: slots.map((s) => ({ ...s, answers: slotAnswers.get(s.id) ?? {} })),

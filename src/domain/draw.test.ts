@@ -30,6 +30,16 @@ const first = () => 0
 const last = (max: number) => max - 1
 
 describe("planEnrollment", () => {
+  test("przed startem zapisów nic nie jest sprawdzane ani losowane", () => {
+    const opensAt = new Date("2026-10-01T10:00:00Z")
+    expect(planEnrollment(data({ opensAt }), ["100"], now, first)).toEqual({
+      ok: false,
+      code: "NOT_OPEN_YET",
+      opensAt,
+    })
+    expect(planEnrollment(data({ opensAt: now }), ["100"], now, first)).toMatchObject({ ok: true })
+  })
+
   test("pusty zapis to brak danych", () => {
     expect(planEnrollment(data(), [], now, first)).toEqual({ ok: false, code: "NO_INPUT" })
   })

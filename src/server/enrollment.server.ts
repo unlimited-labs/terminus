@@ -32,6 +32,7 @@ export async function enrollTeam(
       select: {
         maxTeamSize: true,
         fields: true,
+        enrollmentOpensAt: true,
         enrollments: { select: { studentNumber: true, slotId: true } },
         rosters: {
           select: {
@@ -44,6 +45,7 @@ export async function enrollTeam(
     const plan = planEnrollment(
       {
         maxTeamSize: exam.maxTeamSize,
+        opensAt: exam.enrollmentOpensAt,
         entries: exam.rosters.flatMap((r) => r.entries),
         slots: exam.rosters.flatMap((r) => r.slots),
         enrollments: exam.enrollments,

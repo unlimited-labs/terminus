@@ -24,6 +24,13 @@ export const examSchema = z.object({
     .min(1, "Zespół ma co najmniej 1 osobę.")
     .max(20, "Zespół może mieć najwyżej 20 osób."),
   fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
+  opensDate: z.union([z.literal(""), z.iso.date("Podaj datę.")]),
+  opensTime: z.union([z.literal(""), z.string().regex(/^d{2}:d{2}$/, "Podaj godzinę.")]),
+})
+
+export const examFormSchema = examSchema.refine((v) => !v.opensDate === !v.opensTime, {
+  message: "Podaj datę i godzinę startu albo zostaw oba pola puste.",
+  path: ["opensTime"],
 })
 
 export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string() })
