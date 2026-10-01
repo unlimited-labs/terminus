@@ -333,8 +333,11 @@ src/
     api/auth/$.ts     handler Better Auth
   domain/       czysta logika bez bazy i HTTP: losowanie (draw.ts), reguły tablicy
                 (board.ts), cięcie okna, parsowanie i eksport CSV
-  server/       tylko serwer: db.ts (jeden klient Prisma), auth.ts, moduły
-                enrollment.ts, board.ts, … (blokada → wczytaj → domain → zapisz)
+  server/       funkcje serwerowe (exams.ts, board.ts, …) wołane z UI; kod tylko
+                serwerowy w *.server.ts: db.server.ts (jeden klient Prisma),
+                auth.server.ts, enrollment.server.ts, board-ops.server.ts, …
+                (blokada → wczytaj → domain → zapisz); ochrona importów TanStack
+                Start przerywa build, gdy kod przeglądarki importuje *.server.ts
   components/   UI; shadcn w components/ui
   schemas/      schematy Zod wspólne dla formularzy i serwera
   messages.pl.ts  kody błędów domeny → zdania po polsku
@@ -477,7 +480,7 @@ Node 24 (LTS) w obrazie i lokalnie; menedżer pakietów pnpm.
   `node .output/server/index.mjs`. Obraz zawiera `node_modules` z CLI Prisma
   i skrypt `reset-password`.
 - Env (walidowane przez t3-env; brak = aplikacja nie startuje), `.env` na VPS
-  poza repo, `.env.example` w repo: `IMAGE_TAG`, `DATABASE_URL`,
+  poza repo, `.env.example` w repo: `IMAGE`, `IMAGE_TAG`, `PROXY_NETWORK`, `DB_NETWORK`, `DATABASE_URL`,
   `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
   `ADMIN_NAME`, `PORT` (3000), `TZ` (`Europe/Warsaw`).
 

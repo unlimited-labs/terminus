@@ -1,0 +1,16 @@
+# Na VPS: ten plik + .env (wzór: .env.example). Wdrożenie: zmień IMAGE_TAG i `docker compose up -d`.
+services:
+  app:
+    image: ${IMAGE:?ustaw IMAGE}:${IMAGE_TAG:?ustaw IMAGE_TAG}
+    container_name: zapisy-app
+    restart: unless-stopped
+    env_file: .env
+    networks: [proxy, db]
+
+networks:
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:?ustaw PROXY_NETWORK}
+  db:
+    external: true
+    name: ${DB_NETWORK:?ustaw DB_NETWORK}

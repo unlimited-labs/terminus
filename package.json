@@ -14,7 +14,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "oxlint --type-aware && oxfmt --check && tsc --noEmit && fallow && react-doctor --no-telemetry && vitest run && vite build --logLevel error",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "release": "node scripts/release.ts"
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
@@ -68,5 +69,6 @@
   },
   "engines": {
     "node": ">=24"
-  }
+  },
+  "packageManager": "pnpm@12.8.1"
 }
