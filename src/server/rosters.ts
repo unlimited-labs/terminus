@@ -33,7 +33,7 @@ export const applyRosterImport = createServerFn({ method: "POST" })
 export const addRosterEntry = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(addEntrySchema)
-  .handler(({ data, context }) => addEntry(context.user.id, data))
+  .handler(({ data, context }) => addEntry(data.examId, context.user.id, data))
 
 export const deleteRosterEntry = createServerFn({ method: "POST" })
   .middleware([requireUser])

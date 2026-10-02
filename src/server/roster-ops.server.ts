@@ -80,8 +80,9 @@ export async function applyImport(
 
 /** Bez wskazanej listy osoba trafia na pierwszą listę zaliczenia; nieistniejąca lista = nowa „lista”. */
 export async function addEntry(
+  examId: string,
   ownerId: string,
-  { examId, rosterId, studentNumber, firstName, lastName }: z.infer<typeof addEntrySchema>,
+  { rosterId, studentNumber, firstName, lastName }: Omit<z.infer<typeof addEntrySchema>, "examId">,
 ): Promise<Result> {
   const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const current = await tx.rosterEntry.findUnique({
