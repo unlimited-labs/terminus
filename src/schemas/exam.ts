@@ -2,7 +2,6 @@ import { z } from "zod"
 
 export const examIdSchema = z.object({ examId: z.uuid() })
 
-/** Godzina "GG:MM" w obrębie jednej doby. */
 export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
 
 export const examFieldSchema = z.object({
