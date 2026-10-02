@@ -22,7 +22,7 @@ async function requireAdmin(headers: Headers) {
   return user
 }
 
-export async function createAccount(
+export async function addAccount(
   headers: Headers,
   data: z.infer<typeof createAccountSchema>,
 ): Promise<Result> {
@@ -34,7 +34,7 @@ export async function createAccount(
   return { ok: true }
 }
 
-export async function updateAccount(
+export async function editAccount(
   headers: Headers,
   { userId, email, name }: z.infer<typeof updateAccountSchema>,
 ): Promise<Result> {

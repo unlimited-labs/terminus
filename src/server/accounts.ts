@@ -10,7 +10,7 @@ import {
   updateAccountSchema,
 } from "../schemas/account.ts"
 
-import * as ops from "./account-ops.server.ts"
+import { addAccount, editAccount, setAdmin, setBanned, setPassword } from "./account-ops.server.ts"
 import { db } from "./db.server.ts"
 import { requireAdmin } from "./session.ts"
 
@@ -29,20 +29,20 @@ export const accountsQuery = () =>
 // Uprawnienia admina sprawdza każda operacja w account-ops.server.ts (z tych samych nagłówków).
 export const createAccount = createServerFn({ method: "POST" })
   .validator(createAccountSchema)
-  .handler(({ data }) => ops.createAccount(getRequestHeaders(), data))
+  .handler(({ data }) => addAccount(getRequestHeaders(), data))
 
 export const updateAccount = createServerFn({ method: "POST" })
   .validator(updateAccountSchema)
-  .handler(({ data }) => ops.updateAccount(getRequestHeaders(), data))
+  .handler(({ data }) => editAccount(getRequestHeaders(), data))
 
 export const setAccountPassword = createServerFn({ method: "POST" })
   .validator(setPasswordSchema)
-  .handler(({ data }) => ops.setPassword(getRequestHeaders(), data))
+  .handler(({ data }) => setPassword(getRequestHeaders(), data))
 
 export const setAccountBanned = createServerFn({ method: "POST" })
   .validator(setBannedSchema)
-  .handler(({ data }) => ops.setBanned(getRequestHeaders(), data))
+  .handler(({ data }) => setBanned(getRequestHeaders(), data))
 
 export const setAccountAdmin = createServerFn({ method: "POST" })
   .validator(setAdminSchema)
-  .handler(({ data }) => ops.setAdmin(getRequestHeaders(), data))
+  .handler(({ data }) => setAdmin(getRequestHeaders(), data))

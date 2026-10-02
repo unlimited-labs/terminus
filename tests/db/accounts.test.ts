@@ -3,11 +3,11 @@ import { randomUUID } from "node:crypto"
 import { expect, test } from "vitest"
 
 import {
-  createAccount,
+  addAccount,
   setAdmin,
   setBanned,
   setPassword,
-  updateAccount,
+  editAccount,
 } from "@/server/account-ops.server"
 import { auth, sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
@@ -41,10 +41,10 @@ test("bez roli admina każda operacja jest odrzucona i niczego nie zmienia", asy
 
   for (const headers of [(await account()).headers, new Headers()]) {
     const email = `${randomUUID()}@example.com`
-    await expect(createAccount(headers, { email, name: "X", password })).rejects.toThrow(
+    await expect(addAccount(headers, { email, name: "X", password })).rejects.toThrow(
       "Brak dostępu",
     )
-    await expect(updateAccount(headers, { userId: target.id, email, name: "X" })).rejects.toThrow(
+    await expect(editAccount(headers, { userId: target.id, email, name: "X" })).rejects.toThrow(
       "Brak dostępu",
     )
     await expect(
@@ -67,22 +67,22 @@ test("admin zakłada i poprawia konta; zajęty e-mail odrzucony", async () => {
   const other = await account()
   const email = `${randomUUID()}@example.com`
 
-  expect(await createAccount(admin.headers, { email, name: "Nowy", password })).toEqual({
+  expect(await addAccount(admin.headers, { email, name: "Nowy", password })).toEqual({
     ok: true,
   })
-  expect(await createAccount(admin.headers, { email, name: "Drugi", password })).toEqual({
+  expect(await addAccount(admin.headers, { email, name: "Drugi", password })).toEqual({
     ok: false,
     code: "EMAIL_TAKEN",
   })
   expect(await db.user.findUniqueOrThrow({ where: { email } })).toMatchObject({ role: "user" })
 
-  expect(await updateAccount(admin.headers, { userId: other.id, email, name: "Y" })).toEqual({
+  expect(await editAccount(admin.headers, { userId: other.id, email, name: "Y" })).toEqual({
     ok: false,
     code: "EMAIL_TAKEN",
   })
   const renamed = `${randomUUID()}@example.com`
   expect(
-    await updateAccount(admin.headers, { userId: other.id, email: renamed, name: "Inna" }),
+    await editAccount(admin.headers, { userId: other.id, email: renamed, name: "Inna" }),
   ).toEqual({ ok: true })
   expect(await row(other.id)).toMatchObject({ email: renamed })
 })
@@ -103,7 +103,7 @@ test("admin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", async 
 
   expect(await setBanned(admin.headers, { userId: other.id, banned: true })).toEqual({ ok: true })
   expect(await row(other.id)).toMatchObject({ banned: true })
-  await expect(signIn(other.email)).rejects.toThrow()
+  await expect(signIn(other.email)).rejects.toThrow("You have been banned")
   expect(await setBanned(admin.headers, { userId: other.id, banned: false })).toEqual({ ok: true })
   expect(await sessionUser(await signIn(other.email))).toMatchObject({ id: other.id })
 })
@@ -116,7 +116,7 @@ test("nowe hasło wylogowuje osobę i zastępuje stare", async () => {
     ok: true,
   })
   expect(await sessionUser(other.headers)).toBeNull()
-  await expect(signIn(other.email)).rejects.toThrow()
+  await expect(signIn(other.email)).rejects.toThrow("Invalid email or password")
   expect(await sessionUser(await signIn(other.email, "nowe-haslo-1"))).toMatchObject({
     id: other.id,
   })
