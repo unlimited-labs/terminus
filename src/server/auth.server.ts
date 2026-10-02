@@ -18,3 +18,11 @@ export const auth = betterAuth({
   disabledPaths: Object.values(adminPlugin.endpoints).map((e) => e.path),
   plugins: [adminPlugin, tanstackStartCookies()],
 })
+
+/** Zalogowany prowadzący z nagłówków żądania; zablokowane konto = brak. */
+export async function sessionUser(headers: Headers) {
+  const session = await auth.api.getSession({ headers })
+  if (!session || session.user.banned) return null
+  const { id, name, email, role } = session.user
+  return { id, name, email, isAdmin: role === "admin" }
+}
