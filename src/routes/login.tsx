@@ -1,17 +1,16 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
-import { z } from "zod"
 
 import { useAppForm } from "@/components/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { authClient } from "@/lib/auth-client"
 import { authErrorMessage } from "@/messages.pl"
-import { loginSchema } from "@/schemas/auth"
+import { loginSchema, loginSearchSchema } from "@/schemas/auth"
 import { getSessionUser } from "@/server/session"
 
 export const Route = createFileRoute("/login")({
-  validateSearch: z.object({ redirect: z.string().optional() }),
+  validateSearch: loginSearchSchema,
   beforeLoad: async () => {
     if (await getSessionUser()) throw redirect({ to: "/" })
   },
@@ -27,12 +26,14 @@ function Login() {
     defaultValues: { email: "", password: "" },
     validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {
-      const { error: authError } = await authClient.signIn.email(loginSchema.parse(value))
+      const { error: authError } = await authClient.signIn
+        .email(loginSchema.parse(value))
+        .catch(() => ({ error: { code: undefined } }))
       if (authError) {
         setError(authErrorMessage(authError.code))
         return
       }
-      await navigate({ href: target?.startsWith("/") ? target : "/" })
+      await navigate({ href: target ?? "/" })
     },
   })
 

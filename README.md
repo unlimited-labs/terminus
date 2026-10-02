@@ -55,6 +55,8 @@ wystawia portów; NPMplus łączy się z nią po nazwie kontenera `terminus`, po
 
 Przy starcie kontener wykonuje migracje, zakłada superadmina z `ADMIN_*`, jeśli
 tego e-maila nie ma w bazie (istniejącego konta nie zmienia), i uruchamia serwer.
+Po pierwszym wdrożeniu usuń `ADMIN_PASSWORD` z `.env` — bez niego kontener
+pomija zakładanie superadmina i startuje normalnie.
 
 Przed pierwszym uruchomieniem sprawdzić na VPS:
 

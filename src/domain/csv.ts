@@ -178,7 +178,7 @@ export function buildExportCsv(
         ],
         data: rows,
       },
-      { delimiter: ";", quotes: true, newline: "\r\n" },
+      { delimiter: ";", quotes: true, newline: "\r\n", escapeFormulae: true },
     )
   )
 }

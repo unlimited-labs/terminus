@@ -5,6 +5,15 @@ export const password = z.string().min(8, "Hasło musi mieć co najmniej 8 znak�
 
 export const loginSchema = z.object({ email, password: z.string().min(1, "Podaj hasło.") })
 
+/** Tylko ścieżki wewnętrzne: "//host" i "/\host" przeglądarka traktuje jak inny serwer. */
+export const loginSearchSchema = z.object({
+  redirect: z
+    .string()
+    .regex(/^\/(?![/\\])/)
+    .optional()
+    .catch(undefined),
+})
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Podaj obecne hasło."),
   newPassword: password,

@@ -36,3 +36,24 @@ test("skrypt pierwszego superadmina jest idempotentny", () => {
     { role: "admin" },
   ])
 })
+
+test("skrypt superadmina bez ADMIN_PASSWORD kończy się kodem 0", () => {
+  const out = execFileSync("node", ["scripts/seed-admin.ts"], {
+    env: { ...process.env, ADMIN_PASSWORD: "" },
+    encoding: "utf8",
+  })
+  expect(out).toContain("pomijam")
+})
+
+test("końcówki pluginu admin nie są dostępne przez HTTP", async () => {
+  for (const path of ["impersonate-user", "remove-user"]) {
+    const response = await auth.handler(
+      new Request(`http://localhost:3000/api/auth/admin/${path}`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: "x" }),
+      }),
+    )
+    expect(response.status).toBe(404)
+  }
+})

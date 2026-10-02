@@ -1,7 +1,10 @@
 import { Link, Outlet, createFileRoute, redirect, useRouter } from "@tanstack/react-router"
 
 import { Button } from "@/components/ui/button"
+import { toast } from "sonner"
+
 import { authClient } from "@/lib/auth-client"
+import { UNEXPECTED_ERROR } from "@/messages.pl"
 import { getSessionUser } from "@/server/session"
 
 export const Route = createFileRoute("/_authed")({
@@ -14,10 +17,15 @@ export const Route = createFileRoute("/_authed")({
 })
 
 function AuthedLayout() {
-  const { user } = Route.useRouteContext()
+  const { user, queryClient } = Route.useRouteContext()
   const router = useRouter()
   const logout = async () => {
-    await authClient.signOut()
+    const { error } = await authClient.signOut().catch(() => ({ error: true }))
+    if (error) {
+      toast.error(UNEXPECTED_ERROR)
+      return
+    }
+    queryClient.clear()
     await router.navigate({ to: "/login" })
   }
   return (

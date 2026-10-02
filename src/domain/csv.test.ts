@@ -124,6 +124,25 @@ test("exportFileName: nazwa zaliczenia i data eksportu", () => {
   )
 })
 
+test("buildExportCsv: formuły w odpowiedziach, nazwiskach i etykietach nie wykonują się", () => {
+  const slot = {
+    id: "s1",
+    startsAt: new Date("2026-10-05T07:00:00Z"),
+    endsAt: new Date("2026-10-05T07:30:00Z"),
+    answers: { f1: '=HYPERLINK("http://evil.com","x")' },
+  }
+  const person = {
+    studentNumber: "1",
+    firstName: "@a",
+    lastName: "-b",
+    rosterName: "g1",
+    slotId: "s1",
+  }
+  const csv = buildExportCsv([slot], [person], [{ id: "f1", label: "+pole" }])
+  expect(csv).not.toMatch(/(^|;|\n)"[=+\-@]/)
+  expect(csv).toContain(`"'=HYPERLINK(`)
+})
+
 test("buildExportCsv: sortuje po slocie i nazwisku, niezapisani na końcu, wolne sloty pominięte", () => {
   const slots = [
     {

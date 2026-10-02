@@ -17,7 +17,9 @@ function ChangePassword() {
     defaultValues: { currentPassword: "", newPassword: "" },
     validators: { onSubmit: changePasswordSchema },
     onSubmit: async ({ value, formApi }) => {
-      const { error } = await authClient.changePassword({ ...value, revokeOtherSessions: true })
+      const { error } = await authClient
+        .changePassword({ ...value, revokeOtherSessions: true })
+        .catch(() => ({ error: { code: undefined } }))
       if (error) {
         toast.error(authErrorMessage(error.code))
         return

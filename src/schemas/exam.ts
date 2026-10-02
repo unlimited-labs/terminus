@@ -2,6 +2,9 @@ import { z } from "zod"
 
 export const examIdSchema = z.object({ examId: z.uuid() })
 
+/** Godzina "GG:MM" w obrębie jednej doby. */
+export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
+
 export const examFieldSchema = z.object({
   id: z.string().min(1).max(40),
   label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, "Najwyżej 60 znaków."),
@@ -25,7 +28,7 @@ export const examSchema = z.object({
     .max(20, "Zespół może mieć najwyżej 20 osób."),
   fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
   opensDate: z.union([z.literal(""), z.iso.date("Podaj datę.")]),
-  opensTime: z.union([z.literal(""), z.string().regex(/^d{2}:d{2}$/, "Podaj godzinę.")]),
+  opensTime: z.union([z.literal(""), hhmm]),
 })
 
 export const examFormSchema = examSchema.refine((v) => !v.opensDate === !v.opensTime, {

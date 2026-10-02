@@ -1,15 +1,14 @@
 import { z } from "zod"
 
-import { examIdSchema } from "./exam.ts"
+import { examIdSchema, hhmm } from "./exam.ts"
 
 const date = z.iso.date("Podaj datę.")
-const time = z.string().regex(/^\d{2}:\d{2}$/, "Podaj godzinę.")
 
 export const windowSchema = examIdSchema.extend({
   rosterId: z.uuid("Wybierz listę."),
   date,
-  from: time,
-  to: time,
+  from: hhmm,
+  to: hhmm,
   minutes: z
     .number({ error: "Podaj liczbę minut." })
     .int("Podaj pełne minuty.")
@@ -21,8 +20,8 @@ export const updateSlotSchema = examIdSchema.extend({
   slotId: z.uuid(),
   rosterId: z.uuid(),
   date,
-  from: time,
-  to: time,
+  from: hhmm,
+  to: hhmm,
 })
 
 export const slotRefSchema = examIdSchema.extend({ slotId: z.uuid() })

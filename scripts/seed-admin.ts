@@ -3,6 +3,11 @@ import { z } from "zod"
 import { auth } from "../src/server/auth.server.ts"
 import { db } from "../src/server/db.server.ts"
 
+if (!process.env.ADMIN_PASSWORD) {
+  console.log("Brak ADMIN_PASSWORD — pomijam zakładanie superadmina.")
+  process.exit(0)
+}
+
 const admin = z
   .object({
     ADMIN_EMAIL: z.email(),
