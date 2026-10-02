@@ -26,23 +26,27 @@ export const listAccounts = createServerFn()
 export const accountsQuery = () =>
   queryOptions({ queryKey: ["accounts"], queryFn: () => listAccounts() })
 
-// Uprawnienia admina sprawdza każda operacja w account-ops.server.ts (z tych samych nagłówków).
 export const createAccount = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .validator(createAccountSchema)
   .handler(({ data }) => addAccount(getRequestHeaders(), data))
 
 export const updateAccount = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .validator(updateAccountSchema)
   .handler(({ data }) => editAccount(getRequestHeaders(), data))
 
 export const setAccountPassword = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .validator(setPasswordSchema)
   .handler(({ data }) => setPassword(getRequestHeaders(), data))
 
 export const setAccountBanned = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .validator(setBannedSchema)
   .handler(({ data }) => setBanned(getRequestHeaders(), data))
 
 export const setAccountAdmin = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
   .validator(setAdminSchema)
   .handler(({ data }) => setAdmin(getRequestHeaders(), data))

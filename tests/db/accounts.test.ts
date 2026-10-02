@@ -34,7 +34,7 @@ async function account(role: "admin" | "user" = "user") {
 const row = (id: string) =>
   db.user.findUniqueOrThrow({ where: { id }, select: { email: true, role: true, banned: true } })
 
-test("bez roli admina każda operacja jest odrzucona i niczego nie zmienia", async () => {
+test("bez roli superadmina każda operacja jest odrzucona i niczego nie zmienia", async () => {
   const target = await account()
   const before = await row(target.id)
   const users = await db.user.count()
@@ -60,9 +60,10 @@ test("bez roli admina każda operacja jest odrzucona i niczego nie zmienia", asy
   expect(await row(target.id)).toEqual(before)
   expect(await db.user.count()).toBe(users + 1)
   expect(await sessionUser(target.headers)).toMatchObject({ id: target.id })
+  expect(await sessionUser(await signIn(target.email))).toMatchObject({ id: target.id })
 })
 
-test("admin zakłada i poprawia konta; zajęty e-mail odrzucony", async () => {
+test("superadmin zakłada i poprawia konta; zajęty e-mail odrzucony", async () => {
   const admin = await account("admin")
   const other = await account()
   const email = `${randomUUID()}@example.com`
@@ -87,7 +88,7 @@ test("admin zakłada i poprawia konta; zajęty e-mail odrzucony", async () => {
   expect(await row(other.id)).toMatchObject({ email: renamed })
 })
 
-test("admin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", async () => {
+test("superadmin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", async () => {
   const admin = await account("admin")
   const other = await account()
   const self = { code: "CANNOT_CHANGE_SELF", ok: false }
@@ -103,6 +104,7 @@ test("admin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", async 
 
   expect(await setBanned(admin.headers, { userId: other.id, banned: true })).toEqual({ ok: true })
   expect(await row(other.id)).toMatchObject({ banned: true })
+  expect(await sessionUser(other.headers)).toBeNull()
   await expect(signIn(other.email)).rejects.toThrow("You have been banned")
   expect(await setBanned(admin.headers, { userId: other.id, banned: false })).toEqual({ ok: true })
   expect(await sessionUser(await signIn(other.email))).toMatchObject({ id: other.id })
