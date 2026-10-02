@@ -67,14 +67,13 @@ test("edycja slotu zmienia godziny i listę; nakładanie i zła kolejność odrz
     ok: false,
     code: "WINDOW_END_BEFORE_START",
   })
-  expect(await editSlot(examId, ownerId, { ...edit, from: "09:00", to: "10:00" })).toEqual({
-    ok: true,
-  })
+  const overlapsItself = { ...edit, date: "2030-01-02", from: "10:15", to: "11:00" }
+  expect(await editSlot(examId, ownerId, overlapsItself)).toEqual({ ok: true })
   expect((await slotsOf(examId))[0]).toEqual({
     id: first!.id,
     rosterId: rosterIds.g2,
-    startsAt: inDays(2, 8),
-    endsAt: inDays(2, 9),
+    startsAt: new Date("2030-01-02T09:15:00Z"),
+    endsAt: inDays(1, 10),
   })
 })
 
@@ -85,18 +84,22 @@ test("usunięcie slotu: wolny znika, z zapisem zostaje, cudzy daje NOT_FOUND", a
   const [free, taken] = await slotsOf(examId)
   await enroll(examId, "1", taken!.id)
 
-  const other = await createExam({ rosters: { g1: { students: ["1"], slots: [inDays(3)] } } })
-  const [foreign] = await slotsOf(other.examId)
-  await enroll(other.examId, "1", foreign!.id)
+  const other = await createExam({
+    rosters: { g1: { students: ["1"], slots: [inDays(3), inDays(4)] } },
+  })
+  const [foreignTaken, foreignFree] = await slotsOf(other.examId)
+  await enroll(other.examId, "1", foreignTaken!.id)
 
-  expect(await removeSlot(examId, ownerId, foreign!.id)).toEqual({ ok: false, code: "NOT_FOUND" })
+  const notFound = { ok: false, code: "NOT_FOUND" }
+  expect(await removeSlot(examId, ownerId, foreignTaken!.id)).toEqual(notFound)
+  expect(await removeSlot(examId, ownerId, foreignFree!.id)).toEqual(notFound)
   expect(await removeSlot(examId, ownerId, taken!.id)).toEqual({
     ok: false,
     code: "SLOT_HAS_ENROLLMENTS",
   })
   expect(await removeSlot(examId, ownerId, free!.id)).toEqual({ ok: true })
   expect((await slotsOf(examId)).map((s) => s.id)).toEqual([taken!.id])
-  expect(await slotsOf(other.examId)).toHaveLength(1)
+  expect(await slotsOf(other.examId)).toHaveLength(2)
 })
 
 test("usunięcie wolnych slotów dnia liczy dzień w czasie polskim i omija zajęte", async () => {
