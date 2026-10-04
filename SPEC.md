@@ -45,7 +45,7 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
 | Zaliczenie | `Exam` | Właściciel, nazwa (z nazwą przedmiotu), opis/miejsce, domyślna długość slotu, maksymalna wielkość zespołu (1 = indywidualne). `id` (UUID v4) jest też linkiem `/z/<id>`. |
 | Lista indeksów | `Roster` | Nazwana (np. "g1") lista osób uprawnionych do zapisu; zwykle jedna grupa zajęć z systemu uczelni. Zaliczenie ma jedną lub kilka. |
 | Dozwolony indeks | `RosterEntry` | (lista, numer indeksu, imię, nazwisko). Indeks jest najwyżej na jednej liście w zaliczeniu. |
-| Numer indeksu | `studentNumber` | Tekst z samych cyfr, dowolna długość. |
+| Numer indeksu | `studentNumber` | Tekst z samych cyfr, najwyżej 20 znaków. |
 | Slot | `Slot` | Przedział czasu (`startsAt`, `endsAt`) należący do jednej listy; mieści dokładnie jeden zespół. Sloty zaliczenia nie nachodzą na siebie (także między listami). |
 | Okno | `window` | Przedział czasu podany przez prowadzącego, jednorazowo cięty na sloty; nie jest zapisywany. |
 | Zapis | `Enrollment` | (zaliczenie, indeks, slot, czas zapisu); najwyżej jeden na indeks w zaliczeniu. Imię i nazwisko pochodzą z listy. |
@@ -88,7 +88,8 @@ interfejsu i komunikaty.
   zespołu, "Usuń" przy dodanej osobie, jeden przycisk "Losuj slot", pod
   spodem zwinięta klauzula informacyjna RODO. Przy zaliczeniu indywidualnym
   bez wzmianek o zespole.
-- Po wysłaniu krótki stan "Losowanie slotu…", potem w panelu bilet: dzień,
+- Po wysłaniu krótki stan "Losowanie slotu…" (co najmniej 700 ms, nawet gdy
+  serwer odpowie szybciej), potem w panelu bilet: dzień,
   godzina, miejsce, skład zespołu (imiona, nazwiska, numery indeksów) i zdanie,
   że slot jest przydzielony na stałe. "Pokaż na planszy" zamyka panel;
   kafelek wyniku jest wyróżniony i krótko pulsuje, a przycisk na dole zmienia
@@ -201,7 +202,9 @@ interfejsu i komunikaty.
   zaktualizowane; indeksy nieobecne w pliku zostają (podgląd je wymienia);
   `skreslony = 1` bez zapisu znika z listy, z zapisem zostaje i jest
   oznaczony. Nic nie znika po cichu.
-- Ręczne dodanie pojedynczej osoby do listy: indeks, imię, nazwisko.
+- Ręczne dodanie pojedynczej osoby do listy: indeks, imię, nazwisko i lista.
+  Gdy zaliczenie nie ma jeszcze żadnej listy, osoba trafia na nowo założoną
+  listę "lista".
 - Zaliczenie z jedną listą nie pokazuje w interfejsie żadnych "list".
 - Usunięcie indeksu lub całej listy z zapisem jest zablokowane, dopóki zapis
   nie zostanie przeniesiony lub usunięty.

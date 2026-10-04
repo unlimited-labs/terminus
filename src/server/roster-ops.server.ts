@@ -78,7 +78,7 @@ export async function applyImport(
   return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
-/** Bez wskazanej listy osoba trafia na pierwszą listę zaliczenia; nieistniejąca lista = nowa „lista”. */
+/** Bez wskazanej listy osoba trafia na nową listę „lista” — tylko gdy zaliczenie nie ma jeszcze żadnej. */
 export async function addEntry(
   examId: string,
   ownerId: string,
@@ -90,11 +90,17 @@ export async function addEntry(
       include: { roster: { select: { name: true } } },
     })
     if (current) return { ok: false, code: "ENTRY_EXISTS", rosterName: current.roster.name }
-    const roster =
-      (await tx.roster.findFirst({ where: { examId, id: rosterId || undefined } })) ??
-      (await tx.roster.create({ data: { examId, name: "lista" } }))
+    let target = rosterId
+    if (!target) {
+      if ((await tx.roster.count({ where: { examId } })) > 0) {
+        return { ok: false, code: "ROSTER_NOT_CHOSEN" }
+      }
+      target = (await tx.roster.create({ data: { examId, name: "lista" } })).id
+    } else if (!(await tx.roster.findFirst({ where: { id: target, examId } }))) {
+      return { ok: false, code: "NOT_FOUND" }
+    }
     await tx.rosterEntry.create({
-      data: { examId, rosterId: roster.id, studentNumber, firstName, lastName },
+      data: { examId, rosterId: target, studentNumber, firstName, lastName },
     })
     return { ok: true }
   })

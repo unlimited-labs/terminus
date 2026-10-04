@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto"
+
 import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
@@ -114,6 +116,24 @@ test("ręczne dodanie bez list zakłada listę „lista”", async () => {
   const person = { rosterId: "", studentNumber: "7", firstName: "Ewa", lastName: "E" }
   expect(await addEntry(examId, ownerId, person)).toEqual({ ok: true })
   expect(await people(examId)).toEqual([["lista", "7", "Ewa", "E"]])
+})
+
+test("ręczne dodanie do nieistniejącej listy albo bez wyboru przy kilku listach jest odrzucone", async () => {
+  const { examId, ownerId } = await createExam({
+    rosters: { lista: { students: [], slots: [] }, g2: { students: [], slots: [] } },
+  })
+  const person = { studentNumber: "7", firstName: "Ewa", lastName: "E" }
+
+  expect(await addEntry(examId, ownerId, { ...person, rosterId: randomUUID() })).toEqual({
+    ok: false,
+    code: "NOT_FOUND",
+  })
+  expect(await addEntry(examId, ownerId, { ...person, rosterId: "" })).toEqual({
+    ok: false,
+    code: "ROSTER_NOT_CHOSEN",
+  })
+  expect(await db.roster.count({ where: { examId } })).toBe(2)
+  expect(await people(examId)).toEqual([])
 })
 
 test("usunięcie listy: zablokowane, gdy ktoś z niej siedzi w slocie innej listy", async () => {

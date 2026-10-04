@@ -16,7 +16,7 @@ export const rosterImportSchema = examIdSchema.extend({
 })
 
 export const addEntrySchema = examIdSchema.extend({
-  rosterId: z.string(),
+  rosterId: z.union([z.uuid(), z.literal("")]),
   studentNumber,
   firstName: personName("imię"),
   lastName: personName("nazwisko"),

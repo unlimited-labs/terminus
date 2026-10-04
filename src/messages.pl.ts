@@ -20,6 +20,7 @@ export type AppError =
         | "NOT_FOUND"
         | "RATE_LIMITED"
         | "ROSTER_REQUIRED"
+        | "ROSTER_NOT_CHOSEN"
         | "SLOT_HAS_ENROLLMENTS"
         | "ENTRY_HAS_ENROLLMENT"
         | "ROSTER_HAS_ENROLLMENTS"
@@ -66,6 +67,8 @@ export function errorMessage(e: AppError): string {
       return `Koliduje z istniejącym slotem ${formatDayTime(e.startsAt)}–${warsawTime(e.endsAt)}.`
     case "ROSTER_REQUIRED":
       return "Najpierw dodaj listę indeksów."
+    case "ROSTER_NOT_CHOSEN":
+      return "Wybierz listę."
     case "SLOT_HAS_ENROLLMENTS":
       return "Slot ma zapisy — najpierw je przenieś albo usuń."
     case "ENTRY_HAS_ENROLLMENT":
