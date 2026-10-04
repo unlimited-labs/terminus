@@ -90,17 +90,17 @@ export async function addEntry(
       include: { roster: { select: { name: true } } },
     })
     if (current) return { ok: false, code: "ENTRY_EXISTS", rosterName: current.roster.name }
-    let target = rosterId
-    if (!target) {
+    let targetRosterId = rosterId
+    if (!targetRosterId) {
       if ((await tx.roster.count({ where: { examId } })) > 0) {
         return { ok: false, code: "ROSTER_NOT_CHOSEN" }
       }
-      target = (await tx.roster.create({ data: { examId, name: "lista" } })).id
-    } else if (!(await tx.roster.findFirst({ where: { id: target, examId } }))) {
+      targetRosterId = (await tx.roster.create({ data: { examId, name: "lista" } })).id
+    } else if (!(await tx.roster.findFirst({ where: { id: targetRosterId, examId } }))) {
       return { ok: false, code: "NOT_FOUND" }
     }
     await tx.rosterEntry.create({
-      data: { examId, rosterId: target, studentNumber, firstName, lastName },
+      data: { examId, rosterId: targetRosterId, studentNumber, firstName, lastName },
     })
     return { ok: true }
   })

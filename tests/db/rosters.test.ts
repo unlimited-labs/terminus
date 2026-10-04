@@ -124,10 +124,13 @@ test("ręczne dodanie do nieistniejącej listy albo bez wyboru przy kilku listac
   })
   const person = { studentNumber: "7", firstName: "Ewa", lastName: "E" }
 
-  expect(await addEntry(examId, ownerId, { ...person, rosterId: randomUUID() })).toEqual({
-    ok: false,
-    code: "NOT_FOUND",
-  })
+  const foreign = await createExam({ rosters: { g1: { students: [], slots: [] } } })
+  for (const rosterId of [randomUUID(), foreign.rosterIds.g1!]) {
+    expect(await addEntry(examId, ownerId, { ...person, rosterId })).toEqual({
+      ok: false,
+      code: "NOT_FOUND",
+    })
+  }
   expect(await addEntry(examId, ownerId, { ...person, rosterId: "" })).toEqual({
     ok: false,
     code: "ROSTER_NOT_CHOSEN",

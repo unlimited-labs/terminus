@@ -124,7 +124,9 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
     },
     validators: { onSubmit: addEntrySchema },
     onSubmit: async ({ value, formApi }) => {
-      if ((await add.mutateAsync(addEntrySchema.parse(value))).ok) formApi.reset()
+      // Bez widocznego wyboru (0–1 list) liczy się bieżąca lista, nie wartość sprzed usunięcia lub importu.
+      const rosterId = exam.rosters.length > 1 ? value.rosterId : (exam.rosters[0]?.id ?? "")
+      if ((await add.mutateAsync(addEntrySchema.parse({ ...value, rosterId }))).ok) formApi.reset()
     },
   })
   return (
