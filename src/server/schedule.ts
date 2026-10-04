@@ -71,15 +71,16 @@ let warnedNoIp = false
 export const enroll = createServerFn({ method: "POST" })
   .validator(enrollmentSchema)
   .handler(async ({ data }): Promise<EnrollmentOutcome | { ok: false; code: "RATE_LIMITED" }> => {
-    const ip = getRequestHeader("x-real-ip")
-    if (!ip && !warnedNoIp && process.env.NODE_ENV === "production") {
+    const realIp = getRequestHeader("x-real-ip")
+    const ip = realIp ?? "unknown"
+    if (!realIp && !warnedNoIp && process.env.NODE_ENV === "production") {
       warnedNoIp = true
       console.warn(
-        "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — 10 numerów spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
+        "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
       )
     }
-    if (await isBlocked(ip ?? "unknown")) return { ok: false, code: "RATE_LIMITED" }
+    if (await isBlocked(ip)) return { ok: false, code: "RATE_LIMITED" }
     const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers)
-    await recordOutcome(ip ?? "unknown", data.studentNumbers, outcome)
+    await recordOutcome(ip, data.studentNumbers, outcome)
     return outcome
   })

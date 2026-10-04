@@ -62,10 +62,12 @@ Przed pierwszym uruchomieniem sprawdzić na VPS:
 
 - wersję PostgreSQL (`SELECT version();`, Prisma 7 obsługuje 9.6–18);
 - że NPMplus nadpisuje nagłówek `X-Real-IP` adresem klienta, a nie przepuszcza
-  nagłówka przysłanego przez klienta (jeśli nie robi tego domyślnie — w hoście
-  proxy, zakładka „Advanced”: `proxy_set_header X-Real-IP $remote_addr;`).
-  Limit prób zapisu (10 numerów spoza listy na 10 minut) liczy się po tym
-  adresie:
+  nagłówka przysłanego przez klienta — w nginx `proxy_set_header X-Real-IP
+$remote_addr;` w bloku `location`, który przekazuje ruch do aplikacji (w
+  bloku `server` nie zadziała, jeśli `location` ustawia własne nagłówki). Limit
+  prób zapisu liczy się po tym adresie: 10 punktów na 10 minut, każde
+  odrzucone zgłoszenie z numerem spoza listy kosztuje tyle punktów, ile
+  numerów zawierało:
   - bez nagłówka wszyscy studenci dzielą jeden licznik — kilka pomyłek blokuje
     zapisy wszystkim; aplikacja ostrzega wtedy raz w logu („Brak nagłówka
     X-Real-IP…”);
