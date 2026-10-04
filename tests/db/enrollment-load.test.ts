@@ -38,7 +38,7 @@ test.runIf(requests > 0)(
         `sloty=${slotCount} razem=${Math.round(total)}ms p50=${at(0.5)}ms p95=${at(0.95)}ms max=${at(1)}ms`,
         Object.fromEntries(Object.entries(codes).map(([k, v]) => [k, v!.length])),
       )
-      expect(codes.BUSY).toBeUndefined()
+      expect(results.filter((r) => !["OK", "BUSY", "NO_FREE_SLOTS"].includes(r.code))).toEqual([])
     }
   },
   300_000,
