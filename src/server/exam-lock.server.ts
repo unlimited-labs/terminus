@@ -7,12 +7,13 @@ export type Tx = Prisma.TransactionClient
 /**
  * Transakcja pod blokadą wiersza zaliczenia (`SELECT … FOR UPDATE`): zmiany jednego zaliczenia
  * wykonują się po kolei. Z `ownerId` cudze zaliczenie wygląda jak nieistniejące.
- * `null` = nie znaleziono.
+ * `null` = nie znaleziono. Limit czasu liczy się razem z czekaniem na blokadę.
  */
 export function withExamLock<T>(
   examId: string,
   ownerId: string | null,
   fn: (tx: Tx) => Promise<T>,
+  timeout = 10_000,
 ): Promise<T | null> {
   return db.$transaction(
     async (tx) => {
@@ -22,6 +23,6 @@ export function withExamLock<T>(
         FOR UPDATE`
       return rows.length === 0 ? null : fn(tx)
     },
-    { isolationLevel: "ReadCommitted", maxWait: 10_000, timeout: 10_000 },
+    { isolationLevel: "ReadCommitted", maxWait: 10_000, timeout },
   )
 }

@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
 import { enrollTeam } from "@/server/enrollment.server"
+import { withExamLock } from "@/server/exam-lock.server"
 
 import { createExam, inDays } from "./fixtures"
 
@@ -83,7 +84,49 @@ test("przed startem zapisów zapis jest odrzucany, potem przechodzi", async () =
   const opensAt = new Date(Date.now() + 60 * 60_000)
   await db.exam.update({ where: { id: examId }, data: { enrollmentOpensAt: opensAt } })
   expect(await enrollTeam(examId, ["31"])).toEqual({ ok: false, code: "NOT_OPEN_YET", opensAt })
-  expect(await enrollTeam(examId, ["31"], {}, new Date(opensAt.getTime() + 1))).toMatchObject({
+  expect(
+    await enrollTeam(examId, ["31"], {}, { now: () => new Date(opensAt.getTime() + 1) }),
+  ).toMatchObject({
     ok: true,
   })
+})
+
+/** Trzyma blokadę zaliczenia, dopóki test nie wywoła `release`. */
+async function holdLock(examId: string) {
+  const locked = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  const done = withExamLock(examId, null, () => {
+    locked.resolve()
+    return released.promise
+  })
+  await locked.promise
+  return { release: released.resolve, done }
+}
+
+test("„teraz” liczy się po uzyskaniu blokady: kto czekał przez moment otwarcia, zostaje przyjęty", async () => {
+  const { examId } = await createExam({ rosters: { g1: { students: ["41"], slots: [inDays(3)] } } })
+  const opensAt = new Date("2030-01-01T09:00:00Z")
+  await db.exam.update({ where: { id: examId }, data: { enrollmentOpensAt: opensAt } })
+
+  let clock = new Date(opensAt.getTime() - 500)
+  const lock = await holdLock(examId)
+  const pending = enrollTeam(examId, ["41"], {}, { now: () => clock })
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  clock = new Date(opensAt.getTime() + 2000)
+  lock.release()
+  await lock.done
+
+  expect(await pending).toMatchObject({ ok: true })
+})
+
+test("przekroczenie czasu pod blokadą daje BUSY zamiast wyjątku", async () => {
+  const { examId } = await createExam({ rosters: { g1: { students: ["51"], slots: [inDays(3)] } } })
+  const lock = await holdLock(examId)
+  const pending = enrollTeam(examId, ["51"], {}, { timeout: 300 })
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  lock.release()
+  await lock.done
+
+  expect(await pending).toEqual({ ok: false, code: "BUSY" })
+  expect(await db.enrollment.count({ where: { examId } })).toBe(0)
 })

@@ -19,6 +19,7 @@ export type AppError =
       code:
         | "NOT_FOUND"
         | "RATE_LIMITED"
+        | "BUSY"
         | "ROSTER_REQUIRED"
         | "ROSTER_NOT_CHOSEN"
         | "SLOT_HAS_ENROLLMENTS"
@@ -57,6 +58,8 @@ export function errorMessage(e: AppError): string {
       return "Brak wolnych slotów. Skontaktuj się z prowadzącym."
     case "RATE_LIMITED":
       return "Za dużo nieudanych prób. Spróbuj ponownie za kilka minut."
+    case "BUSY":
+      return "Za dużo osób zapisuje się naraz. Spróbuj ponownie za chwilę."
     case "NOT_FOUND":
       return "Nie znaleziono."
     case "WINDOW_END_BEFORE_START":
