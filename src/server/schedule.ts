@@ -5,7 +5,7 @@ import { getRequestHeader } from "@tanstack/react-start/server"
 import { examIdSchema } from "../schemas/exam.ts"
 import { enrollmentSchema } from "../schemas/enrollment.ts"
 
-import { isBlocked, recordFailure } from "./attempt-limit.server.ts"
+import { isBlocked, recordOutcome } from "./attempt-limit.server.ts"
 import { db } from "./db.server.ts"
 import { enrollTeam, type EnrollmentOutcome } from "./enrollment.server.ts"
 import { parseFields } from "./exam-state.server.ts"
@@ -75,11 +75,11 @@ export const enroll = createServerFn({ method: "POST" })
     if (!ip && !warnedNoIp && process.env.NODE_ENV === "production") {
       warnedNoIp = true
       console.warn(
-        "Brak nagłówka X-Real-IP: limit prób jest wspólny dla wszystkich (sprawdź reverse proxy).",
+        "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — 10 numerów spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
       )
     }
     if (await isBlocked(ip ?? "unknown")) return { ok: false, code: "RATE_LIMITED" }
     const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers)
-    if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") await recordFailure(ip ?? "unknown")
+    await recordOutcome(ip ?? "unknown", data.studentNumbers, outcome)
     return outcome
   })

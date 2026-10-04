@@ -61,9 +61,15 @@ pomija zakładanie superadmina i startuje normalnie.
 Przed pierwszym uruchomieniem sprawdzić na VPS:
 
 - wersję PostgreSQL (`SELECT version();`, Prisma 7 obsługuje 9.6–18);
-- że NPMplus nadpisuje nagłówek `X-Real-IP` adresem klienta (limit prób zapisu
-  liczy się po tym adresie; gdyby nagłówek przychodził od klienta, limit można
-  obejść);
+- że NPMplus nadpisuje nagłówek `X-Real-IP` adresem klienta, a nie przepuszcza
+  nagłówka przysłanego przez klienta (jeśli nie robi tego domyślnie — w hoście
+  proxy, zakładka „Advanced”: `proxy_set_header X-Real-IP $remote_addr;`).
+  Limit prób zapisu (10 numerów spoza listy na 10 minut) liczy się po tym
+  adresie:
+  - bez nagłówka wszyscy studenci dzielą jeden licznik — kilka pomyłek blokuje
+    zapisy wszystkim; aplikacja ostrzega wtedy raz w logu („Brak nagłówka
+    X-Real-IP…”);
+  - nagłówek przepuszczony od klienta pozwala limit obejść;
 - akceptację klauzuli RODO (`docs/klauzula-informacyjna.md`) przez Inspektora
   Ochrony Danych AGH.
 

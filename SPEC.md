@@ -123,7 +123,7 @@ interfejsu i komunikaty.
 ### Ochrona i dane osobowe
 
 - Limit: 10 nieudanych prób "indeksu nie ma na liście" na 10 minut z jednego
-  IP (`rate-limiter-flexible`, `RateLimiterMemory`; po restarcie liczniki się
+  IP; próba zespołu kosztuje tyle punktów, ile numerów sprawdzono (`rate-limiter-flexible`, `RateLimiterMemory`; po restarcie liczniki się
   zerują). Udane zapisy i "indeks ma już zapis" się nie liczą — wielu
   studentów za jednym adresem uczelnianej sieci. Bez CAPTCHA.
 - IP klienta wyłącznie z nagłówka `X-Real-IP` ustawianego przez reverse proxy.

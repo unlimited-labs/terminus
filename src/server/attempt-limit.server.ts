@@ -11,6 +11,16 @@ export async function isBlocked(ip: string) {
   return (state?.consumedPoints ?? 0) >= MAX_FAILURES
 }
 
-export async function recordFailure(ip: string) {
-  await failures.penalty(ip, 1)
+/**
+ * „Nie ma na liście” wskazuje brakujące numery, więc potwierdza resztę: kara = liczba
+ * sprawdzonych numerów, żeby wyliczanie indeksów zespołem kosztowało tyle co pojedynczo.
+ */
+export async function recordOutcome(
+  ip: string,
+  studentNumbers: string[],
+  outcome: { ok: boolean; code?: string },
+) {
+  if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") {
+    await failures.penalty(ip, studentNumbers.length)
+  }
 }
