@@ -3,9 +3,8 @@ import { describe, expect, test } from "vitest"
 import type { BoardCommand } from "@/domain/board"
 import { runBoardCommand } from "@/server/board-ops.server"
 import { db } from "@/server/db.server"
-import { enrollTeam } from "@/server/enrollment.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 async function setup() {
   const fixture = await createExam({
@@ -87,14 +86,19 @@ describe("runBoardCommand", () => {
     ).toEqual({ ok: false, code: "NOT_FOUND" })
   })
 
-  test("zapis studenta i operacja prowadzącego równolegle nie przepełniają slotu", async () => {
-    const { examId, s1, run } = await setup()
-    await run({ kind: "move", studentNumber: "1", toSlotId: s1 })
-    await Promise.all([
-      run({ kind: "move", studentNumber: "2", toSlotId: s1 }),
-      enrollTeam(examId, ["3", "4"]),
-    ])
-    const perSlot = await db.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
-    expect(perSlot.every((s) => s._count <= 2)).toBe(true)
+  // Jeden pusty slot na 2 osoby: bez blokady obie strony widzą go pustego i wstawiają razem 3 osoby.
+  test("zapis zespołu i przeniesienie na tablicy równolegle nie przepełniają jedynego slotu", async () => {
+    for (let round = 0; round < 10; round++) {
+      const { examId, ownerId } = await createExam({
+        maxTeamSize: 2,
+        rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1)] } },
+      })
+      const slot = await db.slot.findFirstOrThrow({ where: { examId } })
+      await Promise.all([
+        runBoardCommand(examId, ownerId, { kind: "move", studentNumber: "1", toSlotId: slot.id }),
+        enroll(examId, ["2", "3"]),
+      ])
+      expect(await db.enrollment.count({ where: { examId } })).toBeLessThanOrEqual(2)
+    }
   })
 })

@@ -1,15 +1,14 @@
 import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { enrollTeam } from "@/server/enrollment.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 async function enrolledExam() {
   const fixture = await createExam({
     rosters: { g1: { students: ["1", "2"], slots: [inDays(1), inDays(2)] } },
   })
-  const result = await enrollTeam(fixture.examId, ["1"])
+  const result = await enroll(fixture.examId, ["1"])
   if (!result.ok) throw new Error(result.code)
   return { ...fixture, slotId: result.slotId }
 }

@@ -2,9 +2,8 @@ import { expect, test } from "vitest"
 
 import { runBoardCommand, setSlotAnswers } from "@/server/board-ops.server"
 import { db } from "@/server/db.server"
-import { enrollTeam } from "@/server/enrollment.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 const fields = [
   { id: "title", label: "Tytuł projektu", required: true },
@@ -28,14 +27,14 @@ async function setup() {
 
 test("zapis wymaga wymaganych pól i zapisuje odpowiedzi całemu zespołowi; bilet je pokazuje", async () => {
   const { examId, answersOf } = await setup()
-  expect(await enrollTeam(examId, ["1", "2"], { notes: "x" })).toEqual({
+  expect(await enroll(examId, ["1", "2"], { notes: "x" })).toEqual({
     ok: false,
     code: "MISSING_ANSWER",
     labels: ["Tytuł projektu"],
   })
   expect(await db.enrollment.count({ where: { examId } })).toBe(0)
 
-  const result = await enrollTeam(examId, ["1", "2"], { title: " Robot ", notes: "" })
+  const result = await enroll(examId, ["1", "2"], { title: " Robot ", notes: "" })
   expect(result).toMatchObject({
     ok: true,
     ticket: { answers: [{ label: "Tytuł projektu", value: "Robot" }] },
@@ -48,7 +47,7 @@ test("zapis wymaga wymaganych pól i zapisuje odpowiedzi całemu zespołowi; bil
 
 test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zespół zachowuje swoje", async () => {
   const { examId, ownerId, answersOf } = await setup()
-  const first = await enrollTeam(examId, ["1"], { title: "Robot" })
+  const first = await enroll(examId, ["1"], { title: "Robot" })
   if (!first.ok) throw new Error(first.code)
   const slots = await db.slot.findMany({ where: { examId }, orderBy: { startsAt: "asc" } })
   const free = slots.find((s) => s.id !== first.slotId)!
@@ -75,7 +74,7 @@ test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zes
 
 test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
   const { examId, ownerId, answersOf } = await setup()
-  const enrolled = await enrollTeam(examId, ["1"], { title: "Robot", notes: "x" })
+  const enrolled = await enroll(examId, ["1"], { title: "Robot", notes: "x" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
   const removed = await runBoardCommand(examId, ownerId, {
@@ -92,7 +91,7 @@ test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
 
 test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedzi", async () => {
   const { examId, ownerId, answersOf } = await setup()
-  const enrolled = await enrollTeam(examId, ["1", "2"], { title: "Robot" })
+  const enrolled = await enroll(examId, ["1", "2"], { title: "Robot" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
   const inverses = []

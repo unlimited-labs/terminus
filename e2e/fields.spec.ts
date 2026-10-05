@@ -2,12 +2,12 @@ import { readFileSync } from "node:fs"
 
 import { expect, test } from "@playwright/test"
 
-import { login, state } from "./helpers.ts"
+import { exams, login } from "./helpers.ts"
 
 test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, widać na bilecie, tablicy i w eksporcie", async ({
   page,
 }) => {
-  const { boardExamId } = state()
+  const boardExamId = exams().fields
   await login(page)
   await page.goto(`/zaliczenia/${boardExamId}`)
   await page.getByRole("button", { name: "Edytuj" }).first().click()

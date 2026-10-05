@@ -2,11 +2,11 @@ import { readFileSync } from "node:fs"
 
 import { expect, test } from "@playwright/test"
 
-import { login, state } from "./helpers.ts"
+import { exams, login } from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
-  await page.goto(`/zaliczenia/${state().boardExamId}`)
+  await page.goto(`/zaliczenia/${exams().exportDuplicate}`)
 })
 
 test("eksport CSV: UTF-8 z BOM, ; i nazwa z datą", async ({ page }) => {

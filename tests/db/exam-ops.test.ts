@@ -2,9 +2,8 @@ import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
 import { copyExam, updateExamSettings } from "@/server/exam-ops.server"
-import { enrollTeam } from "@/server/enrollment.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na życzenie", async () => {
   const { examId, ownerId } = await createExam({
@@ -15,7 +14,7 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
       g2: { students: ["3"], slots: [] },
     },
   })
-  await enrollTeam(examId, ["1"])
+  await enroll(examId, ["1"])
 
   const copyId = (await copyExam(examId, ownerId, true))!
   const copy = await db.exam.findUniqueOrThrow({
@@ -51,7 +50,7 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
     maxTeamSize: 3,
     rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1), inDays(2)] } },
   })
-  await enrollTeam(examId, ["1", "2"])
+  await enroll(examId, ["1", "2"])
   const settings = { name: "Nowa", description: "Sala 9", defaultSlotMinutes: 45, fields: [] }
   const opens = { opensDate: "2030-01-07", opensTime: "08:30" }
 

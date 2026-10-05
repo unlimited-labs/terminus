@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 
 import { db } from "@/server/db.server"
+import { enrollTeam } from "@/server/enrollment.server"
 
 type ExamFixture = {
   maxTeamSize?: number
@@ -49,3 +50,14 @@ export async function createExam({ maxTeamSize = 1, fields = [], rosters }: Exam
 }
 
 export const inDays = (days: number, hour = 9) => new Date(Date.UTC(2030, 0, 1 + days, hour))
+
+/** Stały „teraz” testów: dzień przed `inDays(1)`, niezależnie od dzisiejszej daty. */
+export const TEST_NOW = inDays(0, 0)
+
+/** `enrollTeam` z zegarem testów; `options` może go nadpisać. */
+export const enroll = (
+  examId: string,
+  studentNumbers: string[],
+  answers: Record<string, string> = {},
+  options: Parameters<typeof enrollTeam>[3] = {},
+) => enrollTeam(examId, studentNumbers, answers, { now: () => TEST_NOW, ...options })

@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test"
 
-import { login, state } from "./helpers.ts"
+import { day, exams, login } from "./helpers.ts"
 
 const FIXTURE = "src/domain/fixtures/studenci_110-ITE-2S-027_g1_2026-09-30.csv"
 
 test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", async ({ page }) => {
   await login(page)
-  await page.goto(`/zaliczenia/${state().studentExamId}`)
+  await page.goto(`/zaliczenia/${exams().rosters}`)
 
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await expect(page.getByLabel("Nazwa listy")).toHaveValue("g1")
@@ -23,7 +23,7 @@ test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", a
   await expect(page.getByText("Listy indeksów")).toBeVisible()
 
   const windowForm = page.locator("form", { hasText: "Dodaj okno" })
-  await windowForm.getByLabel("Data").fill("2030-10-07")
+  await windowForm.getByLabel("Data").fill(day(7))
   await windowForm.getByLabel("Od").fill("12:00")
   await windowForm.getByLabel("Do").fill("12:40")
   await windowForm.getByLabel("Lista").click()

@@ -1,10 +1,9 @@
 import { describe, expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { enrollTeam } from "@/server/enrollment.server"
 import { withExamLock } from "@/server/exam-lock.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays, TEST_NOW } from "./fixtures"
 
 const numbers = (from: number, count: number) =>
   Array.from({ length: count }, (_, i) => String(from + i))
@@ -17,7 +16,7 @@ describe("enrollTeam", () => {
       rosters: { g1: { students, slots: [1, 2, 3, 4, 5].map((d) => inDays(d)) } },
     })
     const teams = Array.from({ length: 25 }, (_, i) => [students[2 * i]!, students[2 * i + 1]!])
-    const requests = [...teams, ...teams].map((team) => enrollTeam(examId, team))
+    const requests = [...teams, ...teams].map((team) => enroll(examId, team))
 
     const results = await Promise.all(requests)
 
@@ -37,7 +36,7 @@ describe("enrollTeam", () => {
         g1: { students: ["11", "12"], slots: [new Date("2020-01-01T09:00:00Z"), inDays(3)] },
       },
     })
-    const result = await enrollTeam(examId, ["12", "11"])
+    const result = await enroll(examId, ["12", "11"])
     expect(result).toMatchObject({
       ok: true,
       ticket: {
@@ -58,11 +57,11 @@ describe("enrollTeam", () => {
         g2: { students: ["22"], slots: [inDays(2)] },
       },
     })
-    expect(await enrollTeam(examId, ["21", "22"])).toMatchObject({
+    expect(await enroll(examId, ["21", "22"])).toMatchObject({
       ok: false,
       code: "DIFFERENT_ROSTER",
     })
-    expect(await enrollTeam(examId, ["21", "99"])).toMatchObject({
+    expect(await enroll(examId, ["21", "99"])).toMatchObject({
       ok: false,
       code: "NOT_ON_ROSTER",
     })
@@ -70,7 +69,7 @@ describe("enrollTeam", () => {
   })
 
   test("nieistniejące zaliczenie", async () => {
-    expect(await enrollTeam("00000000-0000-4000-8000-000000000000", ["1"])).toEqual({
+    expect(await enroll("00000000-0000-4000-8000-000000000000", ["1"])).toEqual({
       ok: false,
       code: "NOT_FOUND",
     })
@@ -81,11 +80,11 @@ test("przed startem zapisów zapis jest odrzucany, potem przechodzi", async () =
   const { examId } = await createExam({
     rosters: { g1: { students: ["31"], slots: [inDays(3)] } },
   })
-  const opensAt = new Date(Date.now() + 60 * 60_000)
+  const opensAt = new Date(TEST_NOW.getTime() + 60 * 60_000)
   await db.exam.update({ where: { id: examId }, data: { enrollmentOpensAt: opensAt } })
-  expect(await enrollTeam(examId, ["31"])).toEqual({ ok: false, code: "NOT_OPEN_YET", opensAt })
+  expect(await enroll(examId, ["31"])).toEqual({ ok: false, code: "NOT_OPEN_YET", opensAt })
   expect(
-    await enrollTeam(examId, ["31"], {}, { now: () => new Date(opensAt.getTime() + 1) }),
+    await enroll(examId, ["31"], {}, { now: () => new Date(opensAt.getTime() + 1) }),
   ).toMatchObject({
     ok: true,
   })
@@ -110,7 +109,7 @@ test("„teraz” liczy się po uzyskaniu blokady: kto czekał przez moment otwa
 
   let clock = new Date(opensAt.getTime() - 500)
   const lock = await holdLock(examId)
-  const pending = enrollTeam(examId, ["41"], {}, { now: () => clock })
+  const pending = enroll(examId, ["41"], {}, { now: () => clock })
   await new Promise((resolve) => setTimeout(resolve, 200))
   clock = new Date(opensAt.getTime() + 2000)
   lock.release()
@@ -122,7 +121,7 @@ test("„teraz” liczy się po uzyskaniu blokady: kto czekał przez moment otwa
 test("przekroczenie czasu pod blokadą daje BUSY zamiast wyjątku", async () => {
   const { examId } = await createExam({ rosters: { g1: { students: ["51"], slots: [inDays(3)] } } })
   const lock = await holdLock(examId)
-  const pending = enrollTeam(examId, ["51"], {}, { timeout: 300 })
+  const pending = enroll(examId, ["51"], {}, { timeout: 300 })
   await new Promise((resolve) => setTimeout(resolve, 500))
   lock.release()
   await lock.done

@@ -1,8 +1,6 @@
 import { expect, test } from "vitest"
 
-import { enrollTeam } from "@/server/enrollment.server"
-
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 /** Pomiar ręczny: `LOAD=200 pnpm vitest run tests/db/enrollment-load.test.ts --silent=false`; wyniki w issue 06. */
 const requests = Number(process.env.LOAD)
@@ -26,7 +24,7 @@ test.runIf(requests > 0)(
       const results = await Promise.all(
         students.slice(0, requests).map(async (s) => {
           const t = performance.now()
-          const outcome = await enrollTeam(examId, [s])
+          const outcome = await enroll(examId, [s])
           return { code: outcome.ok ? "OK" : outcome.code, ms: performance.now() - t }
         }),
       )

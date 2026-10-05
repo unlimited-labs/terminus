@@ -1,9 +1,13 @@
+import { warsawDateTime } from "../src/domain/slots.ts"
+import { warsawDay } from "../src/domain/time.ts"
 import { db } from "../src/server/db.server.ts"
 
-import { E2E, type E2EState } from "./config.ts"
+import { dayOf, E2E, type E2EState } from "./config.ts"
 
+const baseDay = warsawDay(new Date(Date.now() + 30 * 86_400_000))
+const pad = (n: number) => String(n).padStart(2, "0")
 const at = (day: number, hour: number, minute = 0) =>
-  new Date(Date.UTC(2030, 9, day, hour - 2, minute))
+  warsawDateTime(dayOf(baseDay, day), `${pad(hour)}:${pad(minute)}`)
 
 async function createExam(
   ownerId: string,
@@ -53,104 +57,90 @@ async function createExam(
   return exam.id
 }
 
+type Student = [string, string, string]
+
+const BOARD: Student[] = [
+  ["500001", "Anna", "Adamska"],
+  ["500002", "Bartosz", "Bąk"],
+  ["500003", "Celina", "Cis"],
+]
+const STUDENT: Student[] = [
+  ["600001", "Ewa", "Ekiert"],
+  ["600002", "Filip", "Fik"],
+  ["600003", "Gosia", "Gil"],
+]
+const RACE: Student[] = [
+  ["900001", "Kamil", "Kos"],
+  ["900002", "Lena", "Lis"],
+  ["900003", "Marek", "Mak"],
+]
+
 export async function seed(): Promise<E2EState> {
   const owner = await db.user.findUniqueOrThrow({ where: { email: E2E.admin.email } })
-  const boardExamId = await createExam(
-    owner.id,
-    "Tablica E2E",
-    2,
-    [
-      ["500001", "Anna", "Adamska"],
-      ["500002", "Bartosz", "Bąk"],
-      ["500003", "Celina", "Cis"],
-    ],
-    [at(5, 9), at(5, 9, 20), at(5, 9, 40)],
-    [
+  const exam = (...args: Parameters<typeof createExam> extends [string, ...infer R] ? R : never) =>
+    createExam(owner.id, ...args)
+  const boardSlots = [at(5, 9), at(5, 9, 20), at(5, 9, 40)]
+  const board = () =>
+    exam("Tablica E2E", 2, BOARD, boardSlots, [
       ["500001", 0],
       ["500002", 1],
-    ],
-  )
-  const studentExamId = await createExam(
-    owner.id,
-    "Kolokwium E2E",
-    2,
-    [
-      ["600001", "Ewa", "Ekiert"],
-      ["600002", "Filip", "Fik"],
-      ["600003", "Gosia", "Gil"],
-    ],
-    [at(6, 10), at(6, 10, 20)],
-    [],
-  )
-  const fullExamId = await createExam(
-    owner.id,
-    "Pełne E2E",
-    1,
-    [
-      ["700001", "Hanna", "Hak"],
-      ["700002", "Igor", "Iwan"],
-    ],
-    [at(7, 8)],
-    [["700001", 0]],
-  )
-  const futureExamId = await createExam(
-    owner.id,
-    "Przyszłe E2E",
-    1,
-    [["800001", "Jan", "Jutro"]],
-    [at(8, 9)],
-    [],
-    at(1, 12),
-  )
-  const raceExamId = await createExam(
-    owner.id,
-    "Wyścig E2E",
-    1,
-    [
-      ["900001", "Kamil", "Kos"],
-      ["900002", "Lena", "Lis"],
-      ["900003", "Marek", "Mak"],
-    ],
-    [at(9, 9), at(9, 9, 20), at(10, 9, 40)],
-    [["900003", 2]],
-  )
-  const slotsExamId = await createExam(
-    owner.id,
-    "Sloty E2E",
-    1,
-    [["950001", "Nina", "Nowak"]],
-    [at(11, 9), at(11, 9, 20), at(11, 9, 40), at(12, 9)],
-    [["950001", 0]],
-  )
-  await db.exam.update({
-    where: { id: slotsExamId },
-    data: { fields: [{ id: "t", label: "Temat", required: false }] },
-  })
-  await db.enrollment.updateMany({
-    where: { examId: slotsExamId },
-    data: { answers: { t: "Robot" } },
-  })
-  const daysExamId = await createExam(
-    owner.id,
-    "Plansza E2E",
-    1,
-    [
-      ["960001", "Ola", "Olek"],
-      ["960002", "Piotr", "Pal"],
-    ],
-    [at(13, 9), at(14, 9)],
-    [["960001", 0]],
-  )
-  const doomedExamId = await createExam(owner.id, "Usuwane E2E", 1, [], [], [])
-  await db.$disconnect()
-  return {
-    boardExamId,
-    studentExamId,
-    fullExamId,
-    futureExamId,
-    raceExamId,
-    slotsExamId,
-    daysExamId,
-    doomedExamId,
+    ])
+  const slots = async () => {
+    const id = await exam(
+      "Sloty E2E",
+      1,
+      [["950001", "Nina", "Nowak"]],
+      [at(11, 9), at(11, 9, 20), at(11, 9, 40), at(12, 9)],
+      [["950001", 0]],
+    )
+    await db.exam.update({
+      where: { id },
+      data: { fields: [{ id: "t", label: "Temat", required: false }] },
+    })
+    await db.enrollment.updateMany({ where: { examId: id }, data: { answers: { t: "Robot" } } })
+    return id
   }
+  const race = () =>
+    exam("Wyścig E2E", 1, RACE, [at(9, 9), at(9, 9, 20), at(10, 9, 40)], [["900003", 2]])
+
+  const exams = {
+    boardMouse: await board(),
+    boardKeyboard: await exam("Tablica E2E", 2, BOARD, boardSlots, [
+      ["500001", 1],
+      ["500002", 0],
+    ]),
+    boardTeam: await exam("Tablica E2E", 2, BOARD, boardSlots, [["500001", 1]]),
+    exportDuplicate: await board(),
+    fields: await board(),
+    student: await exam("Kolokwium E2E", 2, STUDENT, [at(6, 10), at(6, 10, 20)], []),
+    rosters: await exam("Kolokwium E2E", 2, STUDENT, [at(6, 10), at(6, 10, 20)], []),
+    full: await exam(
+      "Pełne E2E",
+      1,
+      [
+        ["700001", "Hanna", "Hak"],
+        ["700002", "Igor", "Iwan"],
+      ],
+      [at(7, 8)],
+      [["700001", 0]],
+    ),
+    future: await exam("Przyszłe E2E", 1, [["800001", "Jan", "Jutro"]], [at(8, 9)], [], at(1, 12)),
+    raceRename: await race(),
+    raceDrag: await race(),
+    slotsDelete: await slots(),
+    slotsAnswers: await slots(),
+    days: await exam(
+      "Plansza E2E",
+      1,
+      [
+        ["960001", "Ola", "Olek"],
+        ["960002", "Piotr", "Pal"],
+      ],
+      [at(13, 9), at(14, 9)],
+      [["960001", 0]],
+    ),
+    doomed: await exam("Usuwane E2E", 1, [], [], []),
+  }
+  await db.$disconnect()
+  return { baseDay, exams }
 }

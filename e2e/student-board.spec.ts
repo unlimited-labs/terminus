@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test"
 
-import { login, state } from "./helpers.ts"
+import { dayLabel, exams, login } from "./helpers.ts"
 
 test("ostatni wolny slot dnia: „Pokaż na planszy” wraca na ten dzień i wyróżnia „Twój” slot", async ({
   page,
 }) => {
-  await page.goto(`/z/${state().daysExamId}`)
+  await page.goto(`/z/${exams().days}`)
   const days = page.getByRole("group", { name: "Dni" })
-  await expect(days.getByRole("button", { pressed: true })).toContainText("14.10")
+  await expect(days.getByRole("button", { pressed: true })).toContainText(dayLabel(14))
 
   await page.getByRole("button", { name: "Zapisz się" }).click()
   await page.getByLabel("Numer indeksu").fill("960002")
@@ -15,7 +15,7 @@ test("ostatni wolny slot dnia: „Pokaż na planszy” wraca na ten dzień i wyr
   await expect(page.getByRole("dialog")).toContainText("Piotr Pal")
 
   await page.getByRole("button", { name: "Pokaż na planszy" }).click()
-  await expect(days.getByRole("button", { pressed: true })).toContainText("14.10")
+  await expect(days.getByRole("button", { pressed: true })).toContainText(dayLabel(14))
   const mine = page.getByRole("button", { name: /Twój slot: Piotr Pal/ })
   await expect(mine).toContainText("Twój: Piotr Pal")
   await expect(mine).toHaveClass(/animate-slot-pulse/)
@@ -25,7 +25,7 @@ test("usunięte w trakcie zaliczenie: komunikat zamiast pustej strony", async ({
   page,
   browser,
 }) => {
-  const { doomedExamId } = state()
+  const doomedExamId = exams().doomed
   await page.clock.install()
   await page.goto(`/z/${doomedExamId}`)
   await expect(page.getByRole("heading", { name: "Usuwane E2E" })).toBeVisible()

@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test"
 
-import { state } from "./helpers.ts"
+import { exams } from "./helpers.ts"
 
 test("zapis zespołu, bilet, a ponowne wejście pokazuje ten sam slot", async ({ page }) => {
-  await page.goto(`/z/${state().studentExamId}`)
+  await page.goto(`/z/${exams().student}`)
   await expect(page.getByRole("heading", { name: "Kolokwium E2E" })).toBeVisible()
 
   await page.getByRole("button", { name: "Zapisz się" }).click()
@@ -34,7 +34,7 @@ test("zapis zespołu, bilet, a ponowne wejście pokazuje ten sam slot", async ({
 })
 
 test("indeksu nie ma na liście — komunikat i podświetlone pole", async ({ page }) => {
-  await page.goto(`/z/${state().studentExamId}`)
+  await page.goto(`/z/${exams().student}`)
   await page.getByRole("button", { name: "Zapisz się" }).click()
   await page.getByLabel("Osoba 1 — numer indeksu").fill("123456")
   await page.getByRole("button", { name: "Losuj slot" }).click()
@@ -45,7 +45,7 @@ test("indeksu nie ma na liście — komunikat i podświetlone pole", async ({ pa
 test("brak wolnych slotów: zapisany indeks sprawdza swój slot, niezapisany dostaje komunikat", async ({
   page,
 }) => {
-  await page.goto(`/z/${state().fullExamId}`)
+  await page.goto(`/z/${exams().full}`)
   await expect(page.getByText("Brak wolnych slotów.")).toBeVisible()
   await expect(page.getByRole("button", { name: "Zapisz się" })).toHaveCount(0)
 
@@ -62,7 +62,7 @@ test("brak wolnych slotów: zapisany indeks sprawdza swój slot, niezapisany dos
 test("przed startem zapisów: harmonogram i komunikat z datą, bez przycisku zapisu", async ({
   page,
 }) => {
-  await page.goto(`/z/${state().futureExamId}`)
+  await page.goto(`/z/${exams().future}`)
   await expect(page.getByRole("status")).toContainText("Zapisy ruszają")
   await expect(page.getByRole("status")).toContainText("12:00")
   await expect(page.getByRole("button", { name: "Zapisz się" })).toHaveCount(0)

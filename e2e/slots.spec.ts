@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { login, state } from "./helpers.ts"
+import { exams, login } from "./helpers.ts"
 
 const slot = (page: Page, time: string) => page.locator("li", { hasText: time })
 
@@ -9,7 +9,7 @@ test.beforeEach(async ({ page }) => {
 })
 
 test("usunięcie slotu i wolnych slotów dnia pyta w dialogu", async ({ page }) => {
-  await page.goto(`/zaliczenia/${state().slotsExamId}`)
+  await page.goto(`/zaliczenia/${exams().slotsDelete}`)
 
   await slot(page, "09:20–09:40").getByRole("button", { name: "Usuń" }).click()
   await expect(page.getByRole("dialog", { name: "Usunąć slot?" })).toBeVisible()
@@ -34,13 +34,13 @@ test("nieudane kopiowanie linku pokazuje toast z błędem", async ({ page }) => 
   await page.addInitScript(() => {
     navigator.clipboard.writeText = () => Promise.reject(new Error("brak zgody"))
   })
-  await page.goto(`/zaliczenia/${state().slotsExamId}`)
+  await page.goto(`/zaliczenia/${exams().slotsAnswers}`)
   await page.getByRole("button", { name: "Kopiuj link" }).click()
   await expect(page.getByText(/Nie udało się skopiować/)).toBeVisible()
 })
 
 test("podwójne kliknięcie Zapisz przy odpowiedziach wysyła jedno żądanie", async ({ page }) => {
-  await page.goto(`/zaliczenia/${state().slotsExamId}/tablica`)
+  await page.goto(`/zaliczenia/${exams().slotsAnswers}/tablica`)
   await page.getByRole("button", { name: "Zmień odpowiedzi zespołu" }).click()
   await page.getByLabel("Temat").fill("Dron")
 

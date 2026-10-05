@@ -1,11 +1,9 @@
 import { expect, test } from "@playwright/test"
 
-import { dragWithKeyboard, dragWithMouse, login, state } from "./helpers.ts"
+import { dragWithKeyboard, dragWithMouse, exams, login, openBoard } from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
-  await page.goto(`/zaliczenia/${state().boardExamId}/tablica`)
-  await expect(page.getByRole("heading", { name: /tablica zapisów/ })).toBeVisible()
 })
 
 const row = (page: import("@playwright/test").Page, time: string) =>
@@ -14,6 +12,7 @@ const pool = (page: import("@playwright/test").Page) =>
   page.getByRole("complementary", { name: "Niezapisani" })
 
 test("myszą: ręczny zapis z Niezapisanych, Cofnij, zamiana osób", async ({ page }) => {
+  await openBoard(page, exams().boardMouse)
   await dragWithMouse(page, pool(page).getByText("500003"), row(page, "09:40–10:00"))
   await expect(page.getByText("Zapisano ręcznie.")).toBeVisible()
   await expect(row(page, "09:40–10:00")).toContainText("Celina Cis")
@@ -32,6 +31,7 @@ test("myszą: ręczny zapis z Niezapisanych, Cofnij, zamiana osób", async ({ pa
 })
 
 test("klawiaturą: przeniesienie osoby do wolnego slotu", async ({ page }) => {
+  await openBoard(page, exams().boardKeyboard)
   const tile = page.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
   await dragWithKeyboard(page, tile, row(page, "09:40–10:00"))
   await expect(page.getByText("Przeniesiono.")).toBeVisible()
@@ -40,9 +40,8 @@ test("klawiaturą: przeniesienie osoby do wolnego slotu", async ({ page }) => {
   await expect(page.getByText(/^Aby podnieść, naciśnij spację/)).toBeAttached()
 })
 
-test("myszą: cały zespół uchwytem na wolny slot (po poprzednich testach: Anna 9:20, 9:00 wolny)", async ({
-  page,
-}) => {
+test("myszą: cały zespół uchwytem na wolny slot", async ({ page }) => {
+  await openBoard(page, exams().boardTeam)
   const handle = row(page, "09:20–09:40").getByRole("button", { name: /Przenieś cały zespół/ })
   await dragWithMouse(page, handle, row(page, "09:00–09:20"))
   await expect(page.getByText("Przeniesiono zespół.")).toBeVisible()
