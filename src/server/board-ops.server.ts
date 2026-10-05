@@ -54,7 +54,7 @@ async function savePerson(
     })
   }
   if (prev.slotId === next.slotId) return
-  const answers = teamAnswers ?? prev.answers
+  const answers = teamAnswers ?? next.answers
   if (next.slotId === null) await tx.enrollment.delete({ where: key })
   else if (prev.slotId === null) {
     await tx.enrollment.create({

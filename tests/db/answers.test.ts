@@ -72,3 +72,45 @@ test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zes
   expect(await answersOf("1")).toEqual({ title: "Dron", notes: "spóźni się" })
   expect(await answersOf("2")).toEqual({ title: "Dron", notes: "spóźni się" })
 })
+
+test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
+  const { examId, ownerId, answersOf } = await setup()
+  const enrolled = await enrollTeam(examId, ["1"], { title: "Robot", notes: "x" })
+  if (!enrolled.ok) throw new Error(enrolled.code)
+
+  const removed = await runBoardCommand(examId, ownerId, {
+    kind: "move",
+    studentNumber: "1",
+    toSlotId: null,
+  })
+  if (!removed.ok) throw new Error(removed.code)
+  expect(await answersOf("1")).toBeUndefined()
+
+  expect(await runBoardCommand(examId, ownerId, removed.inverse)).toMatchObject({ ok: true })
+  expect(await answersOf("1")).toEqual({ title: "Robot", notes: "x" })
+})
+
+test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedzi", async () => {
+  const { examId, ownerId, answersOf } = await setup()
+  const enrolled = await enrollTeam(examId, ["1", "2"], { title: "Robot" })
+  if (!enrolled.ok) throw new Error(enrolled.code)
+
+  const inverses = []
+  for (const studentNumber of ["1", "2"]) {
+    const removed = await runBoardCommand(examId, ownerId, {
+      kind: "move",
+      studentNumber,
+      toSlotId: null,
+    })
+    if (!removed.ok) throw new Error(removed.code)
+    inverses.push(removed.inverse)
+  }
+  for (const inverse of inverses.toReversed()) await runBoardCommand(examId, ownerId, inverse)
+
+  expect([await answersOf("1"), await answersOf("2")]).toEqual([
+    { title: "Robot" },
+    { title: "Robot" },
+  ])
+  const slots = await db.enrollment.findMany({ where: { examId }, select: { slotId: true } })
+  expect(slots).toEqual([{ slotId: enrolled.slotId }, { slotId: enrolled.slotId }])
+})

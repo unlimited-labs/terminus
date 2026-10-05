@@ -1,8 +1,11 @@
+import type { Answers } from "./fields.ts"
+
 export type BoardPerson = {
   studentNumber: string
   slotId: string | null
   firstName: string
   lastName: string
+  answers?: Answers
 }
 
 export type BoardState<P extends BoardPerson = BoardPerson> = {
@@ -11,9 +14,9 @@ export type BoardState<P extends BoardPerson = BoardPerson> = {
   people: P[]
 }
 
-/** `toSlotId: null` to panel "Niezapisani". */
+/** `toSlotId: null` to panel "Niezapisani"; `answers` niesie Cofnij wypisania. */
 export type BoardCommand =
-  | { kind: "move"; studentNumber: string; toSlotId: string | null }
+  | { kind: "move"; studentNumber: string; toSlotId: string | null; answers?: Answers }
   | { kind: "swapPeople"; a: string; b: string }
   | { kind: "swapSlots"; a: string; b: string }
   | { kind: "rename"; studentNumber: string; firstName: string; lastName: string }
@@ -46,8 +49,15 @@ function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step
   if (p.slotId === to) return "NO_CHANGE"
   if (to !== null && teamSize(s, to) >= s.maxTeamSize) return "SLOT_FULL"
   return {
-    people: s.people.map((q) => (q === p ? { ...q, slotId: to } : q)),
-    inverse: { kind: "move", studentNumber: p.studentNumber, toSlotId: p.slotId },
+    people: s.people.map((q) =>
+      q === p ? { ...q, slotId: to, ...(c.answers && { answers: c.answers }) } : q,
+    ),
+    inverse: {
+      kind: "move",
+      studentNumber: p.studentNumber,
+      toSlotId: p.slotId,
+      ...(to === null && p.answers && { answers: p.answers }),
+    },
   }
 }
 
