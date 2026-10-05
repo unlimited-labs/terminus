@@ -67,8 +67,14 @@ function StudentPage() {
   const { data: schedule } = useSuspenseQuery(scheduleQuery(examId))
   const [open, setOpen] = useState(false)
   const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
-  const [pulse, setPulse] = useState(false)
-  if (!schedule) return null
+  const [shown, setShown] = useState(0)
+  if (!schedule) {
+    return (
+      <p role="status" className="mx-auto max-w-3xl px-4 pt-6">
+        Tego zaliczenia już nie ma — prowadzący je usunął.
+      </p>
+    )
+  }
 
   const mode = entryMode(schedule, mine !== null)
 
@@ -82,7 +88,12 @@ function StudentPage() {
         <p className="text-muted-foreground">Prowadzący: {schedule.ownerName}</p>
       </header>
       {!mine && <EntryNotice schedule={schedule} anyFree={mode.anyFree} />}
-      <ScheduleBoard schedule={schedule} mySlotId={mine?.slotId ?? null} pulse={pulse} />
+      <ScheduleBoard
+        key={shown}
+        schedule={schedule}
+        mySlotId={mine?.slotId ?? null}
+        pulse={shown > 0}
+      />
       {mode.open && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
           <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
@@ -103,7 +114,7 @@ function StudentPage() {
         onEnrolled={(slotId, ticket) => setMine({ slotId, ticket })}
         onShowOnBoard={() => {
           setOpen(false)
-          setPulse(true)
+          setShown(shown + 1)
         }}
       />
     </div>

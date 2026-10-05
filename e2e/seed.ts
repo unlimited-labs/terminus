@@ -130,6 +130,27 @@ export async function seed(): Promise<E2EState> {
     where: { examId: slotsExamId },
     data: { answers: { t: "Robot" } },
   })
+  const daysExamId = await createExam(
+    owner.id,
+    "Plansza E2E",
+    1,
+    [
+      ["960001", "Ola", "Olek"],
+      ["960002", "Piotr", "Pal"],
+    ],
+    [at(13, 9), at(14, 9)],
+    [["960001", 0]],
+  )
+  const doomedExamId = await createExam(owner.id, "Usuwane E2E", 1, [], [], [])
   await db.$disconnect()
-  return { boardExamId, studentExamId, fullExamId, futureExamId, raceExamId, slotsExamId }
+  return {
+    boardExamId,
+    studentExamId,
+    fullExamId,
+    futureExamId,
+    raceExamId,
+    slotsExamId,
+    daysExamId,
+    doomedExamId,
+  }
 }

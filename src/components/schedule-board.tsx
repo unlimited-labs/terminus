@@ -22,6 +22,7 @@ function tone(slot: Slot, now: Date, mine: boolean): keyof typeof TONES {
   return isFreeSlot(slot, now) ? "free" : "past"
 }
 
+/** `pulse`: plansza startuje na dniu „Twojego” slotu, bez filtra listy, a kafelek pulsuje. */
 export function ScheduleBoard({
   schedule,
   mySlotId,
@@ -31,8 +32,9 @@ export function ScheduleBoard({
   mySlotId: string | null
   pulse: boolean
 }) {
+  const shown = pulse ? schedule.slots.find((s) => s.id === mySlotId) : undefined
   const [rosterId, setRosterId] = useState<string | null>(null)
-  const [chosenDay, setChosenDay] = useState<string | null>(null)
+  const [chosenDay, setChosenDay] = useState(shown ? warsawDay(shown.startsAt) : null)
   const multi = schedule.rosters.length > 1
   const visible = schedule.slots.filter((s) => rosterId === null || s.rosterId === rosterId)
   const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt)).values()]
@@ -61,15 +63,14 @@ export function ScheduleBoard({
       )}
       <Legend />
       {days.length > 1 && (
-        <div role="tablist" aria-label="Dni" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <div role="group" aria-label="Dni" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {days.map((d) => (
             <button
               key={warsawDay(d[0]!.startsAt)}
               type="button"
-              role="tab"
-              aria-selected={d === day}
+              aria-pressed={d === day}
               onClick={() => setChosenDay(warsawDay(d[0]!.startsAt))}
-              className="grid shrink-0 rounded-xl border bg-card px-4 py-2 text-left aria-selected:border-primary aria-selected:bg-primary aria-selected:text-primary-foreground"
+              className="grid shrink-0 rounded-xl border bg-card px-4 py-2 text-left aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
             >
               <span className="font-bold capitalize">{formatDayShort(d[0]!.startsAt)}</span>
               <span className="text-xs opacity-80 tabular-nums">
@@ -160,6 +161,10 @@ function DayTimeline({
   )
 }
 
+const slotText = (kind: keyof typeof TONES, names: string) =>
+  ({ free: "wolny", past: "", mine: `Twój: ${names}`, taken: names })[kind]
+const A11Y_KIND = { mine: "Twój slot", taken: "zajęty", free: "wolny", past: "miniony" }
+
 function SlotBlock({
   slot,
   kind,
@@ -177,7 +182,7 @@ function SlotBlock({
 }) {
   const [open, setOpen] = useState(false)
   const names = slot.team.map((p) => `${p.firstName} ${p.lastName}`).join(", ")
-  const label = kind === "free" ? "wolny" : kind === "past" ? "" : names
+  const label = slotText(kind, names)
   const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${TONES[kind]} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
@@ -195,7 +200,7 @@ function SlotBlock({
         <button
           type="button"
           aria-expanded={open}
-          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}: ${names}`}
+          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}, ${A11Y_KIND[kind]}: ${names}`}
           onClick={() => setOpen(!open)}
           className={className}
           style={style}

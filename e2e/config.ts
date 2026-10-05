@@ -15,6 +15,8 @@ export const e2eStateSchema = z.object({
   futureExamId: z.uuid(),
   raceExamId: z.uuid(),
   slotsExamId: z.uuid(),
+  daysExamId: z.uuid(),
+  doomedExamId: z.uuid(),
 })
 
 export type E2EState = z.infer<typeof e2eStateSchema>
