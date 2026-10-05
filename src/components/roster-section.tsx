@@ -16,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { currentRosterId } from "@/components/roster-choice"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { errorMessage } from "@/messages.pl"
@@ -124,8 +125,7 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
     },
     validators: { onSubmit: addEntrySchema },
     onSubmit: async ({ value, formApi }) => {
-      // Bez widocznego wyboru (0–1 list) liczy się bieżąca lista, nie wartość sprzed usunięcia lub importu.
-      const rosterId = exam.rosters.length > 1 ? value.rosterId : (exam.rosters[0]?.id ?? "")
+      const rosterId = currentRosterId(exam.rosters, value.rosterId)
       if ((await add.mutateAsync(addEntrySchema.parse({ ...value, rosterId }))).ok) formApi.reset()
     },
   })

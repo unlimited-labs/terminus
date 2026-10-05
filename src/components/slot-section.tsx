@@ -3,6 +3,7 @@ import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { useAppForm } from "@/components/form"
+import { currentRosterId } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
@@ -57,8 +58,7 @@ function WindowForm({ exam }: { exam: ExamDetail }) {
     },
     validators: { onSubmit: windowSchema },
     onSubmit: ({ value }) => {
-      // Bez widocznego wyboru (1 lista) liczy się bieżąca lista, nie wartość sprzed usunięcia innej.
-      const rosterId = exam.rosters.length > 1 ? value.rosterId : exam.rosters[0]!.id
+      const rosterId = currentRosterId(exam.rosters, value.rosterId)
       return add.mutateAsync(windowSchema.parse({ ...value, rosterId }))
     },
   })
