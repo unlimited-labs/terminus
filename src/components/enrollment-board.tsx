@@ -31,9 +31,11 @@ function doneMessage(command: BoardCommand, exam: ExamDetail) {
 function useBoardCommand(exam: ExamDetail) {
   const queryClient = useQueryClient()
   const key = ["exam", exam.id]
-  const restore = (previous: ExamDetail | undefined) => queryClient.setQueryData(key, previous)
 
+  // Polecenia idą do serwera po kolei; po każdym (także nieudanym) tablica wraca do stanu z serwera,
+  // zamiast przywracać migawkę, która skasowałaby optymistyczne zmiany kolejnych przeciągnięć.
   const mutation = useMutation({
+    scope: { id: `board:${exam.id}` },
     mutationFn: (command: BoardCommand) =>
       applyBoardCommand({ data: { examId: exam.id, command } }),
     onMutate: async (command) => {
@@ -47,7 +49,6 @@ function useBoardCommand(exam: ExamDetail) {
     },
     onSuccess: (result, command, context) => {
       if (!result.ok) {
-        restore(context.previous)
         toast.error(errorMessage(result))
         return
       }
@@ -60,10 +61,12 @@ function useBoardCommand(exam: ExamDetail) {
         },
       )
     },
-    onError: (error, _command, context) => {
+    onError: (error) => {
       console.error(error)
-      restore(context?.previous)
       toast.error(UNEXPECTED_ERROR)
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key })
     },
   })
 

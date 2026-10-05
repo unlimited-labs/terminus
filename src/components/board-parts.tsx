@@ -1,10 +1,11 @@
 import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
 import { GripVerticalIcon, PencilIcon } from "lucide-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { parseDragId, type BoardCommand } from "@/domain/board"
-import { warsawTime } from "@/domain/time"
+import { formatDayShort, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 type Person = ExamDetail["people"][number]
@@ -25,6 +26,7 @@ function PersonTile({
   onCommand: (command: BoardCommand) => void
 }) {
   const [editing, setEditing] = useState(false)
+  const refocusPencil = useRef(false)
   const drag = useDraggable({
     id: `p:${person.studentNumber}`,
     type: "person",
@@ -43,7 +45,10 @@ function PersonTile({
     return (
       <RenameForm
         person={person}
-        onDone={() => setEditing(false)}
+        onDone={() => {
+          refocusPencil.current = true
+          setEditing(false)
+        }}
         onSave={(firstName, lastName) =>
           onCommand({ kind: "rename", studentNumber: person.studentNumber, firstName, lastName })
         }
@@ -76,9 +81,18 @@ function PersonTile({
       )}
       {!unenrolled && (
         <button
+          ref={(el) => {
+            if (el && refocusPencil.current) {
+              refocusPencil.current = false
+              el.focus()
+            }
+          }}
           type="button"
           aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
           onPointerDown={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") e.stopPropagation()
+          }}
           onClick={() => setEditing(true)}
           className="rounded p-0.5 text-muted-foreground hover:text-foreground"
         >
@@ -102,13 +116,15 @@ function RenameForm({
   const [lastName, setLastName] = useState(person.lastName)
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") onDone()
-    if (e.key === "Enter" && firstName.trim() && lastName.trim()) {
-      onSave(firstName.trim(), lastName.trim())
-      onDone()
-    }
+  }
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!firstName.trim() || !lastName.trim()) return
+    onSave(firstName.trim(), lastName.trim())
+    onDone()
   }
   return (
-    <div className="flex shrink-0 gap-1 rounded-lg border bg-card p-1">
+    <form onSubmit={onSubmit} className="flex shrink-0 gap-1 rounded-lg border bg-card p-1">
       <Input
         aria-label="Imię"
         value={firstName}
@@ -124,7 +140,10 @@ function RenameForm({
         onKeyDown={onKeyDown}
         className="h-7 w-28"
       />
-    </div>
+      <Button type="submit" size="sm" className="h-7">
+        Zapisz
+      </Button>
+    </form>
   )
 }
 
@@ -209,7 +228,7 @@ export function SlotRow({
   onCommand: (command: BoardCommand) => void
   extra?: React.ReactNode
 }) {
-  const label = `slot ${dayLabel ?? ""} ${warsawTime(slot.startsAt)}`.replace(/\s+/g, " ")
+  const label = `slot ${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}`
   const { attach, attachHandle, tone } = useSlotDnd(slot, team, maxTeamSize, label)
   return (
     <tr
