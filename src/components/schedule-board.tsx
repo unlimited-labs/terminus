@@ -1,5 +1,7 @@
 import { useState } from "react"
 
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+
 import { isFreeSlot } from "@/domain/schedule"
 import { formatDayShort, formatDayTime, warsawDay, warsawTime } from "@/domain/time"
 import type { Schedule } from "@/server/schedule"
@@ -9,16 +11,25 @@ type Slot = Schedule["slots"][number]
 const HOUR = 3_600_000
 const MIN_SLOT_PX = 40
 
-const TONES = {
-  mine: "bg-primary text-primary-foreground",
-  taken: "bg-taken",
-  free: "border-2 border-free bg-card text-free",
-  past: "bg-card text-muted-foreground",
+/** Rodzaj kafelka: kolor, tekst w kafelku i nazwa dla czytnika ekranu. */
+const KINDS = {
+  mine: {
+    tone: "bg-primary text-primary-foreground",
+    text: (n: string) => `Twój: ${n}`,
+    a11y: "Twój slot",
+  },
+  taken: { tone: "bg-taken", text: (n: string) => n, a11y: "zajęty" },
+  free: { tone: "border-2 border-free bg-card text-free", text: () => "wolny", a11y: "wolny" },
+  past: { tone: "bg-card text-muted-foreground", text: () => "", a11y: "miniony" },
 }
+type Kind = keyof typeof KINDS
 
-function tone(slot: Slot, now: Date, mine: boolean): keyof typeof TONES {
-  if (mine) return "mine"
-  if (slot.team.length > 0) return "taken"
+const PRESSED =
+  "border bg-card data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground"
+
+/** „Twój” tylko gdy w slocie widać już zespół (plansza mogła się jeszcze nie odświeżyć po zapisie). */
+function tone(slot: Slot, now: Date, mine: boolean): Kind {
+  if (slot.team.length > 0) return mine ? "mine" : "taken"
   return isFreeSlot(slot, now) ? "free" : "past"
 }
 
@@ -47,38 +58,40 @@ export function ScheduleBoard({
   return (
     <section aria-label="Harmonogram" className="grid gap-3">
       {multi && (
-        <div role="group" aria-label="Lista" className="flex flex-wrap gap-2">
-          {[{ id: null, name: "Wszystkie" }, ...schedule.rosters].map((r) => (
-            <button
-              key={r.id ?? "all"}
-              type="button"
-              aria-pressed={rosterId === r.id}
-              onClick={() => setRosterId(r.id)}
-              className="rounded-lg border bg-card px-3 py-1 text-sm font-semibold aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
-            >
+        <ToggleGroup
+          aria-label="Lista"
+          value={[rosterId ?? ""]}
+          onValueChange={([next]) => next !== undefined && setRosterId(next || null)}
+          className="flex-wrap"
+        >
+          {[{ id: "", name: "Wszystkie" }, ...schedule.rosters].map((r) => (
+            <ToggleGroupItem key={r.id} value={r.id} className={`font-semibold ${PRESSED}`}>
               {r.name}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       )}
       <Legend />
       {days.length > 1 && (
-        <div role="group" aria-label="Dni" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+        <ToggleGroup
+          aria-label="Dni"
+          value={day[0] ? [warsawDay(day[0].startsAt)] : []}
+          onValueChange={([next]) => next && setChosenDay(next)}
+          className="-mx-4 w-auto overflow-x-auto px-4 pb-1"
+        >
           {days.map((d) => (
-            <button
+            <ToggleGroupItem
               key={warsawDay(d[0]!.startsAt)}
-              type="button"
-              aria-pressed={d === day}
-              onClick={() => setChosenDay(warsawDay(d[0]!.startsAt))}
-              className="grid shrink-0 rounded-xl border bg-card px-4 py-2 text-left aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground"
+              value={warsawDay(d[0]!.startsAt)}
+              className={`grid h-auto rounded-xl px-4 py-2 text-left ${PRESSED}`}
             >
               <span className="font-bold capitalize">{formatDayShort(d[0]!.startsAt)}</span>
               <span className="text-xs opacity-80 tabular-nums">
                 wolne: {d.filter((s) => isFreeSlot(s, schedule.now)).length}
               </span>
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       )}
       {day[0] && (
         <DayTimeline
@@ -161,10 +174,6 @@ function DayTimeline({
   )
 }
 
-const slotText = (kind: keyof typeof TONES, names: string) =>
-  ({ free: "wolny", past: "", mine: `Twój: ${names}`, taken: names })[kind]
-const A11Y_KIND = { mine: "Twój slot", taken: "zajęty", free: "wolny", past: "miniony" }
-
 function SlotBlock({
   slot,
   kind,
@@ -174,7 +183,7 @@ function SlotBlock({
   height,
 }: {
   slot: Slot
-  kind: keyof typeof TONES
+  kind: Kind
   pulse: boolean
   rosterName?: string
   top: number
@@ -182,8 +191,8 @@ function SlotBlock({
 }) {
   const [open, setOpen] = useState(false)
   const names = slot.team.map((p) => `${p.firstName} ${p.lastName}`).join(", ")
-  const label = slotText(kind, names)
-  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${TONES[kind]} ${
+  const label = KINDS[kind].text(names)
+  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${KINDS[kind].tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
   const body = (
@@ -200,7 +209,7 @@ function SlotBlock({
         <button
           type="button"
           aria-expanded={open}
-          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}, ${A11Y_KIND[kind]}: ${names}`}
+          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}, ${KINDS[kind].a11y}: ${names}`}
           onClick={() => setOpen(!open)}
           className={className}
           style={style}

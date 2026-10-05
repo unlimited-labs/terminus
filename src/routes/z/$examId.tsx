@@ -67,7 +67,7 @@ function StudentPage() {
   const { data: schedule } = useSuspenseQuery(scheduleQuery(examId))
   const [open, setOpen] = useState(false)
   const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
-  const [shown, setShown] = useState(0)
+  const [showCount, setShowCount] = useState(0)
   if (!schedule) {
     return (
       <p role="status" className="mx-auto max-w-3xl px-4 pt-6">
@@ -89,10 +89,10 @@ function StudentPage() {
       </header>
       {!mine && <EntryNotice schedule={schedule} anyFree={mode.anyFree} />}
       <ScheduleBoard
-        key={shown}
+        key={showCount}
         schedule={schedule}
         mySlotId={mine?.slotId ?? null}
-        pulse={shown > 0}
+        pulse={showCount > 0}
       />
       {mode.open && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
@@ -114,7 +114,7 @@ function StudentPage() {
         onEnrolled={(slotId, ticket) => setMine({ slotId, ticket })}
         onShowOnBoard={() => {
           setOpen(false)
-          setShown(shown + 1)
+          setShowCount(showCount + 1)
         }}
       />
     </div>
