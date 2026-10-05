@@ -23,8 +23,12 @@ import { deleteExam, updateExam } from "@/server/exams"
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
   const copy = async () => {
-    await navigator.clipboard.writeText(new URL(path, window.location.origin).href)
-    toast.success("Skopiowano link.")
+    try {
+      await navigator.clipboard.writeText(new URL(path, window.location.origin).href)
+      toast.success("Skopiowano link.")
+    } catch {
+      toast.error("Nie udało się skopiować — zaznacz link i skopiuj go ręcznie.")
+    }
   }
   return (
     <div className="flex flex-wrap items-center gap-2">

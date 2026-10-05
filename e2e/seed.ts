@@ -114,6 +114,22 @@ export async function seed(): Promise<E2EState> {
     [at(9, 9), at(9, 9, 20), at(10, 9, 40)],
     [["900003", 2]],
   )
+  const slotsExamId = await createExam(
+    owner.id,
+    "Sloty E2E",
+    1,
+    [["950001", "Nina", "Nowak"]],
+    [at(11, 9), at(11, 9, 20), at(11, 9, 40), at(12, 9)],
+    [["950001", 0]],
+  )
+  await db.exam.update({
+    where: { id: slotsExamId },
+    data: { fields: [{ id: "t", label: "Temat", required: false }] },
+  })
+  await db.enrollment.updateMany({
+    where: { examId: slotsExamId },
+    data: { answers: { t: "Robot" } },
+  })
   await db.$disconnect()
-  return { boardExamId, studentExamId, fullExamId, futureExamId, raceExamId }
+  return { boardExamId, studentExamId, fullExamId, futureExamId, raceExamId, slotsExamId }
 }

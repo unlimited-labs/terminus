@@ -1,5 +1,5 @@
 import { PencilIcon } from "lucide-react"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -24,11 +24,25 @@ export function SlotAnswers({
     setDraft(null)
     toast.success("Zapisano odpowiedzi zespołu.")
   })
+  // Stan mutacji dociera do komponentu asynchronicznie, a drugie kliknięcie bywa szybsze.
+  const sending = useRef(false)
+  const submit = (values: Answers) => {
+    if (sending.current) return
+    sending.current = true
+    save.mutate(
+      { examId, slotId, answers: values },
+      {
+        onSettled: () => {
+          sending.current = false
+        },
+      },
+    )
+  }
 
   if (draft) {
     const onKeyDown = (e: React.KeyboardEvent) => {
       if (e.key === "Escape") setDraft(null)
-      if (e.key === "Enter") save.mutate({ examId, slotId, answers: draft })
+      if (e.key === "Enter") submit(draft)
     }
     return (
       <div className="mt-1 flex flex-wrap gap-2">
@@ -43,7 +57,7 @@ export function SlotAnswers({
             className="h-7 w-48"
           />
         ))}
-        <Button size="xs" onClick={() => save.mutate({ examId, slotId, answers: draft })}>
+        <Button size="xs" disabled={save.isPending} onClick={() => submit(draft)}>
           Zapisz
         </Button>
       </div>

@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ConfirmButton } from "@/components/confirm-button"
 import { useAppForm } from "@/components/form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,7 +56,11 @@ function WindowForm({ exam }: { exam: ExamDetail }) {
       minutes: exam.defaultSlotMinutes,
     },
     validators: { onSubmit: windowSchema },
-    onSubmit: ({ value }) => add.mutateAsync(windowSchema.parse(value)),
+    onSubmit: ({ value }) => {
+      // Bez widocznego wyboru (1 lista) liczy się bieżąca lista, nie wartość sprzed usunięcia innej.
+      const rosterId = exam.rosters.length > 1 ? value.rosterId : exam.rosters[0]!.id
+      return add.mutateAsync(windowSchema.parse({ ...value, rosterId }))
+    },
   })
   return (
     <form.AppForm>
@@ -128,14 +133,16 @@ function DaySlots({ exam, day, slots }: { exam: ExamDetail; day: string; slots: 
     <section className="grid gap-2">
       <div className="flex items-center gap-3 border-b pb-1">
         <h3 className="font-bold capitalize">{formatDayShort(slots[0]!.startsAt)}</h3>
-        <Button
-          variant="ghost"
-          size="xs"
-          className="ml-auto"
-          onClick={() => removeFree.mutate({ examId: exam.id, day })}
-        >
-          usuń wolne sloty
-        </Button>
+        <span className="ml-auto">
+          <ConfirmButton
+            title="Usunąć wolne sloty tego dnia?"
+            description={`${formatDayShort(slots[0]!.startsAt)}: znikną wszystkie sloty bez zapisów. Sloty z zapisami zostaną.`}
+            confirmLabel="Usuń wolne sloty"
+            onConfirm={() => removeFree.mutateAsync({ examId: exam.id, day })}
+          >
+            usuń wolne sloty
+          </ConfirmButton>
+        </span>
       </div>
       <ul className="grid gap-1">
         {slots.map((slot) => (
@@ -166,14 +173,15 @@ function SlotRow({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
         <Button variant="ghost" size="xs" onClick={() => setEditing(true)}>
           Edytuj
         </Button>
-        <Button
-          variant="ghost"
-          size="xs"
+        <ConfirmButton
+          title="Usunąć slot?"
+          description={`${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}`}
+          confirmLabel="Usuń slot"
           disabled={team.length > 0}
-          onClick={() => remove.mutate({ examId: exam.id, slotId: slot.id })}
+          onConfirm={() => remove.mutateAsync({ examId: exam.id, slotId: slot.id })}
         >
           Usuń
-        </Button>
+        </ConfirmButton>
       </span>
     </li>
   )
