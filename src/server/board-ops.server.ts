@@ -38,7 +38,10 @@ async function loadBoardState(tx: Tx, examId: string) {
   }
 }
 
-/** Kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi; przeniesiony cały zespół zachowuje swoje. */
+/**
+ * Kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi; przeniesiony cały zespół
+ * zachowuje swoje; Cofnij wypisania wraca z odpowiedziami z polecenia.
+ */
 async function savePerson(
   tx: Tx,
   examId: string,

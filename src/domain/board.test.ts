@@ -32,6 +32,33 @@ function applyOk(s: BoardState, command: BoardCommand) {
 }
 
 describe("applyCommand", () => {
+  test("wypisanie: polecenie odwrotne niesie odpowiedzi; zapis z odpowiedziami je ustawia", () => {
+    const withAnswers: BoardState = {
+      ...state,
+      people: state.people.map((p) =>
+        p.studentNumber === "3" ? { ...p, answers: { title: "Robot" } } : p,
+      ),
+    }
+    expect(
+      applyCommand(withAnswers, { kind: "move", studentNumber: "3", toSlotId: null }),
+    ).toMatchObject({
+      ok: true,
+      inverse: { kind: "move", studentNumber: "3", toSlotId: "s2", answers: { title: "Robot" } },
+    })
+
+    const back = applyCommand(state, {
+      kind: "move",
+      studentNumber: "4",
+      toSlotId: "s3",
+      answers: { title: "Dron" },
+    })
+    if (!back.ok) throw new Error(back.code)
+    expect(back.state.people.find((p) => p.studentNumber === "4")?.answers).toEqual({
+      title: "Dron",
+    })
+    expect(back.inverse).toEqual({ kind: "move", studentNumber: "4", toSlotId: null })
+  })
+
   test("osoba → slot z wolnym miejscem: przeniesienie (Cofnij wraca)", () => {
     expect(slotOf(applyOk(state, { kind: "move", studentNumber: "1", toSlotId: "s2" }), "1")).toBe(
       "s2",
