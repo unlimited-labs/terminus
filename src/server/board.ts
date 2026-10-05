@@ -8,6 +8,9 @@ import { runBoardCommand, setSlotAnswers } from "./board-ops.server.ts"
 import { loadExam, type ExamDetail } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
 
+/** Klucz poleceń tablicy: kolejka (scope) i wstrzymanie odświeżania w trakcie. */
+export const boardMutationKey = (examId: string) => ["board", examId]
+
 export const applyBoardCommand = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(boardInputSchema)

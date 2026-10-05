@@ -90,9 +90,6 @@ function PersonTile({
           type="button"
           aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
           onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") e.stopPropagation()
-          }}
           onClick={() => setEditing(true)}
           className="rounded p-0.5 text-muted-foreground hover:text-foreground"
         >

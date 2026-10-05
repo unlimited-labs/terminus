@@ -1,6 +1,6 @@
 import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
-import { applyBoardCommand } from "@/server/board"
+import { applyBoardCommand, boardMutationKey } from "@/server/board"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 const DONE: Record<BoardCommand["kind"], string> = {
@@ -28,31 +28,49 @@ function doneMessage(command: BoardCommand, exam: ExamDetail) {
   return before?.slotId === null ? "Zapisano ręcznie." : DONE.move
 }
 
+const replay = (state: ExamDetail, commands: BoardCommand[]) =>
+  commands.reduce((s, c) => {
+    const next = applyCommand(s, c)
+    return next.ok ? next.state : s
+  }, state)
+
+/**
+ * Polecenia idą do serwera po kolei (wspólny `scope`). Po każdym tablica = ostatni znany stan
+ * z serwera + optymistycznie polecenia wciąż w kolejce; nieudane polecenie po prostu znika.
+ */
 function useBoardCommand(exam: ExamDetail) {
   const queryClient = useQueryClient()
   const key = ["exam", exam.id]
+  const mutationKey = boardMutationKey(exam.id)
+  const server = useRef<ExamDetail | undefined>(undefined)
+  const pending = useRef<BoardCommand[]>([])
 
-  // Polecenia idą do serwera po kolei; po każdym (także nieudanym) tablica wraca do stanu z serwera,
-  // zamiast przywracać migawkę, która skasowałaby optymistyczne zmiany kolejnych przeciągnięć.
+  const queued = (except: BoardCommand) => pending.current.filter((c) => c !== except)
+  const show = (latest: ExamDetail | undefined, settled: BoardCommand) => {
+    if (latest) server.current = latest
+    if (server.current) queryClient.setQueryData(key, replay(server.current, queued(settled)))
+  }
+
   const mutation = useMutation({
-    scope: { id: `board:${exam.id}` },
+    mutationKey,
+    scope: { id: mutationKey.join(":") },
     mutationFn: (command: BoardCommand) =>
       applyBoardCommand({ data: { examId: exam.id, command } }),
     onMutate: async (command) => {
       await queryClient.cancelQueries({ queryKey: key })
       const previous = queryClient.getQueryData<ExamDetail>(key)
-      if (previous) {
-        const optimistic = applyCommand(previous, command)
-        if (optimistic.ok) queryClient.setQueryData(key, optimistic.state)
-      }
+      if (pending.current.length === 0) server.current = previous
+      pending.current.push(command)
+      if (previous) queryClient.setQueryData(key, replay(previous, [command]))
       return { previous }
     },
     onSuccess: (result, command, context) => {
       if (!result.ok) {
+        show(undefined, command)
         toast.error(errorMessage(result))
         return
       }
-      queryClient.setQueryData(key, result.exam)
+      show(result.exam, command)
       toast.success(
         context.previous ? doneMessage(command, context.previous) : DONE[command.kind],
         {
@@ -61,12 +79,14 @@ function useBoardCommand(exam: ExamDetail) {
         },
       )
     },
-    onError: (error) => {
+    onError: (error, command) => {
       console.error(error)
+      show(undefined, command)
       toast.error(UNEXPECTED_ERROR)
     },
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: key })
+    onSettled: (_result, _error, command) => {
+      pending.current = queued(command)
+      if (pending.current.length === 0) void queryClient.invalidateQueries({ queryKey: key })
     },
   })
 

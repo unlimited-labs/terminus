@@ -28,29 +28,42 @@ test("zmiana nazwy: przycisk Zapisz, fokus wraca na ołówek; Enter na ołówku 
   ).toBeFocused()
 })
 
-test("dwa szybkie przeciągnięcia, pierwsze nieudane: tablica zgodna z serwerem; ogłoszenie z dniem", async ({
+test("dwa szybkie przeciągnięcia, pierwsze odrzucone przez serwer: tablica zgodna z serwerem; ogłoszenie z dniem", async ({
   page,
+  browser,
 }) => {
+  const held = Promise.withResolvers<void>()
   let first = true
   await page.route("**/_serverFn/**", async (route) => {
     if (route.request().method() !== "POST" || !first) return route.continue()
     first = false
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-    await route.abort()
+    await held.promise
+    await route.continue()
   })
 
   await dragWithMouse(page, pool(page).getByText("900001"), row(page, "09:00–09:20"))
   await expect(row(page, "09:00–09:20")).toContainText("Kamil Kos")
-  await dragWithMouse(page, pool(page).getByText("900002"), row(page, "09:20–09:40"))
+  await expect(page.locator("[data-dnd-placeholder]")).toHaveCount(0)
+  const marek = page.locator("[aria-roledescription]", { hasText: "Marek Makowski" })
+  await dragWithMouse(page, marek, row(page, "09:20–09:40"))
   await expect(page.getByRole("status")).toHaveText(/na: slot \S+ 9\.10 09:20\.$/)
-  await expect(page.getByText("Zapisano ręcznie.")).toBeVisible()
-  await expect(page.getByText("Coś poszło nie tak. Spróbuj ponownie.")).toBeVisible()
 
-  await expect(row(page, "09:20–09:40")).toContainText("Lena Lis")
-  await expect(row(page, "09:00–09:20")).toContainText("wolny")
+  const other = await browser.newPage()
+  await login(other)
+  await other.goto(`/zaliczenia/${state().raceExamId}/tablica`)
+  await dragWithMouse(other, pool(other).getByText("900002"), row(other, "09:00–09:20"))
+  await expect(other.getByText("Zapisano ręcznie.")).toBeVisible()
+  await other.close()
+  held.resolve()
+
+  await expect(page.getByText("Slot jest pełny.")).toBeVisible()
+  await expect(page.getByText("Przeniesiono.")).toBeVisible()
+  await expect(row(page, "09:00–09:20")).toContainText("Lena Lis")
+  await expect(row(page, "09:20–09:40")).toContainText("Marek Makowski")
+  await expect(row(page, "09:40–10:00")).toContainText("wolny")
   await expect(pool(page).getByText("900001")).toBeVisible()
   const shown = await page.locator("table").innerText()
   await page.reload()
-  await expect(row(page, "09:20–09:40")).toContainText("Lena Lis")
+  await expect(row(page, "09:00–09:20")).toContainText("Lena Lis")
   expect(await page.locator("table").innerText()).toBe(shown)
 })
