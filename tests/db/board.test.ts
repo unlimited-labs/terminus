@@ -94,10 +94,11 @@ describe("runBoardCommand", () => {
         rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1)] } },
       })
       const slot = await db.slot.findFirstOrThrow({ where: { examId } })
-      await Promise.all([
+      const results = await Promise.all([
         runBoardCommand(examId, ownerId, { kind: "move", studentNumber: "1", toSlotId: slot.id }),
         enroll(examId, ["2", "3"]),
       ])
+      expect(results.filter((r) => r.ok)).toHaveLength(1)
       expect(await db.enrollment.count({ where: { examId } })).toBeLessThanOrEqual(2)
     }
   })

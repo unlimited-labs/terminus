@@ -10,7 +10,6 @@ const at = (day: number, hour: number, minute = 0) =>
   warsawDateTime(dayOf(baseDay, day), `${pad(hour)}:${pad(minute)}`)
 
 async function createExam(
-  ownerId: string,
   name: string,
   maxTeamSize: number,
   students: [string, string, string][],
@@ -18,9 +17,10 @@ async function createExam(
   enrolled: [string, number][],
   enrollmentOpensAt: Date | null = null,
 ) {
+  const owner = await db.user.findUniqueOrThrow({ where: { email: E2E.admin.email } })
   const exam = await db.exam.create({
     data: {
-      ownerId,
+      ownerId: owner.id,
       name,
       description: "Sala 1.23",
       defaultSlotMinutes: 20,
@@ -76,17 +76,15 @@ const RACE: Student[] = [
 ]
 
 export async function seed(): Promise<E2EState> {
-  const owner = await db.user.findUniqueOrThrow({ where: { email: E2E.admin.email } })
-  const exam = (...args: Parameters<typeof createExam> extends [string, ...infer R] ? R : never) =>
-    createExam(owner.id, ...args)
-  const boardSlots = [at(5, 9), at(5, 9, 20), at(5, 9, 40)]
-  const board = () =>
-    exam("Tablica E2E", 2, BOARD, boardSlots, [
+  const board = (
+    enrolled: [string, number][] = [
       ["500001", 0],
       ["500002", 1],
-    ])
+    ],
+  ) => createExam("Tablica E2E", 2, BOARD, [at(5, 9), at(5, 9, 20), at(5, 9, 40)], enrolled)
+  const kolokwium = () => createExam("Kolokwium E2E", 2, STUDENT, [at(6, 10), at(6, 10, 20)], [])
   const slots = async () => {
-    const id = await exam(
+    const id = await createExam(
       "Sloty E2E",
       1,
       [["950001", "Nina", "Nowak"]],
@@ -101,20 +99,20 @@ export async function seed(): Promise<E2EState> {
     return id
   }
   const race = () =>
-    exam("Wyścig E2E", 1, RACE, [at(9, 9), at(9, 9, 20), at(10, 9, 40)], [["900003", 2]])
+    createExam("Wyścig E2E", 1, RACE, [at(9, 9), at(9, 9, 20), at(10, 9, 40)], [["900003", 2]])
 
   const exams = {
     boardMouse: await board(),
-    boardKeyboard: await exam("Tablica E2E", 2, BOARD, boardSlots, [
+    boardKeyboard: await board([
       ["500001", 1],
       ["500002", 0],
     ]),
-    boardTeam: await exam("Tablica E2E", 2, BOARD, boardSlots, [["500001", 1]]),
+    boardTeam: await board([["500001", 1]]),
     exportDuplicate: await board(),
     fields: await board(),
-    student: await exam("Kolokwium E2E", 2, STUDENT, [at(6, 10), at(6, 10, 20)], []),
-    rosters: await exam("Kolokwium E2E", 2, STUDENT, [at(6, 10), at(6, 10, 20)], []),
-    full: await exam(
+    student: await kolokwium(),
+    rosters: await kolokwium(),
+    full: await createExam(
       "Pełne E2E",
       1,
       [
@@ -124,12 +122,19 @@ export async function seed(): Promise<E2EState> {
       [at(7, 8)],
       [["700001", 0]],
     ),
-    future: await exam("Przyszłe E2E", 1, [["800001", "Jan", "Jutro"]], [at(8, 9)], [], at(1, 12)),
+    future: await createExam(
+      "Przyszłe E2E",
+      1,
+      [["800001", "Jan", "Jutro"]],
+      [at(8, 9)],
+      [],
+      at(1, 12),
+    ),
     raceRename: await race(),
     raceDrag: await race(),
     slotsDelete: await slots(),
     slotsAnswers: await slots(),
-    days: await exam(
+    days: await createExam(
       "Plansza E2E",
       1,
       [
@@ -139,7 +144,7 @@ export async function seed(): Promise<E2EState> {
       [at(13, 9), at(14, 9)],
       [["960001", 0]],
     ),
-    doomed: await exam("Usuwane E2E", 1, [], [], []),
+    doomed: await createExam("Usuwane E2E", 1, [], [], []),
   }
   await db.$disconnect()
   return { baseDay, exams }
