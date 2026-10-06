@@ -59,10 +59,24 @@ schemat bazy pasuje też do poprzedniej wersji:
 - migracje zgodne wstecz — najpierw dodaj (nową kolumnę, tabelę), a usuwaj
   lub zmieniaj starą dopiero w kolejnym wydaniu, gdy poprzednia wersja już nie
   będzie potrzebna;
-- przed każdym `docker compose up -d` z nowym tagiem zrób kopię bazy:
-  `pg_dump --format=custom --file=terminus-$(date +%F).dump "$DATABASE_URL"`.
-  Gdy wydanie z migracją trzeba wycofać, a schemat nie jest zgodny wstecz,
-  przywróć kopię (`pg_restore --clean`) i dopiero wtedy poprzedni tag.
+- przed każdym `docker compose up -d` z nowym tagiem zrób kopię bazy. Baza jest
+  osiągalna tylko w sieci `DB_NETWORK`, a obraz aplikacji nie ma `pg_dump`,
+  więc kopię robi jednorazowy kontener `postgres` (wersja co najmniej taka jak
+  serwera), w katalogu z `.env`:
+
+  ```sh
+  set -a; . ./.env; set +a
+  docker run --rm --network "$DB_NETWORK" -v "$PWD:/backup" postgres:18-alpine     pg_dump --format=custom --file=/backup/terminus-$(date +%F).dump "$DATABASE_URL"
+  ```
+
+- gdy wydanie z migracją trzeba wycofać, a schemat nie jest zgodny wstecz:
+  zatrzymaj aplikację, przywróć kopię, dopiero potem poprzedni tag w `.env` i
+  `docker compose up -d`. Zapisy zrobione po kopii przepadają.
+
+  ```sh
+  docker compose stop app
+  docker run --rm --network "$DB_NETWORK" -v "$PWD:/backup" postgres:18-alpine     pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL" /backup/terminus-<data>.dump
+  ```
 
 Kontener ma `HEALTHCHECK` (strona logowania); `docker ps` pokazuje `healthy`
 po starcie.
