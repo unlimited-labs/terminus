@@ -3,11 +3,8 @@ import Papa from "papaparse"
 import { warsawDay, warsawTime } from "./time.ts"
 
 export type RosterRow = { line: number; studentNumber: string; firstName: string; lastName: string }
-type InvalidRow = {
-  line: number
-  studentNumber: string
-  reason: "NOT_DIGITS" | "DUPLICATE_IN_FILE"
-}
+export type InvalidRowReason = "NOT_DIGITS" | "DUPLICATE_IN_FILE"
+type InvalidRow = { line: number; studentNumber: string; reason: InvalidRowReason }
 
 export type ParsedRoster =
   | {

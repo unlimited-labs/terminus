@@ -19,7 +19,7 @@ import {
 import { currentRosterId } from "@/components/roster-choice"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
-import { errorMessage } from "@/messages.pl"
+import { errorMessage, INVALID_ROW } from "@/messages.pl"
 import { addEntrySchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
@@ -212,12 +212,10 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
             {[
               ...result.invalid.map(
                 (r) =>
-                  `wiersz ${r.line}: ${r.studentNumber || "(pusty)"} — ${
-                    r.reason === "NOT_DIGITS" ? "indeks nie z samych cyfr" : "powtórzony w pliku"
-                  }`,
+                  `wiersz ${r.line}: ${r.studentNumber || "(pusty)"} — ${INVALID_ROW[r.reason]}`,
               ),
               ...result.otherRoster.map(
-                (r) => `wiersz ${r.line}: ${r.studentNumber} — już na innej liście`,
+                (r) => `wiersz ${r.line}: ${r.studentNumber} — ${INVALID_ROW.OTHER_ROSTER}`,
               ),
             ]}
           </PreviewList>

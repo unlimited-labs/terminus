@@ -1,8 +1,9 @@
 import { z } from "zod"
 
+import { tooLong } from "../messages.pl.ts"
 import { email, password } from "./auth.ts"
 
-const name = z.string().trim().min(1, "Podaj imię i nazwisko.").max(100)
+const name = z.string().trim().min(1, "Podaj imię i nazwisko.").max(100, tooLong(100))
 const userId = z.string().min(1)
 
 export const createAccountSchema = z.object({ email, name, password })

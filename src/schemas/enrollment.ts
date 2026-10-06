@@ -4,6 +4,9 @@ import { answersSchema, examIdSchema } from "./exam.ts"
 import { studentNumber } from "./roster.ts"
 
 export const enrollmentSchema = examIdSchema.extend({
-  studentNumbers: z.array(studentNumber).min(1, "Wpisz numer indeksu.").max(20),
+  studentNumbers: z
+    .array(studentNumber)
+    .min(1, "Wpisz numer indeksu.")
+    .max(20, "Najwyżej 20 osób."),
   answers: answersSchema,
 })

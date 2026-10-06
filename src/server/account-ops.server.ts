@@ -1,7 +1,7 @@
 import type { z } from "zod"
 
 import { Prisma } from "../generated/prisma/client.ts"
-import type { Result } from "../messages.pl.ts"
+import { ACCESS_DENIED, type Result } from "../messages.pl.ts"
 import type {
   createAccountSchema,
   setAdminSchema,
@@ -19,7 +19,7 @@ const isUniqueViolation = (e: unknown) =>
 /** Powtarza middleware `requireAdmin`, żeby odmowę dało się sprawdzić testem każdej operacji. */
 async function assertAdmin(headers: Headers) {
   const user = await sessionUser(headers)
-  if (!user?.isAdmin) throw new Error("Brak dostępu")
+  if (!user?.isAdmin) throw new Error(ACCESS_DENIED)
   return user
 }
 

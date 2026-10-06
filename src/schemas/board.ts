@@ -1,9 +1,10 @@
 import { z } from "zod"
 
+import { tooLong } from "../messages.pl.ts"
 import { answersSchema, examIdSchema } from "./exam.ts"
 import { studentNumber } from "./roster.ts"
 
-const personName = z.string().trim().min(1).max(100)
+const personName = z.string().trim().min(1, "Podaj imię i nazwisko.").max(100, tooLong(100))
 
 const boardCommandSchema = z.discriminatedUnion("kind", [
   z.object({

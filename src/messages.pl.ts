@@ -1,4 +1,5 @@
 import type { BoardErrorCode } from "./domain/board.ts"
+import type { InvalidRowReason } from "./domain/csv.ts"
 import type { EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
@@ -49,7 +50,7 @@ export function errorMessage(e: AppError): string {
         .map((x) => `Indeks ${x.studentNumber} ma już slot: ${formatDayTime(x.startsAt)}.`)
         .join(" ")
     case "DIFFERENT_ROSTER":
-      return `Indeks z innej grupy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
+      return `Indeks z innej listy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
     case "NOT_OPEN_YET":
       return `Zapisy ruszają ${formatDayTime(e.opensAt)}.`
     case "MISSING_ANSWER":
@@ -104,6 +105,26 @@ export function errorMessage(e: AppError): string {
 }
 
 export const UNEXPECTED_ERROR = "Coś poszło nie tak. Spróbuj ponownie."
+
+/** Dlaczego wiersz pliku CSV nie zostanie zaimportowany (podgląd importu). */
+export const INVALID_ROW: Record<InvalidRowReason | "OTHER_ROSTER", string> = {
+  NOT_DIGITS: "indeks nie z samych cyfr",
+  DUPLICATE_IN_FILE: "powtórzony w pliku",
+  OTHER_ROSTER: "już na innej liście",
+}
+
+/** Odmowa w middleware sesji (do klienta dociera jako ogólny błąd). */
+export const ACCESS_DENIED = "Brak dostępu"
+
+/** Teksty dla administratora: logi kontenera i walidacja zmiennych środowiskowych. */
+export const OPS = {
+  noRealIp:
+    "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
+  unknownTimeZone: "Nieznana strefa czasowa.",
+}
+
+/** Limit długości pola tekstowego. */
+export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 
 export function authErrorMessage(code: string | undefined): string {
   switch (code) {

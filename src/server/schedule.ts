@@ -2,6 +2,7 @@ import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeader } from "@tanstack/react-start/server"
 
+import { OPS } from "../messages.pl.ts"
 import { examIdSchema } from "../schemas/exam.ts"
 import { enrollmentSchema } from "../schemas/enrollment.ts"
 
@@ -75,9 +76,7 @@ export const enroll = createServerFn({ method: "POST" })
     const ip = realIp ?? "unknown"
     if (!realIp && !warnedNoIp && process.env.NODE_ENV === "production") {
       warnedNoIp = true
-      console.warn(
-        "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
-      )
+      console.warn(OPS.noRealIp)
     }
     if (await isBlocked(ip)) return { ok: false, code: "RATE_LIMITED" }
     const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers)

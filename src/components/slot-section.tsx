@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, warsawDay, warsawTime } from "@/domain/time"
+import { errorMessage } from "@/messages.pl"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { addSlotWindow, deleteFreeSlotsOfDay, deleteSlot, updateSlot } from "@/server/slots"
@@ -104,13 +105,7 @@ function WindowPreview({
   if (!date || !from || !to || !(minutes >= 1)) return null
   const cut = cutWindow({ date, from, to, minutes })
   if (!cut.ok) {
-    return (
-      <p className="text-sm text-destructive">
-        {cut.code === "WINDOW_TOO_SHORT"
-          ? "Okno jest krótsze niż jeden slot."
-          : "„Do” musi być później niż „od”."}
-      </p>
-    )
+    return <p className="text-sm text-destructive">{errorMessage(cut)}</p>
   }
   return (
     <p className="text-sm text-muted-foreground tabular-nums">

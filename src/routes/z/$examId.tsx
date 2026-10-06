@@ -7,7 +7,7 @@ import { EnrollSheet } from "@/components/enroll-sheet"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
 import { isFreeSlot } from "@/domain/schedule"
-import { formatDayTime } from "@/domain/time"
+import { errorMessage } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
 
@@ -34,7 +34,8 @@ function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boole
   if (schedule.opensAt && schedule.opensAt > schedule.now) {
     return (
       <p role="status" className="rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
-        Zapisy ruszają <strong>{formatDayTime(schedule.opensAt)}</strong>. Strona odświeży się sama.
+        {errorMessage({ code: "NOT_OPEN_YET", opensAt: schedule.opensAt })} Strona odświeży się
+        sama.
       </p>
     )
   }
@@ -44,7 +45,7 @@ function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boole
       role="status"
       className="rounded-lg border-l-4 border-destructive bg-destructive/10 px-3 py-2"
     >
-      Brak wolnych slotów. Skontaktuj się z prowadzącym.
+      {errorMessage({ code: "NO_FREE_SLOTS" })}
     </p>
   )
 }

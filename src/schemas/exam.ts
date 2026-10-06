@@ -1,5 +1,6 @@
 import { z } from "zod"
 
+import { tooLong } from "../messages.pl.ts"
 export const examIdSchema = z.object({ examId: z.uuid() })
 
 export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
@@ -13,8 +14,8 @@ export const examFieldSchema = z.object({
 export const answersSchema = z.record(z.string(), z.string().max(500, "Najwyżej 500 znaków."))
 
 export const examSchema = z.object({
-  name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200),
-  description: z.string().trim().max(2000),
+  name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200, tooLong(200)),
+  description: z.string().trim().max(2000, tooLong(2000)),
   defaultSlotMinutes: z
     .number({ error: "Podaj liczbę minut." })
     .int("Podaj pełne minuty.")
