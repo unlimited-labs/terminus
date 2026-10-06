@@ -77,7 +77,7 @@ export type RosterImportPlan = {
   /** Wycofani z tej listy — znikają (z zapisem: razem z nim). */
   remove: ExistingEntry[]
   /** Ci z `remove`, którzy mają zapis — podgląd pokazuje ich slot, zanim zapis zniknie. */
-  withdrawnEnrolled: ExistingEntry[]
+  withdrawnEnrolled: (ExistingEntry & { slotStartsAt: Date })[]
   /** Na tej liście, nieobecni w pliku — zostają. */
   notInFile: ExistingEntry[]
 }
@@ -111,7 +111,9 @@ export function planRosterImport(
   const absent = existing.filter((e) => e.rosterId === rosterId && !inFile.has(e.studentNumber))
   plan.notInFile = absent.filter((e) => !withdrawn.has(e.studentNumber))
   plan.remove = absent.filter((e) => withdrawn.has(e.studentNumber))
-  plan.withdrawnEnrolled = plan.remove.filter((e) => e.slotStartsAt)
+  plan.withdrawnEnrolled = plan.remove.filter(
+    (e): e is ExistingEntry & { slotStartsAt: Date } => e.slotStartsAt !== null,
+  )
   return plan
 }
 

@@ -207,8 +207,8 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           <p>
             {result.rosterId ? "Ponowny import do istniejącej listy." : "Nowa lista."} Osoby w
             pliku: {result.people} (nowe {result.add.length}, zmienione nazwiska{" "}
-            {result.update.length}, bez zmian {result.unchanged}). Pominięci (skreśleni,
-            rezygnacja): {result.withdrawn}.
+            {result.update.length}, bez zmian {result.unchanged}). W pliku skreśleni lub z
+            rezygnacją: {result.withdrawn}.
           </p>
           <PreviewList title="Błędne — nie zostaną zaimportowane">
             {[
@@ -229,7 +229,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
             {result.withdrawnEnrolled.map(
               (e) =>
-                `${e.studentNumber} ${e.lastName} ${e.firstName} — slot ${formatDayTime(e.slotStartsAt!)}`,
+                `${e.studentNumber} ${e.lastName} ${e.firstName} — slot ${formatDayTime(e.slotStartsAt)}`,
             )}
           </PreviewList>
           <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
@@ -238,7 +238,13 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           <div className="flex gap-2">
             <Button
               disabled={apply.isPending || preview.isPending}
-              onClick={() => apply.mutate(input)}
+              onClick={async () => {
+                const done = await apply.mutateAsync({
+                  ...input,
+                  withdrawnEnrolled: result.withdrawnEnrolled.map((e) => e.studentNumber),
+                })
+                if (!done.ok && done.code === "IMPORT_PREVIEW_STALE") preview.mutate(input)
+              }}
             >
               Zapisz listę
             </Button>

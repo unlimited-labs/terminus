@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start"
 import {
   addEntrySchema,
   entryRefSchema,
+  rosterApplySchema,
   rosterImportSchema,
   rosterRefSchema,
 } from "../schemas/roster.ts"
@@ -25,9 +26,9 @@ export const previewRosterImport = createServerFn({ method: "POST" })
 
 export const applyRosterImport = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(rosterImportSchema)
+  .validator(rosterApplySchema)
   .handler(({ data, context }) =>
-    applyImport(data.examId, context.user.id, data.rosterName, data.csv),
+    applyImport(data.examId, context.user.id, data.rosterName, data.csv, data.withdrawnEnrolled),
   )
 
 export const addRosterEntry = createServerFn({ method: "POST" })

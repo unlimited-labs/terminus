@@ -17,6 +17,10 @@ export const rosterImportSchema = examIdSchema.extend({
   csv: z.string().max(2_000_000, "Plik jest za duży."),
 })
 
+export const rosterApplySchema = rosterImportSchema.extend({
+  withdrawnEnrolled: z.array(studentNumber).max(10_000),
+})
+
 export const addEntrySchema = examIdSchema.extend({
   rosterId: z.union([z.uuid(), z.literal("")]),
   studentNumber,

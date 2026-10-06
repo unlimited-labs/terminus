@@ -50,10 +50,16 @@ export async function applyImport(
   ownerId: string,
   rosterName: string,
   csv: string,
+  /** Skreśleni z zapisem z zatwierdzonego podglądu: inny skład = zapisy zmieniły się od podglądu. */
+  previewedWithdrawnEnrolled: string[],
 ): Promise<Result> {
   return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const plan = await planImport(tx, examId, rosterName, csv)
     if (!plan.ok) return plan
+    const now = plan.withdrawnEnrolled.map((e) => e.studentNumber).toSorted()
+    if (now.join() !== previewedWithdrawnEnrolled.toSorted().join()) {
+      return { ok: false, code: "IMPORT_PREVIEW_STALE" }
+    }
     const rosterId =
       plan.rosterId ?? (await tx.roster.create({ data: { examId, name: rosterName } })).id
     await tx.rosterEntry.createMany({

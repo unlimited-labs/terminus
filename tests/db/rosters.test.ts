@@ -32,6 +32,7 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — tak
       ownerId,
       "g1",
       csv("1;Ala;A;0", "2;Bob;B;0", "3;Cyd;C;0", "5;Eda;E;0"),
+      [],
     ),
   ).toEqual({ ok: true })
   expect(await people(examId)).toEqual([
@@ -57,7 +58,12 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — tak
     withdrawnEnrolled: [{ studentNumber: "3", slotStartsAt: inDays(1) }],
     notInFile: [{ studentNumber: "5" }],
   })
-  expect(await applyImport(examId, ownerId, "g1", next)).toEqual({ ok: true })
+  expect(await applyImport(examId, ownerId, "g1", next, [])).toEqual({
+    ok: false,
+    code: "IMPORT_PREVIEW_STALE",
+  })
+  expect(await people(examId)).toHaveLength(4)
+  expect(await applyImport(examId, ownerId, "g1", next, ["3"])).toEqual({ ok: true })
   expect(await people(examId)).toEqual([
     ["g1", "1", "Ala", "Nowak"],
     ["g1", "4", "Dan", "D"],
@@ -76,7 +82,9 @@ test("skreślony z zespołu traci zapis; druga osoba zostaje w slocie z odpowied
   const enrolled = await enroll(examId, ["1", "2"], { t: "Robot" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
-  expect(await applyImport(examId, ownerId, "g1", csv("1;A;A;0", "2;B;B;1"))).toEqual({ ok: true })
+  expect(await applyImport(examId, ownerId, "g1", csv("1;A;A;0", "2;B;B;1"), ["2"])).toEqual({
+    ok: true,
+  })
   expect(await db.enrollment.findMany({ where: { examId } })).toMatchObject([
     { studentNumber: "1", slotId: enrolled.slotId, answers: { t: "Robot" } },
   ])
@@ -91,12 +99,14 @@ test("import nie przenosi osoby z innej listy i odrzuca plik bez wymaganych kolu
     add: [{ studentNumber: "5" }],
     otherRoster: [{ studentNumber: "1" }],
   })
-  expect(await applyImport(examId, ownerId, "g2", csv("1;X;Y;0", "5;E;E;0"))).toEqual({ ok: true })
+  expect(await applyImport(examId, ownerId, "g2", csv("1;X;Y;0", "5;E;E;0"), [])).toEqual({
+    ok: true,
+  })
   expect(await people(examId)).toEqual([
     ["g1", "1", "Imię1", "Nazwisko1"],
     ["g2", "5", "E", "E"],
   ])
-  expect(await applyImport(examId, ownerId, "g2", "indeks;imie\n1;X")).toMatchObject({
+  expect(await applyImport(examId, ownerId, "g2", "indeks;imie\n1;X", [])).toMatchObject({
     ok: false,
     code: "MISSING_COLUMNS",
   })
@@ -184,7 +194,7 @@ test("cudzy prowadzący dostaje NOT_FOUND i niczego nie zmienia", async () => {
   const notFound = { ok: false, code: "NOT_FOUND" }
 
   expect(await previewImport(examId, stranger, "g1", csv("2;B;B;0"))).toEqual(notFound)
-  expect(await applyImport(examId, stranger, "g1", csv("2;B;B;0"))).toEqual(notFound)
+  expect(await applyImport(examId, stranger, "g1", csv("2;B;B;0"), [])).toEqual(notFound)
   expect(
     await addEntry(examId, stranger, {
       rosterId: rosterIds.g1!,
