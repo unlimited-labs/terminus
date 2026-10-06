@@ -16,7 +16,9 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
   })
   await enroll(examId, ["1"])
 
-  const copyId = (await copyExam(examId, ownerId, true))!
+  const copied = await copyExam(examId, ownerId, true)
+  if (!copied.ok) throw new Error(copied.code)
+  const copyId = copied.examId
   const copy = await db.exam.findUniqueOrThrow({
     where: { id: copyId },
     include: { rosters: { include: { entries: true } }, enrollments: true },
@@ -38,11 +40,12 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
   expect(copy.enrollments).toEqual([])
   expect(await db.slot.count({ where: { examId: copyId } })).toBe(0)
 
-  const bare = (await copyExam(examId, ownerId, false))!
-  expect(await db.roster.count({ where: { examId: bare } })).toBe(0)
+  const bare = await copyExam(examId, ownerId, false)
+  if (!bare.ok) throw new Error(bare.code)
+  expect(await db.roster.count({ where: { examId: bare.examId } })).toBe(0)
 
   const stranger = await createExam({ rosters: {} })
-  expect(await copyExam(examId, stranger.ownerId, true)).toBeNull()
+  expect(await copyExam(examId, stranger.ownerId, true)).toEqual({ ok: false, code: "NOT_FOUND" })
 })
 
 test("edycja po starcie: zespół nie mniejszy niż największy istniejący; reszta zmienia się od razu", async () => {

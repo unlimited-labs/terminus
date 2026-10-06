@@ -36,10 +36,7 @@ export async function previewImport(
   rosterName: string,
   csv: string,
 ): Promise<Result<ImportPreview>> {
-  const result = await withExamLock(examId, ownerId, (tx) =>
-    planImport(tx, examId, rosterName, csv),
-  )
-  return result ?? { ok: false, code: "NOT_FOUND" }
+  return withExamLock(examId, ownerId, (tx) => planImport(tx, examId, rosterName, csv))
 }
 
 export async function applyImport(
@@ -48,7 +45,7 @@ export async function applyImport(
   rosterName: string,
   csv: string,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const plan = await planImport(tx, examId, rosterName, csv)
     if (!plan.ok) return plan
     const rosterId =
@@ -75,7 +72,6 @@ export async function applyImport(
     })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 /** Bez wskazanej listy osoba trafia na nową listę „lista” — tylko gdy zaliczenie nie ma jeszcze żadnej. */
@@ -84,7 +80,7 @@ export async function addEntry(
   ownerId: string,
   { rosterId, studentNumber, firstName, lastName }: Omit<z.infer<typeof addEntrySchema>, "examId">,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const current = await tx.rosterEntry.findUnique({
       where: { examId_studentNumber: { examId, studentNumber } },
       include: { roster: { select: { name: true } } },
@@ -104,7 +100,6 @@ export async function addEntry(
     })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 export async function deleteEntry(
@@ -112,7 +107,7 @@ export async function deleteEntry(
   ownerId: string,
   studentNumber: string,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     if (
       await tx.enrollment.findUnique({
         where: { examId_studentNumber: { examId, studentNumber } },
@@ -123,7 +118,6 @@ export async function deleteEntry(
     await tx.rosterEntry.deleteMany({ where: { examId, studentNumber } })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 /** Listy nie da się usunąć, dopóki ktoś z niej jest zapisany albo ktoś siedzi w jej slocie. */
@@ -132,7 +126,7 @@ export async function removeRoster(
   ownerId: string,
   rosterId: string,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const enrolled = await tx.enrollment.count({
       where: { examId, OR: [{ entry: { rosterId } }, { slot: { rosterId } }] },
     })
@@ -140,5 +134,4 @@ export async function removeRoster(
     await tx.roster.deleteMany({ where: { id: rosterId, examId } })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }

@@ -10,6 +10,7 @@ import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
+import { isFreeSlot } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { applyBoardCommand, boardMutationKey } from "@/server/board"
@@ -122,7 +123,8 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
 
   const enrolled = exam.people.filter((p) => p.slotId !== null).length
   const taken = new Set(exam.people.map((p) => p.slotId))
-  const freeSlots = exam.slots.filter((s) => !taken.has(s.id)).length
+  const now = new Date()
+  const freeSlots = exam.slots.filter((s) => isFreeSlot(s, taken.has(s.id) ? 1 : 0, now)).length
 
   return (
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>

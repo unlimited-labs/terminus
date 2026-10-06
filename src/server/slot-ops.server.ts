@@ -21,22 +21,17 @@ export async function addWindow(
   window: Omit<z.infer<typeof windowSchema>, "examId">,
 ): Promise<Result<{ count: number }>> {
   const { rosterId } = window
-  const result = await withExamLock(
-    examId,
-    ownerId,
-    async (tx): Promise<Result<{ count: number }>> => {
-      if (!(await tx.roster.findFirst({ where: { id: rosterId, examId } }))) {
-        return { ok: false, code: "ROSTER_REQUIRED" }
-      }
-      const cut = cutWindow(window)
-      if (!cut.ok) return cut
-      const overlap = await overlapError(tx, examId, cut.slots)
-      if (overlap) return overlap
-      await tx.slot.createMany({ data: cut.slots.map((s) => ({ ...s, examId, rosterId })) })
-      return { ok: true, count: cut.slots.length }
-    },
-  )
-  return result ?? { ok: false, code: "NOT_FOUND" }
+  return withExamLock(examId, ownerId, async (tx): Promise<Result<{ count: number }>> => {
+    if (!(await tx.roster.findFirst({ where: { id: rosterId, examId } }))) {
+      return { ok: false, code: "ROSTER_REQUIRED" }
+    }
+    const cut = cutWindow(window)
+    if (!cut.ok) return cut
+    const overlap = await overlapError(tx, examId, cut.slots)
+    if (overlap) return overlap
+    await tx.slot.createMany({ data: cut.slots.map((s) => ({ ...s, examId, rosterId })) })
+    return { ok: true, count: cut.slots.length }
+  })
 }
 
 export async function editSlot(
@@ -44,7 +39,7 @@ export async function editSlot(
   ownerId: string,
   { slotId, rosterId, date, from, to }: Omit<z.infer<typeof updateSlotSchema>, "examId">,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const [slot, roster] = await Promise.all([
       tx.slot.findFirst({ where: { id: slotId, examId } }),
       tx.roster.findFirst({ where: { id: rosterId, examId } }),
@@ -57,11 +52,10 @@ export async function editSlot(
     await tx.slot.update({ where: { id: slotId }, data: { ...interval, rosterId } })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 export async function removeSlot(examId: string, ownerId: string, slotId: string): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const slot = await tx.slot.findFirst({
       where: { id: slotId, examId },
       select: { _count: { select: { enrollments: true } } },
@@ -71,7 +65,6 @@ export async function removeSlot(examId: string, ownerId: string, slotId: string
     await tx.slot.delete({ where: { id: slotId } })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 export async function removeFreeSlotsOfDay(
@@ -79,7 +72,7 @@ export async function removeFreeSlotsOfDay(
   ownerId: string,
   day: string,
 ): Promise<Result<{ deleted: number; skipped: number }>> {
-  const result = await withExamLock(examId, ownerId, async (tx) => {
+  return withExamLock(examId, ownerId, async (tx) => {
     const slots = await tx.slot.findMany({
       where: { examId },
       select: { id: true, startsAt: true, _count: { select: { enrollments: true } } },
@@ -89,5 +82,4 @@ export async function removeFreeSlotsOfDay(
     await tx.slot.deleteMany({ where: { id: { in: free } } })
     return { ok: true as const, deleted: free.length, skipped: ofDay.length - free.length }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }

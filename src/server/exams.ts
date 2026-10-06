@@ -11,14 +11,9 @@ import {
 
 import { db } from "./db.server.ts"
 import { copyExam, examRecord, updateExamSettings } from "./exam-ops.server.ts"
-import { withExamLock } from "./exam-lock.server.ts"
+import { getOwnedExam, withExamLock } from "./exam-lock.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
-
-/** Jedyna brama do zaliczenia prowadzącego: cudze zaliczenie = nie znaleziono. */
-function getOwnedExam(userId: string, examId: string) {
-  return db.exam.findFirst({ where: { id: examId, ownerId: userId } })
-}
 
 const listExams = createServerFn()
   .middleware([requireUser])
@@ -42,7 +37,7 @@ const getExam = createServerFn()
   .middleware([requireUser])
   .validator(examIdSchema)
   .handler(async ({ data, context }) =>
-    (await getOwnedExam(context.user.id, data.examId)) ? loadExam(data.examId) : null,
+    (await getOwnedExam(data.examId, context.user.id)) ? loadExam(data.examId) : null,
   )
 
 export const examQuery = (examId: string) =>
@@ -67,28 +62,26 @@ export const deleteExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(deleteExamSchema)
   .handler(async ({ data, context }): Promise<Result> => {
-    const result = await withExamLock(data.examId, context.user.id, async (tx): Promise<Result> => {
+    return withExamLock(data.examId, context.user.id, async (tx): Promise<Result> => {
       const exam = await tx.exam.findUniqueOrThrow({ where: { id: data.examId } })
       if (exam.name !== data.confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
       await tx.exam.delete({ where: { id: data.examId } })
       return { ok: true }
     })
-    return result ?? { ok: false, code: "NOT_FOUND" }
   })
 
 export const duplicateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(duplicateExamSchema)
   .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
-    const examId = await copyExam(data.examId, context.user.id, data.copyRosters)
-    return examId ? { ok: true, examId } : { ok: false, code: "NOT_FOUND" }
+    return copyExam(data.examId, context.user.id, data.copyRosters)
   })
 
 export const exportExamCsv = createServerFn()
   .middleware([requireUser])
   .validator(examIdSchema)
   .handler(async ({ data, context }): Promise<Result<{ fileName: string; csv: string }>> => {
-    if (!(await getOwnedExam(context.user.id, data.examId))) return { ok: false, code: "NOT_FOUND" }
+    if (!(await getOwnedExam(data.examId, context.user.id))) return { ok: false, code: "NOT_FOUND" }
     const exam = (await loadExam(data.examId))!
     const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
     const people = exam.people.map((p) => ({ ...p, rosterName: rosterName.get(p.rosterId) ?? "" }))

@@ -6,7 +6,7 @@ import { z } from "zod"
 import { EnrollSheet } from "@/components/enroll-sheet"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
-import { isFreeSlot } from "@/domain/schedule"
+import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
 import { errorMessage } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
@@ -31,7 +31,7 @@ export const Route = createFileRoute("/z/$examId")({
 })
 
 function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boolean }) {
-  if (schedule.opensAt && schedule.opensAt > schedule.now) {
+  if (schedule.opensAt && !isEnrollmentOpen(schedule.opensAt, schedule.now)) {
     return (
       <p role="status" className="rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
         {errorMessage({ code: "NOT_OPEN_YET", opensAt: schedule.opensAt })} Strona odświeży się
@@ -52,10 +52,10 @@ function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boole
 
 /** Co oferuje panel: zapis z losowaniem, a przy braku wolnych slotów tylko sprawdzenie swojego. */
 function entryMode(schedule: Schedule, enrolled: boolean) {
-  const anyFree = schedule.slots.some((s) => isFreeSlot(s, schedule.now))
+  const anyFree = schedule.slots.some((s) => isFreeSlot(s, s.team.length, schedule.now))
   return {
     anyFree,
-    open: !schedule.opensAt || schedule.opensAt <= schedule.now,
+    open: isEnrollmentOpen(schedule.opensAt, schedule.now),
     action: enrolled ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot",
     submitLabel: anyFree ? "Losuj slot" : "Sprawdź",
     maxTeamSize: anyFree ? schedule.maxTeamSize : 1,

@@ -1,3 +1,4 @@
+import { isEnrollmentOpen, isFreeSlot } from "./schedule.ts"
 import { warsawDay } from "./time.ts"
 
 export type EnrollmentData = {
@@ -34,7 +35,7 @@ export function planEnrollment(
   now: Date,
   randomInt: RandomInt,
 ): EnrollmentPlan {
-  if (data.opensAt && data.opensAt > now)
+  if (data.opensAt && !isEnrollmentOpen(data.opensAt, now))
     return { ok: false, code: "NOT_OPEN_YET", opensAt: data.opensAt }
   if (studentNumbers.length === 0) return { ok: false, code: "NO_INPUT" }
   if (studentNumbers.length > data.maxTeamSize) {
@@ -64,7 +65,7 @@ export function planEnrollment(
   const taken = new Set(data.enrollments.map((e) => e.slotId))
   const byDay = Map.groupBy(
     data.slots
-      .filter((s) => s.rosterId === rosterId && !taken.has(s.id) && s.startsAt > now)
+      .filter((s) => s.rosterId === rosterId && isFreeSlot(s, taken.has(s.id) ? 1 : 0, now))
       .toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
     (s) => warsawDay(s.startsAt),
   )

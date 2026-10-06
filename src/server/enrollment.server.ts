@@ -39,7 +39,7 @@ export async function enrollTeam(
   rawAnswers: Answers = {},
   { now = () => new Date(), timeout }: { now?: () => Date; timeout?: number } = {},
 ): Promise<EnrollmentOutcome> {
-  const outcome = await withExamLock(
+  return withExamLock(
     examId,
     null,
     async (tx): Promise<EnrollmentOutcome> => {
@@ -102,5 +102,4 @@ export async function enrollTeam(
     },
     timeout,
   ).catch(busyOnTimeout)
-  return outcome ?? { ok: false, code: "NOT_FOUND" }
 }

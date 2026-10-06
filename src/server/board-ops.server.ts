@@ -73,7 +73,7 @@ export async function runBoardCommand(
   ownerId: string,
   command: BoardCommand,
 ): Promise<CommandResult> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<CommandResult> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<CommandResult> => {
     const before = await loadBoardState(tx, examId)
     const applied = applyCommand(before, command)
     if (!applied.ok) return applied
@@ -96,7 +96,6 @@ export async function runBoardCommand(
     )
     return { ok: true, inverse: applied.inverse }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 /** Prowadzący poprawia odpowiedzi zespołu w slocie (bez sprawdzania wymaganych pól). */
@@ -106,7 +105,7 @@ export async function setSlotAnswers(
   slotId: string,
   answers: Answers,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({
       where: { id: examId },
       select: { fields: true },
@@ -121,5 +120,4 @@ export async function setSlotAnswers(
     })
     return count > 0 ? { ok: true } : { ok: false, code: "SLOT_NOT_FOUND" }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }

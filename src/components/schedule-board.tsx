@@ -31,7 +31,7 @@ const PRESSED =
 /** „Twój” tylko gdy w slocie widać już zespół (plansza mogła się jeszcze nie odświeżyć po zapisie). */
 function tone(slot: Slot, now: Date, mine: boolean): Kind {
   if (slot.team.length > 0) return mine ? "mine" : "taken"
-  return isFreeSlot(slot, now) ? "free" : "past"
+  return isFreeSlot(slot, slot.team.length, now) ? "free" : "past"
 }
 
 /** `pulse`: plansza startuje na dniu „Twojego” slotu, bez filtra listy, a kafelek pulsuje. */
@@ -52,7 +52,7 @@ export function ScheduleBoard({
   const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt)).values()]
   const firstFree = Math.max(
     0,
-    days.findIndex((d) => d.some((s) => isFreeSlot(s, schedule.now))),
+    days.findIndex((d) => d.some((s) => isFreeSlot(s, s.team.length, schedule.now))),
   )
   const day = days.find((d) => warsawDay(d[0]!.startsAt) === chosenDay) ?? days[firstFree] ?? []
 
@@ -88,7 +88,7 @@ export function ScheduleBoard({
             >
               <span className="font-bold capitalize">{formatDayShort(d[0]!.startsAt)}</span>
               <span className="text-xs opacity-80 tabular-nums">
-                wolne: {d.filter((s) => isFreeSlot(s, schedule.now)).length}
+                wolne: {d.filter((s) => isFreeSlot(s, s.team.length, schedule.now)).length}
               </span>
             </ToggleGroupItem>
           ))}

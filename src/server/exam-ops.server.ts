@@ -4,18 +4,20 @@ import { warsawDateTime } from "../domain/slots.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
-import { db } from "./db.server.ts"
 import { withExamLock } from "./exam-lock.server.ts"
 import { parseFields } from "./exam-state.server.ts"
 
 /** Poprawka = nowe zaliczenie: ustawienia i (opcjonalnie) listy z nazwiskami, bez slotów i zapisów. */
-export function copyExam(examId: string, ownerId: string, copyRosters: boolean) {
-  return db.$transaction(async (tx) => {
-    const source = await tx.exam.findFirst({
-      where: { id: examId, ownerId },
+export function copyExam(
+  examId: string,
+  ownerId: string,
+  copyRosters: boolean,
+): Promise<Result<{ examId: string }>> {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result<{ examId: string }>> => {
+    const source = await tx.exam.findUniqueOrThrow({
+      where: { id: examId },
       include: { rosters: { include: { entries: true } } },
     })
-    if (!source) return null
     const copy = await tx.exam.create({
       data: {
         ownerId,
@@ -27,7 +29,7 @@ export function copyExam(examId: string, ownerId: string, copyRosters: boolean) 
         enrollmentOpensAt: source.enrollmentOpensAt,
       },
     })
-    if (!copyRosters) return copy.id
+    if (!copyRosters) return { ok: true, examId: copy.id }
     await Promise.all(
       source.rosters.map((roster) =>
         tx.roster.create({
@@ -47,7 +49,7 @@ export function copyExam(examId: string, ownerId: string, copyRosters: boolean) 
         }),
       ),
     )
-    return copy.id
+    return { ok: true, examId: copy.id }
   })
 }
 
@@ -57,7 +59,7 @@ export async function updateExamSettings(
   ownerId: string,
   data: z.infer<typeof examSchema>,
 ): Promise<Result> {
-  const result = await withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
     const teams = await tx.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
     const tooBig = teams.filter((t) => t._count > data.maxTeamSize).map((t) => t.slotId)
     if (tooBig.length > 0) {
@@ -71,7 +73,6 @@ export async function updateExamSettings(
     await tx.exam.update({ where: { id: examId }, data: examRecord(data) })
     return { ok: true }
   })
-  return result ?? { ok: false, code: "NOT_FOUND" }
 }
 
 /** Wartości formularza zaliczenia → kolumny tabeli (start zapisów w czasie polskim). */
