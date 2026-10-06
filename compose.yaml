@@ -6,6 +6,9 @@ services:
     restart: unless-stopped
     env_file: .env
     networks: [proxy, db]
+    logging:
+      driver: json-file
+      options: { max-size: 10m, max-file: "3" }
 
 networks:
   proxy:

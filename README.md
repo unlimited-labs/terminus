@@ -53,6 +53,20 @@ wystawia portów; NPMplus łączy się z nią po nazwie kontenera `terminus`, po
 2. Na VPS: `IMAGE_TAG=<tag>` w `.env`, potem `docker compose up -d`.
 3. Wycofanie: poprzedni tag w `.env` i `docker compose up -d`.
 
+Migracje idą tylko w przód, więc wycofanie jest bezpieczne tylko wtedy, gdy
+schemat bazy pasuje też do poprzedniej wersji:
+
+- migracje zgodne wstecz — najpierw dodaj (nową kolumnę, tabelę), a usuwaj
+  lub zmieniaj starą dopiero w kolejnym wydaniu, gdy poprzednia wersja już nie
+  będzie potrzebna;
+- przed każdym `docker compose up -d` z nowym tagiem zrób kopię bazy:
+  `pg_dump --format=custom --file=terminus-$(date +%F).dump "$DATABASE_URL"`.
+  Gdy wydanie z migracją trzeba wycofać, a schemat nie jest zgodny wstecz,
+  przywróć kopię (`pg_restore --clean`) i dopiero wtedy poprzedni tag.
+
+Kontener ma `HEALTHCHECK` (strona logowania); `docker ps` pokazuje `healthy`
+po starcie.
+
 Przy starcie kontener wykonuje migracje, zakłada superadmina z `ADMIN_*`, jeśli
 tego e-maila nie ma w bazie (istniejącego konta nie zmienia), i uruchamia serwer.
 Po pierwszym wdrożeniu usuń `ADMIN_PASSWORD` z `.env` — bez niego kontener

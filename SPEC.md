@@ -497,10 +497,12 @@ Node 24 (LTS) w obrazie i lokalnie; menedżer pakietów pnpm.
 - Obraz: `docker buildx build --platform linux/amd64 --push` lokalnie, do
   prywatnego `registry:2`; tag = wersja z gita, plus `latest` na ostatni release. Na VPS tylko
   `compose.yaml` i `.env`; wdrożenie = `IMAGE_TAG` w `.env` +
-  `docker compose up -d`; wycofanie = poprzedni tag.
+  `docker compose up -d`; wycofanie = poprzedni tag — migracje zgodne wstecz
+  (dodaj teraz, usuń w kolejnym wydaniu) i `pg_dump` przed `up -d` (README).
 - Start kontenera: `prisma migrate deploy` → skrypt pierwszego superadmina →
-  `node .output/server/index.mjs`. Obraz zawiera `node_modules` z CLI Prisma
-  i skrypt `reset-password`.
+  `node .output/server/index.mjs`. Obraz zawiera produkcyjne `node_modules`
+  (CLI Prisma, bez narzędzi deweloperskich), skrypty `seed-admin` i
+  `reset-password` oraz `HEALTHCHECK` na stronę logowania.
 - Env (walidowane przez t3-env; brak = aplikacja nie startuje), `.env` na VPS
   poza repo, `.env.example` w repo: `IMAGE`, `IMAGE_TAG`, `PROXY_NETWORK`, `DB_NETWORK`, `DATABASE_URL`,
   `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
