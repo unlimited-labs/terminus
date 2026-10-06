@@ -1,10 +1,7 @@
 import { z } from "zod"
 
-import { tooLong } from "../messages.pl.ts"
 import { answersSchema, examIdSchema } from "./exam.ts"
-import { studentNumber } from "./roster.ts"
-
-const personName = z.string().trim().min(1, "Podaj imię i nazwisko.").max(100, tooLong(100))
+import { personName, studentNumber } from "./roster.ts"
 
 const boardCommandSchema = z.discriminatedUnion("kind", [
   z.object({
@@ -18,8 +15,8 @@ const boardCommandSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("rename"),
     studentNumber,
-    firstName: personName,
-    lastName: personName,
+    firstName: personName("imię"),
+    lastName: personName("nazwisko"),
   }),
 ])
 

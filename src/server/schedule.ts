@@ -1,14 +1,9 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
-import { getRequestHeader } from "@tanstack/react-start/server"
 
-import { OPS } from "../messages.pl.ts"
 import { examIdSchema } from "../schemas/exam.ts"
-import { enrollmentSchema } from "../schemas/enrollment.ts"
 
-import { isBlocked, recordOutcome } from "./attempt-limit.server.ts"
 import { db } from "./db.server.ts"
-import { enrollTeam, type EnrollmentOutcome } from "./enrollment.server.ts"
 import { parseFields } from "./exam-state.server.ts"
 
 /** Publiczny harmonogram: sloty z imionami i nazwiskami, bez numerów indeksów. */
@@ -65,21 +60,4 @@ export const scheduleQuery = (examId: string) =>
     queryKey: ["schedule", examId],
     queryFn: () => getSchedule({ data: { examId } }),
     refetchInterval: 30_000,
-  })
-
-let warnedNoIp = false
-
-export const enroll = createServerFn({ method: "POST" })
-  .validator(enrollmentSchema)
-  .handler(async ({ data }): Promise<EnrollmentOutcome | { ok: false; code: "RATE_LIMITED" }> => {
-    const realIp = getRequestHeader("x-real-ip")
-    const ip = realIp ?? "unknown"
-    if (!realIp && !warnedNoIp && process.env.NODE_ENV === "production") {
-      warnedNoIp = true
-      console.warn(OPS.noRealIp)
-    }
-    if (await isBlocked(ip)) return { ok: false, code: "RATE_LIMITED" }
-    const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers)
-    await recordOutcome(ip, data.studentNumbers, outcome)
-    return outcome
   })

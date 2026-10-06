@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 
-import { auth } from "../src/server/auth.server.ts"
+import { auth, replacePassword } from "../src/server/auth.server.ts"
 import { db } from "../src/server/db.server.ts"
 
 const email = process.argv[2]
@@ -17,7 +17,6 @@ if (!found) {
 }
 
 const password = randomBytes(12).toString("base64url")
-await ctx.internalAdapter.updatePassword(found.user.id, await ctx.password.hash(password))
-await ctx.internalAdapter.deleteUserSessions(found.user.id)
+await replacePassword(found.user.id, password)
 console.log(`Nowe hasło dla ${email}: ${password}`)
 await db.$disconnect()

@@ -47,6 +47,7 @@ export async function loadExam(examId: string) {
     rosters: exam.rosters,
     slots: slots.map((s) => ({ ...s, answers: slotAnswers.get(s.id) ?? {} })),
     people: entries.map((e) => ({ ...e, slotId: slotOf.get(e.studentNumber) ?? null })),
+    now: new Date(),
   }
 }
 

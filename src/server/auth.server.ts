@@ -26,3 +26,10 @@ export async function sessionUser(headers: Headers) {
   const { id, name, email, role } = session.user
   return { id, name, email, isAdmin: role === "admin" }
 }
+
+/** Nowe hasło i wylogowanie wszystkich sesji tej osoby (panel kont i skrypt reset-password). */
+export async function replacePassword(userId: string, password: string) {
+  const ctx = await auth.$context
+  await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password))
+  await ctx.internalAdapter.deleteUserSessions(userId)
+}

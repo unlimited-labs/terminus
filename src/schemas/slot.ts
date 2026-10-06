@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { examIdSchema, hhmm } from "./exam.ts"
+import { examIdSchema, hhmm, slotMinutes } from "./exam.ts"
 
 const date = z.iso.date("Podaj datę.")
 
@@ -9,11 +9,7 @@ export const windowSchema = examIdSchema.extend({
   date,
   from: hhmm,
   to: hhmm,
-  minutes: z
-    .number({ error: "Podaj liczbę minut." })
-    .int("Podaj pełne minuty.")
-    .min(1, "Slot musi mieć co najmniej 1 minutę.")
-    .max(480, "Slot może mieć najwyżej 480 minut."),
+  minutes: slotMinutes,
 })
 
 export const updateSlotSchema = examIdSchema.extend({

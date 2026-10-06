@@ -9,7 +9,7 @@ export const studentNumber = z
   .regex(/^\d+$/, "Numer indeksu to same cyfry.")
   .max(20, "Za długi numer indeksu.")
 
-const personName = (label: string) =>
+export const personName = (label: string) =>
   z.string().trim().min(1, `Podaj ${label}.`).max(100, tooLong(100))
 
 export const rosterImportSchema = examIdSchema.extend({

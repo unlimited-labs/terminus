@@ -10,7 +10,7 @@ import type {
   updateAccountSchema,
 } from "../schemas/account.ts"
 
-import { auth, sessionUser } from "./auth.server.ts"
+import { auth, replacePassword, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 
 const isUniqueViolation = (e: unknown) =>
@@ -55,9 +55,7 @@ export async function setPassword(
   { userId, password }: z.infer<typeof setPasswordSchema>,
 ): Promise<Result> {
   await assertAdmin(headers)
-  const ctx = await auth.$context
-  await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password))
-  await ctx.internalAdapter.deleteUserSessions(userId)
+  await replacePassword(userId, password)
   return { ok: true }
 }
 

@@ -385,9 +385,10 @@ src/
 - Dostęp do bazy tylko w `server/` (tanie przejście na Prisma 8 w przyszłości).
 - Uprawnienia: middleware `requireUser` (sesja; zablokowane konto = odmowa)
   i `requireAdmin` podpinane `.middleware([...])` do każdej funkcji
-  serwerowej prowadzącego / superadmina; każde zapytanie o zaliczenie przez
-  `getOwnedExam(userId, examId)`, które dla cudzego zaliczenia zwraca "nie
-  znaleziono". `beforeLoad` tylko przekierowuje.
+  serwerowej prowadzącego / superadmina; własność zaliczenia sprawdza jedna
+  funkcja w `server/exam-lock.server.ts` — zapisy przez `withExamLock`
+  (cudze zaliczenie = `NOT_FOUND`), odczyty przez `getOwnedExam` (= `null`).
+  `beforeLoad` tylko przekierowuje.
 - Dane: TanStack Query zintegrowane z routerem przez
   `@tanstack/react-router-ssr-query` (`setupRouterSsrQueryIntegration({ router, queryClient })`);
   loadery `context.queryClient.query({ ...opcje, staleTime: "static" })`; zmiany przez
