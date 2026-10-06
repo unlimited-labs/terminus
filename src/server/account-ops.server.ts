@@ -9,9 +9,11 @@ import type {
   setPasswordSchema,
   updateAccountSchema,
 } from "../schemas/account.ts"
+import type { deleteExamSchema } from "../schemas/exam.ts"
 
 import { auth, replacePassword, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
+import { removeExam } from "./exam-ops.server.ts"
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
@@ -79,4 +81,29 @@ export async function setAdmin(
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
   await auth.api.setRole({ body: { userId, role: isAdmin ? "admin" : "user" }, headers })
   return { ok: true }
+}
+
+/** Zaliczenia zablokowanego konta (SPEC: superadmin cudzych zaliczeń nie widzi — poza tym wyjątkiem). */
+export async function listBlockedAccountExams(headers: Headers, userId: string) {
+  await assertAdmin(headers)
+  const exams = await db.exam.findMany({
+    where: { ownerId: userId, owner: { banned: true } },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, name: true, _count: { select: { enrollments: true } } },
+  })
+  return exams.map(({ _count, ...exam }) => ({ ...exam, enrollments: _count.enrollments }))
+}
+
+/** Usunięcie zaliczenia zablokowanego konta; zaliczenie aktywnego prowadzącego = nie znaleziono. */
+export async function deleteBlockedAccountExam(
+  headers: Headers,
+  { examId, confirmName }: z.infer<typeof deleteExamSchema>,
+): Promise<Result> {
+  await assertAdmin(headers)
+  const exam = await db.exam.findUnique({
+    where: { id: examId },
+    select: { ownerId: true, owner: { select: { banned: true } } },
+  })
+  if (!exam?.owner.banned) return { ok: false, code: "NOT_FOUND" }
+  return removeExam(examId, exam.ownerId, confirmName)
 }

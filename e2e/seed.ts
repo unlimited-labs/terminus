@@ -75,6 +75,27 @@ const RACE: Student[] = [
   ["900003", "Marek", "Mak"],
 ]
 
+/** Zaliczenie zablokowanego prowadzącego (konto `zablokowany@e2e.test`), z jednym zapisem. */
+async function blockedOwnerExam() {
+  const id = await createExam(
+    "Zablokowane E2E",
+    1,
+    [["970001", "Zofia", "Zet"]],
+    [at(16, 9)],
+    [["970001", 0]],
+  )
+  const owner = await db.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: "Zablokowany E2E",
+      email: "zablokowany@e2e.test",
+      banned: true,
+    },
+  })
+  await db.exam.update({ where: { id }, data: { ownerId: owner.id } })
+  return id
+}
+
 export async function seed(): Promise<E2EState> {
   const board = (
     enrolled: [string, number][] = [
@@ -146,6 +167,7 @@ export async function seed(): Promise<E2EState> {
     ),
     doomed: await createExam("Usuwane E2E", 1, [], [], []),
     rename: await createExam("Stara nazwa E2E", 1, [], [], []),
+    blockedOwner: await blockedOwnerExam(),
   }
   await db.$disconnect()
   return { baseDay, exams }

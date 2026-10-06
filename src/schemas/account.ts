@@ -8,6 +8,7 @@ const userId = z.string().min(1)
 
 export const createAccountSchema = z.object({ email, name, password })
 export const updateAccountSchema = z.object({ userId, email, name })
+export const accountRefSchema = z.object({ userId })
 export const setPasswordSchema = z.object({ userId, password })
 export const setBannedSchema = z.object({ userId, banned: z.boolean() })
 export const setAdminSchema = z.object({ userId, isAdmin: z.boolean() })

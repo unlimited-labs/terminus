@@ -10,8 +10,8 @@ import {
 } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
-import { copyExam, examRecord, updateExamSettings } from "./exam-ops.server.ts"
-import { getOwnedExam, withExamLock } from "./exam-lock.server.ts"
+import { copyExam, examRecord, removeExam, updateExamSettings } from "./exam-ops.server.ts"
+import { getOwnedExam } from "./exam-lock.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
 
@@ -67,14 +67,7 @@ export const updateExam = createServerFn({ method: "POST" })
 export const deleteExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(deleteExamSchema)
-  .handler(async ({ data, context }): Promise<Result> => {
-    return withExamLock(data.examId, context.user.id, async (tx): Promise<Result> => {
-      const exam = await tx.exam.findUniqueOrThrow({ where: { id: data.examId } })
-      if (exam.name !== data.confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
-      await tx.exam.delete({ where: { id: data.examId } })
-      return { ok: true }
-    })
-  })
+  .handler(({ data, context }) => removeExam(data.examId, context.user.id, data.confirmName))
 
 export const duplicateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])

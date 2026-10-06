@@ -46,3 +46,17 @@ test("nieudane wysłanie formularza: błąd ogłoszony, fokus na pierwszym błę
     "Podaj imię i nazwisko.",
   )
 })
+
+test("superadmin usuwa zaliczenie zablokowanego prowadzącego", async ({ page }) => {
+  await login(page)
+  await page.goto("/konta")
+  const row = page.locator("li", { hasText: "zablokowany@e2e.test" })
+  const exams = row.getByRole("list", { name: "Zaliczenia zablokowanego konta" })
+  await expect(exams).toContainText("Zablokowane E2E")
+  await expect(exams).toContainText("zapisy: 1")
+
+  await exams.getByRole("button", { name: "Usuń" }).click()
+  await page.getByLabel("Nazwa zaliczenia").fill("Zablokowane E2E")
+  await page.getByRole("button", { name: "Usuń na zawsze" }).click()
+  await expect(row).toContainText("Brak zaliczeń tego konta.")
+})

@@ -82,3 +82,13 @@ export function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof exa
     enrollmentOpensAt: opensDate && opensTime ? warsawDateTime(opensDate, opensTime) : null,
   }
 }
+
+/** Usunięcie zaliczenia z listami, slotami i zapisami; trzeba przepisać jego nazwę. */
+export function removeExam(examId: string, ownerId: string, confirmName: string): Promise<Result> {
+  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+    const exam = await tx.exam.findUniqueOrThrow({ where: { id: examId } })
+    if (exam.name !== confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
+    await tx.exam.delete({ where: { id: examId } })
+    return { ok: true }
+  })
+}

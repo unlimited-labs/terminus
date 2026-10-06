@@ -4,13 +4,17 @@ import { expect, test } from "vitest"
 
 import {
   addAccount,
+  deleteBlockedAccountExam,
   setAdmin,
   setBanned,
   setPassword,
   editAccount,
+  listBlockedAccountExams,
 } from "@/server/account-ops.server"
 import { auth, sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
+
+import { createExam, enroll, inDays } from "./fixtures"
 
 const password = "haslo-123456"
 
@@ -129,4 +133,31 @@ test("zablokowane konto z żywą sesją nie jest zalogowanym prowadzącym", asyn
   expect(await sessionUser(user.headers)).toMatchObject({ id: user.id, isAdmin: false })
   await db.user.update({ where: { id: user.id }, data: { banned: true } })
   expect(await sessionUser(user.headers)).toBeNull()
+})
+
+test("zaliczenia zablokowanego konta: superadmin widzi je i usuwa; aktywnego konta — nie", async () => {
+  const admin = await account("admin")
+  const { examId, ownerId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["1"])
+  const remove = (confirmName = "Kolokwium") =>
+    deleteBlockedAccountExam(admin.headers, { examId, confirmName })
+
+  expect(await listBlockedAccountExams(admin.headers, ownerId)).toEqual([])
+  expect(await remove()).toEqual({ ok: false, code: "NOT_FOUND" })
+
+  await db.user.update({ where: { id: ownerId }, data: { banned: true } })
+  expect(await listBlockedAccountExams(admin.headers, ownerId)).toEqual([
+    { id: examId, name: "Kolokwium", enrollments: 1 },
+  ])
+  await expect(listBlockedAccountExams((await account()).headers, ownerId)).rejects.toThrow(
+    "Brak dostępu",
+  )
+  await expect(
+    deleteBlockedAccountExam((await account()).headers, { examId, confirmName: "Kolokwium" }),
+  ).rejects.toThrow("Brak dostępu")
+  expect(await remove("Inna nazwa")).toEqual({ ok: false, code: "NAME_MISMATCH" })
+  expect(await remove()).toEqual({ ok: true })
+  expect(await db.exam.count({ where: { id: examId } })).toBe(0)
 })

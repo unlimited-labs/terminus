@@ -25,6 +25,7 @@ const EXAMS = [
   "days",
   "doomed",
   "rename",
+  "blockedOwner",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */

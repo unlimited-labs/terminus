@@ -1,8 +1,9 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQuery, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,7 +12,9 @@ import { useResultMutation } from "@/components/use-result-mutation"
 import { createAccountSchema, setPasswordSchema, updateAccountSchema } from "@/schemas/account"
 import {
   accountsQuery,
+  blockedAccountExamsQuery,
   createAccount,
+  deleteAccountExam,
   setAccountAdmin,
   setAccountBanned,
   setAccountPassword,
@@ -136,6 +139,7 @@ function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) 
           {mode === "password" && (
             <PasswordForm userId={account.id} onDone={() => setMode("view")} />
           )}
+          {account.banned && <BlockedAccountExams userId={account.id} />}
         </CardContent>
       </Card>
     </li>
@@ -185,5 +189,33 @@ function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }
         </div>
       </form.Form>
     </form.AppForm>
+  )
+}
+
+/** SPEC: zaliczenia zablokowanego prowadzącego usuwa superadmin (klauzula informacyjna, pkt 6). */
+function BlockedAccountExams({ userId }: { userId: string }) {
+  const query = blockedAccountExamsQuery(userId)
+  const { data: exams } = useQuery(query)
+  if (!exams) return null
+  if (exams.length === 0) {
+    return <p className="text-sm text-muted-foreground">Brak zaliczeń tego konta.</p>
+  }
+  return (
+    <ul className="grid gap-1 text-sm" aria-label="Zaliczenia zablokowanego konta">
+      {exams.map((exam) => (
+        <li key={exam.id} className="flex items-center gap-2">
+          <span>{exam.name}</span>
+          <span className="text-muted-foreground tabular-nums">zapisy: {exam.enrollments}</span>
+          <span className="ml-auto">
+            <DeleteExamButton
+              exam={exam}
+              remove={deleteAccountExam}
+              invalidate={[query.queryKey]}
+              size="xs"
+            />
+          </span>
+        </li>
+      ))}
+    </ul>
   )
 }

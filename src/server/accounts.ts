@@ -3,14 +3,24 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 
 import {
+  accountRefSchema,
   createAccountSchema,
   setAdminSchema,
   setBannedSchema,
   setPasswordSchema,
   updateAccountSchema,
 } from "../schemas/account.ts"
+import { deleteExamSchema } from "../schemas/exam.ts"
 
-import { addAccount, editAccount, setAdmin, setBanned, setPassword } from "./account-ops.server.ts"
+import {
+  addAccount,
+  deleteBlockedAccountExam,
+  editAccount,
+  listBlockedAccountExams,
+  setAdmin,
+  setBanned,
+  setPassword,
+} from "./account-ops.server.ts"
 import { db } from "./db.server.ts"
 import { requireAdmin } from "./session.ts"
 
@@ -25,6 +35,22 @@ export const listAccounts = createServerFn()
 
 export const accountsQuery = () =>
   queryOptions({ queryKey: ["accounts"], queryFn: () => listAccounts() })
+
+const blockedAccountExams = createServerFn()
+  .middleware([requireAdmin])
+  .validator(accountRefSchema)
+  .handler(({ data }) => listBlockedAccountExams(getRequestHeaders(), data.userId))
+
+export const blockedAccountExamsQuery = (userId: string) =>
+  queryOptions({
+    queryKey: ["accounts", userId, "exams"],
+    queryFn: () => blockedAccountExams({ data: { userId } }),
+  })
+
+export const deleteAccountExam = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(deleteExamSchema)
+  .handler(({ data }) => deleteBlockedAccountExam(getRequestHeaders(), data))
 
 export const createAccount = createServerFn({ method: "POST" })
   .middleware([requireAdmin])

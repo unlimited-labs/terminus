@@ -6,15 +6,7 @@ import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
+import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { formatDayTime, warsawDay, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -64,6 +56,7 @@ export function CapacitySummary({ exam }: { exam: ExamDetail }) {
 
 export function ExamSettings({ exam }: { exam: ExamDetail }) {
   const [editing, setEditing] = useState(false)
+  const navigate = useNavigate()
   const update = useResultMutation(updateExam, examChangeKeys(exam.id), () => {
     setEditing(false)
     toast.success("Zapisano zmiany.")
@@ -80,7 +73,12 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
           </Button>
           <ExportButton examId={exam.id} />
           <DuplicateButton examId={exam.id} />
-          <DeleteExamButton exam={exam} />
+          <DeleteExamButton
+            exam={exam}
+            remove={deleteExam}
+            invalidate={[examsQuery().queryKey]}
+            onDeleted={() => void navigate({ to: "/" })}
+          />
         </div>
       </CardHeader>
       <CardContent className="grid gap-4">
@@ -133,42 +131,5 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
         )}
       </CardContent>
     </Card>
-  )
-}
-
-function DeleteExamButton({ exam }: { exam: ExamDetail }) {
-  const [open, setOpen] = useState(false)
-  const [confirmName, setConfirmName] = useState("")
-  const navigate = useNavigate()
-  const remove = useResultMutation(deleteExam, [examsQuery().queryKey], () => navigate({ to: "/" }))
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="destructive" size="sm" onClick={() => setOpen(true)}>
-        Usuń
-      </Button>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Usunąć zaliczenie?</DialogTitle>
-          <DialogDescription>
-            Znikną listy indeksów, sloty i wszystkie zapisy. Wpisz nazwę zaliczenia:{" "}
-            <strong>{exam.name}</strong>
-          </DialogDescription>
-        </DialogHeader>
-        <Input
-          aria-label="Nazwa zaliczenia"
-          value={confirmName}
-          onChange={(e) => setConfirmName(e.target.value)}
-        />
-        <DialogFooter>
-          <Button
-            variant="destructive"
-            disabled={confirmName.trim() !== exam.name || remove.isPending}
-            onClick={() => remove.mutate({ examId: exam.id, confirmName })}
-          >
-            Usuń na zawsze
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   )
 }
