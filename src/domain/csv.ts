@@ -64,7 +64,8 @@ export type ExistingEntry = {
   rosterId: string
   firstName: string
   lastName: string
-  enrolled: boolean
+  /** Początek slotu, w którym osoba ma zapis; `null` = bez zapisu. */
+  slotStartsAt: Date | null
 }
 
 export type RosterImportPlan = {
@@ -73,9 +74,9 @@ export type RosterImportPlan = {
   unchanged: number
   /** Błędne: indeks jest już na innej liście zaliczenia. */
   otherRoster: RosterRow[]
-  /** Wycofani z tej listy bez zapisu — znikają. */
+  /** Wycofani z tej listy — znikają (z zapisem: razem z nim). */
   remove: ExistingEntry[]
-  /** Wycofani z tej listy z zapisem — zostają, oznaczeni w podglądzie. */
+  /** Ci z `remove`, którzy mają zapis — podgląd pokazuje ich slot, zanim zapis zniknie. */
   withdrawnEnrolled: ExistingEntry[]
   /** Na tej liście, nieobecni w pliku — zostają. */
   notInFile: ExistingEntry[]
@@ -107,12 +108,10 @@ export function planRosterImport(
   }
   const inFile = new Set(parsed.rows.map((r) => r.studentNumber))
   const withdrawn = new Set(parsed.withdrawn.map((r) => r.studentNumber))
-  for (const entry of existing) {
-    if (entry.rosterId !== rosterId || inFile.has(entry.studentNumber)) continue
-    if (!withdrawn.has(entry.studentNumber)) plan.notInFile.push(entry)
-    else if (entry.enrolled) plan.withdrawnEnrolled.push(entry)
-    else plan.remove.push(entry)
-  }
+  const absent = existing.filter((e) => e.rosterId === rosterId && !inFile.has(e.studentNumber))
+  plan.notInFile = absent.filter((e) => !withdrawn.has(e.studentNumber))
+  plan.remove = absent.filter((e) => withdrawn.has(e.studentNumber))
+  plan.withdrawnEnrolled = plan.remove.filter((e) => e.slotStartsAt)
   return plan
 }
 

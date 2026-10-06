@@ -31,3 +31,18 @@ test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", a
   await windowForm.getByRole("button", { name: "Dodaj sloty" }).click()
   await expect(page.getByText("Dodano sloty: 2.")).toBeVisible()
 })
+
+test("ponowny import: skreślony z zapisem widoczny w podglądzie ze slotem, potem znika razem z zapisem", async ({
+  page,
+}) => {
+  await login(page)
+  await page.goto(`/zaliczenia/${exams().withdrawn}`)
+  await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
+  await expect(page.getByText("Ponowny import do istniejącej listy.")).toBeVisible()
+  await expect(page.getByText(/^400003 Zając Ewa — slot .*10:00/)).toBeVisible()
+
+  await page.getByRole("button", { name: "Zapisz listę" }).click()
+  await expect(page.getByText("Zaimportowano listę.")).toBeVisible()
+  await expect(page.getByRole("cell", { name: "400003" })).toHaveCount(0)
+  await expect(page.getByRole("cell", { name: "400001" })).toBeVisible()
+})

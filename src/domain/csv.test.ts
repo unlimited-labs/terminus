@@ -53,7 +53,7 @@ describe("planRosterImport", () => {
         rosterId: "g2",
         firstName: "Ola",
         lastName: "Mazur",
-        enrolled: false,
+        slotStartsAt: null,
       },
     ]
     const plan = planRosterImport(parsed, "g1", existing)
@@ -70,35 +70,35 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Anna",
         lastName: "Nowak",
-        enrolled: true,
+        slotStartsAt: new Date("2030-01-02T09:00:00Z"),
       },
       {
         studentNumber: "400002",
         rosterId: "g1",
         firstName: "Piotr",
         lastName: "Wisniewski",
-        enrolled: false,
+        slotStartsAt: null,
       },
       {
         studentNumber: "400003",
         rosterId: "g1",
         firstName: "Ewa",
         lastName: "Zając",
-        enrolled: false,
+        slotStartsAt: null,
       },
       {
         studentNumber: "400004",
         rosterId: "g1",
         firstName: "Adam",
         lastName: "Lis",
-        enrolled: true,
+        slotStartsAt: new Date("2030-01-02T09:00:00Z"),
       },
       {
         studentNumber: "400099",
         rosterId: "g1",
         firstName: "Iza",
         lastName: "Byk",
-        enrolled: false,
+        slotStartsAt: null,
       },
     ]
     const plan = planRosterImport(parsed, "g1", existing)
@@ -107,7 +107,7 @@ describe("planRosterImport", () => {
       { line: 3, studentNumber: "400002", firstName: "Piotr", lastName: "Wiśniewski" },
     ])
     expect(plan.unchanged).toBe(1)
-    expect(plan.remove.map((e) => e.studentNumber)).toEqual(["400003"])
+    expect(plan.remove.map((e) => e.studentNumber)).toEqual(["400003", "400004"])
     expect(plan.withdrawnEnrolled.map((e) => e.studentNumber)).toEqual(["400004"])
     expect(plan.notInFile.map((e) => e.studentNumber)).toEqual(["400099"])
   })

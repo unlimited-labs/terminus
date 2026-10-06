@@ -168,6 +168,16 @@ export async function seed(): Promise<E2EState> {
     doomed: await createExam("Usuwane E2E", 1, [], [], []),
     rename: await createExam("Stara nazwa E2E", 1, [], [], []),
     blockedOwner: await blockedOwnerExam(),
+    withdrawn: await createExam(
+      "Skreśleni E2E",
+      1,
+      [
+        ["400001", "Anna", "Nowak"],
+        ["400003", "Ewa", "Zając"],
+      ],
+      [at(17, 10)],
+      [["400003", 0]],
+    ),
   }
   await db.$disconnect()
   return { baseDay, exams }

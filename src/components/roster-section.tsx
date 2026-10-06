@@ -19,6 +19,7 @@ import {
 import { currentRosterId } from "@/components/roster-choice"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
+import { formatDayTime } from "@/domain/time"
 import { errorMessage, INVALID_ROW } from "@/messages.pl"
 import { addEntrySchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -221,10 +222,15 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
             ]}
           </PreviewList>
           <PreviewList title="Znikną z listy (skreśleni, bez zapisu)">
-            {result.remove.map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}
+            {result.remove
+              .filter((e) => !e.slotStartsAt)
+              .map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}
           </PreviewList>
-          <PreviewList title="Skreśleni z zapisem — zostają na liście">
-            {result.withdrawnEnrolled.map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}
+          <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
+            {result.withdrawnEnrolled.map(
+              (e) =>
+                `${e.studentNumber} ${e.lastName} ${e.firstName} — slot ${formatDayTime(e.slotStartsAt!)}`,
+            )}
           </PreviewList>
           <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
             {result.notInFile.map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}

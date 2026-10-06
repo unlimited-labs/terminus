@@ -11,7 +11,7 @@ import {
   removeRoster,
 } from "@/server/roster-ops.server"
 
-import { createExam, inDays } from "./fixtures"
+import { createExam, enroll, inDays } from "./fixtures"
 
 const csv = (...rows: string[]) => ["indeks;imie;nazwisko;skreslony", ...rows].join("\n")
 
@@ -24,7 +24,7 @@ const people = async (examId: string) =>
     })
   ).map((e) => [e.roster.name, e.studentNumber, e.firstName, e.lastName])
 
-test("pierwszy import tworzy listę; ponowny dodaje, poprawia, skreśla i zostawia zapisanych", async () => {
+test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — także z zapisem", async () => {
   const { examId, ownerId } = await createExam({ rosters: {} })
   expect(
     await applyImport(
@@ -53,18 +53,34 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia, skreśla i zostaw
     rosterId: roster.id,
     add: [{ studentNumber: "4" }],
     update: [{ studentNumber: "1", lastName: "Nowak" }],
-    remove: [{ studentNumber: "2" }],
-    withdrawnEnrolled: [{ studentNumber: "3" }],
+    remove: [{ studentNumber: "2" }, { studentNumber: "3" }],
+    withdrawnEnrolled: [{ studentNumber: "3", slotStartsAt: inDays(1) }],
     notInFile: [{ studentNumber: "5" }],
   })
   expect(await applyImport(examId, ownerId, "g1", next)).toEqual({ ok: true })
   expect(await people(examId)).toEqual([
     ["g1", "1", "Ala", "Nowak"],
-    ["g1", "3", "Cyd", "C"],
     ["g1", "4", "Dan", "D"],
     ["g1", "5", "Eda", "E"],
   ])
+  expect(await db.enrollment.count({ where: { examId } })).toBe(0)
   expect(await db.roster.count({ where: { examId } })).toBe(1)
+})
+
+test("skreślony z zespołu traci zapis; druga osoba zostaje w slocie z odpowiedziami", async () => {
+  const { examId, ownerId } = await createExam({
+    maxTeamSize: 2,
+    fields: [{ id: "t", label: "Temat", required: false }],
+    rosters: { g1: { students: ["1", "2"], slots: [inDays(1)] } },
+  })
+  const enrolled = await enroll(examId, ["1", "2"], { t: "Robot" })
+  if (!enrolled.ok) throw new Error(enrolled.code)
+
+  expect(await applyImport(examId, ownerId, "g1", csv("1;A;A;0", "2;B;B;1"))).toEqual({ ok: true })
+  expect(await db.enrollment.findMany({ where: { examId } })).toMatchObject([
+    { studentNumber: "1", slotId: enrolled.slotId, answers: { t: "Robot" } },
+  ])
+  expect((await people(examId)).map(([, n]) => n)).toEqual(["1"])
 })
 
 test("import nie przenosi osoby z innej listy i odrzuca plik bez wymaganych kolumn", async () => {

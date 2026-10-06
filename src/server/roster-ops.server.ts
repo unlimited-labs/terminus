@@ -13,10 +13,16 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     tx.roster.findUnique({ where: { examId_name: { examId, name: rosterName } } }),
     tx.rosterEntry.findMany({
       where: { examId },
-      include: { enrollment: { select: { slotId: true } } },
+      include: { enrollment: { select: { slot: { select: { startsAt: true } } } } },
     }),
   ])
-  const existing = entries.map((e) => ({ ...e, enrolled: e.enrollment !== null }))
+  const existing = entries.map(({ studentNumber, rosterId, firstName, lastName, enrollment }) => ({
+    studentNumber,
+    rosterId,
+    firstName,
+    lastName,
+    slotStartsAt: enrollment?.slot.startsAt ?? null,
+  }))
   const plan = planRosterImport(parsed, roster?.id ?? "", existing)
   return {
     ok: true as const,
@@ -67,9 +73,10 @@ export async function applyImport(
         }),
       ),
     )
-    await tx.rosterEntry.deleteMany({
-      where: { examId, studentNumber: { in: plan.remove.map((e) => e.studentNumber) } },
-    })
+    // Skreślony traci zapis (reszta zespołu zostaje w slocie), potem znika z listy.
+    const removed = plan.remove.map((e) => e.studentNumber)
+    await tx.enrollment.deleteMany({ where: { examId, studentNumber: { in: removed } } })
+    await tx.rosterEntry.deleteMany({ where: { examId, studentNumber: { in: removed } } })
     return { ok: true }
   })
 }
