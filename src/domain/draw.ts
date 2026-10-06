@@ -65,7 +65,7 @@ export function planEnrollment(
   const taken = new Set(data.enrollments.map((e) => e.slotId))
   const byDay = Map.groupBy(
     data.slots
-      .filter((s) => s.rosterId === rosterId && isFreeSlot(s, taken.has(s.id) ? 1 : 0, now))
+      .filter((s) => s.rosterId === rosterId && isFreeSlot(s, taken.has(s.id), now))
       .toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
     (s) => warsawDay(s.startsAt),
   )

@@ -123,9 +123,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
 
   const enrolled = exam.people.filter((p) => p.slotId !== null).length
   const taken = new Set(exam.people.map((p) => p.slotId))
-  const freeSlots = exam.slots.filter((s) =>
-    isFreeSlot(s, taken.has(s.id) ? 1 : 0, exam.now),
-  ).length
+  const freeSlots = exam.slots.filter((s) => isFreeSlot(s, taken.has(s.id), exam.now)).length
 
   return (
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>

@@ -28,11 +28,15 @@ export function withExamLock<T>(
 ): Promise<T | NotFound> {
   return db.$transaction(
     async (tx) => {
-      const [exam] = await tx.$queryRaw<{ ownerId: string }[]>`
-        SELECT "ownerId" FROM exam WHERE id = ${examId} FOR UPDATE`
-      return exam && ownsExam(exam, ownerId)
-        ? fn(tx)
-        : { ok: false as const, code: "NOT_FOUND" as const }
+      // Właściciel przed blokadą: cudzy prowadzący nie czeka w kolejce do cudzego zaliczenia
+      // (`ownerId` zaliczenia się nie zmienia, więc sprawdzenie bez blokady jest trwałe).
+      const exam = await tx.exam.findUnique({ where: { id: examId }, select: { ownerId: true } })
+      const notFound = { ok: false as const, code: "NOT_FOUND" as const }
+      if (!exam || !ownsExam(exam, ownerId)) return notFound
+      const locked = await tx.$queryRaw<
+        unknown[]
+      >`SELECT 1 FROM exam WHERE id = ${examId} FOR UPDATE`
+      return locked.length > 0 ? fn(tx) : notFound
     },
     { isolationLevel: "ReadCommitted", maxWait: 10_000, timeout },
   )

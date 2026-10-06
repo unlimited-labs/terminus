@@ -52,7 +52,7 @@ function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boole
 
 /** Co oferuje panel: zapis z losowaniem, a przy braku wolnych slotów tylko sprawdzenie swojego. */
 function entryMode(schedule: Schedule, enrolled: boolean) {
-  const anyFree = schedule.slots.some((s) => isFreeSlot(s, s.team.length, schedule.now))
+  const anyFree = schedule.slots.some((s) => isFreeSlot(s, s.team.length > 0, schedule.now))
   return {
     anyFree,
     open: isEnrollmentOpen(schedule.opensAt, schedule.now),
