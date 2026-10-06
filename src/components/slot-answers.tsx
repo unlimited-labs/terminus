@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { useResultMutation } from "@/components/use-result-mutation"
 import type { Answers, ExamField } from "@/domain/fields"
 import { updateSlotAnswers } from "@/server/board"
+import { examKeys } from "@/server/exams"
 
 export function SlotAnswers({
   examId,
@@ -20,7 +21,7 @@ export function SlotAnswers({
   answers: Answers
 }) {
   const [draft, setDraft] = useState<Answers | null>(null)
-  const save = useResultMutation(updateSlotAnswers, ["exam", examId], () => {
+  const save = useResultMutation(updateSlotAnswers, examKeys(examId), () => {
     setDraft(null)
     toast.success("Zapisano odpowiedzi zespołu.")
   })

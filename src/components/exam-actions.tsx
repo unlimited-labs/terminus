@@ -1,4 +1,3 @@
-import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -13,33 +12,24 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { useResultMutation } from "@/components/use-result-mutation"
-import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { duplicateExamSchema } from "@/schemas/exam"
-import { duplicateExam, exportExamCsv } from "@/server/exams"
+import { duplicateExam, examsQuery, exportExamCsv } from "@/server/exams"
 
 export function ExportButton({ examId }: { examId: string }) {
-  const download = useMutation({
-    mutationFn: () => exportExamCsv({ data: { examId } }),
-    onSuccess: (result) => {
-      if (!result.ok) {
-        toast.error(errorMessage(result))
-        return
-      }
-      const url = URL.createObjectURL(new Blob([result.csv], { type: "text/csv;charset=utf-8" }))
-      const link = document.createElement("a")
-      link.href = url
-      link.download = result.fileName
-      link.click()
-      URL.revokeObjectURL(url)
-    },
-    onError: () => toast.error(UNEXPECTED_ERROR),
+  const download = useResultMutation(exportExamCsv, [], (result) => {
+    const url = URL.createObjectURL(new Blob([result.csv], { type: "text/csv;charset=utf-8" }))
+    const link = document.createElement("a")
+    link.href = url
+    link.download = result.fileName
+    link.click()
+    URL.revokeObjectURL(url)
   })
   return (
     <Button
       variant="outline"
       size="sm"
       disabled={download.isPending}
-      onClick={() => download.mutate()}
+      onClick={() => download.mutate({ examId })}
     >
       Eksport CSV
     </Button>
@@ -49,7 +39,7 @@ export function ExportButton({ examId }: { examId: string }) {
 export function DuplicateButton({ examId }: { examId: string }) {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
-  const duplicate = useResultMutation(duplicateExam, ["exams"], (result) => {
+  const duplicate = useResultMutation(duplicateExam, [examsQuery().queryKey], (result) => {
     setOpen(false)
     toast.success("Utworzono kopię zaliczenia.")
     void navigate({ to: "/zaliczenia/$examId", params: { examId: result.examId } })

@@ -18,7 +18,7 @@ function ExamList() {
   const { data: exams } = useSuspenseQuery(examsQuery())
   const [creating, setCreating] = useState(false)
   const navigate = useNavigate()
-  const create = useResultMutation(createExam, ["exams"], ({ examId }) =>
+  const create = useResultMutation(createExam, [examsQuery().queryKey], ({ examId }) =>
     navigate({ to: "/zaliczenia/$examId", params: { examId } }),
   )
 

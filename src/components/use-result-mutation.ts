@@ -5,13 +5,13 @@ import { toast } from "sonner"
 import { errorMessage, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
 
 /**
- * Mutacja funkcji serwerowej zwracającej `Result`: błąd domeny → komunikat, potem odświeżenie `invalidate`.
+ * Mutacja funkcji serwerowej zwracającej `Result`: błąd domeny → komunikat, potem odświeżenie zapytań `invalidate`.
  * `mutate` ignoruje wywołania w trakcie poprzedniego (podwójne kliknięcie, przytrzymany Enter):
  * `isPending` dociera do komponentu asynchronicznie, więc samo `disabled` nie wystarcza.
  */
 export function useResultMutation<TInput, TOut extends object>(
   fn: (opts: { data: TInput }) => Promise<Result<TOut>>,
-  invalidate: QueryKey,
+  invalidate: QueryKey[],
   onOk?: (result: { ok: true } & TOut) => void,
 ) {
   const queryClient = useQueryClient()
@@ -26,7 +26,8 @@ export function useResultMutation<TInput, TOut extends object>(
       console.error(error)
       toast.error(UNEXPECTED_ERROR)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: invalidate }),
+    onSettled: () =>
+      Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
   })
   const mutate = (data: TInput) => {
     if (inFlight.current) return

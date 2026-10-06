@@ -28,3 +28,15 @@ test("duplikat z listami prowadzi do nowego zaliczenia", async ({ page }) => {
   await expect(page.getByRole("cell", { name: "500003" })).toBeVisible()
   await expect(page.getByText("Sloty (0)")).toBeVisible()
 })
+
+test("zmiana nazwy zaliczenia widoczna na liście bez przeładowania", async ({ page }) => {
+  await page.goto("/")
+  await expect(page.getByText("Stara nazwa E2E")).toBeVisible()
+  await page.getByText("Stara nazwa E2E").click()
+  await page.getByRole("button", { name: "Edytuj" }).first().click()
+  await page.getByLabel("Nazwa (z nazwą przedmiotu)").fill("Nowa nazwa E2E")
+  await page.getByRole("button", { name: "Zapisz", exact: true }).click()
+  await expect(page.getByRole("heading", { name: "Nowa nazwa E2E" })).toBeVisible()
+  await page.getByRole("link", { name: "Moje zaliczenia" }).click()
+  await expect(page.getByText("Nowa nazwa E2E")).toBeVisible()
+})

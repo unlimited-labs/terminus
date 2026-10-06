@@ -46,7 +46,7 @@ function Accounts() {
 }
 
 function CreateAccountForm() {
-  const create = useResultMutation(createAccount, ["accounts"], () =>
+  const create = useResultMutation(createAccount, [accountsQuery().queryKey], () =>
     toast.success("Konto utworzone. Przekaż hasło prowadzącemu."),
   )
   const form = useAppForm({
@@ -86,8 +86,8 @@ function CreateAccountForm() {
 function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) {
   const [mode, setMode] = useState<"view" | "edit" | "password">("view")
   const isAdmin = account.role === "admin"
-  const ban = useResultMutation(setAccountBanned, ["accounts"])
-  const admin = useResultMutation(setAccountAdmin, ["accounts"])
+  const ban = useResultMutation(setAccountBanned, [accountsQuery().queryKey])
+  const admin = useResultMutation(setAccountAdmin, [accountsQuery().queryKey])
   return (
     <li>
       <Card size="sm">
@@ -143,7 +143,7 @@ function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) 
 }
 
 function EditAccountForm({ account, onDone }: { account: Account; onDone: () => void }) {
-  const update = useResultMutation(updateAccount, ["accounts"], onDone)
+  const update = useResultMutation(updateAccount, [accountsQuery().queryKey], onDone)
   const form = useAppForm({
     defaultValues: { userId: account.id, email: account.email, name: account.name },
     validators: { onSubmit: updateAccountSchema },
@@ -165,7 +165,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
 }
 
 function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const set = useResultMutation(setAccountPassword, ["accounts"], () => {
+  const set = useResultMutation(setAccountPassword, [accountsQuery().queryKey], () => {
     toast.success("Hasło ustawione, sesje tej osoby wylogowane.")
     onDone()
   })

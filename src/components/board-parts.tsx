@@ -210,7 +210,7 @@ function TeamCell({
   )
 }
 
-export function SlotRow({
+export function BoardSlotRow({
   slot,
   team,
   dayLabel,

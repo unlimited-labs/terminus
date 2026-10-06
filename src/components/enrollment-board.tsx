@@ -4,7 +4,7 @@ import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
-import { SlotRow, UnenrolledPanel } from "@/components/board-parts"
+import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
 import { CapacitySummary } from "@/components/exam-settings"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
@@ -14,9 +14,10 @@ import { isFreeSlot } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { applyBoardCommand, boardMutationKey } from "@/server/board"
+import { examKeys, examQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
 
-const DONE: Record<BoardCommand["kind"], string> = {
+const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
   move: "Przeniesiono.",
   swapPeople: "Zamieniono sloty dwóch osób.",
   swapSlots: "Przeniesiono zespół.",
@@ -24,10 +25,10 @@ const DONE: Record<BoardCommand["kind"], string> = {
 }
 
 function doneMessage(command: BoardCommand, exam: ExamDetail) {
-  if (command.kind !== "move") return DONE[command.kind]
+  if (command.kind !== "move") return DONE_MESSAGES[command.kind]
   if (command.toSlotId === null) return "Usunięto zapis."
   const before = exam.people.find((p) => p.studentNumber === command.studentNumber)
-  return before?.slotId === null ? "Zapisano ręcznie." : DONE.move
+  return before?.slotId === null ? "Zapisano ręcznie." : DONE_MESSAGES.move
 }
 
 const replay = (state: ExamDetail, commands: BoardCommand[]) =>
@@ -42,7 +43,7 @@ const replay = (state: ExamDetail, commands: BoardCommand[]) =>
  */
 function useBoardCommand(exam: ExamDetail) {
   const queryClient = useQueryClient()
-  const key = ["exam", exam.id]
+  const key = examQuery(exam.id).queryKey
   const mutationKey = boardMutationKey(exam.id)
   const server = useRef<ExamDetail | undefined>(undefined)
   const pending = useRef<BoardCommand[]>([])
@@ -74,7 +75,7 @@ function useBoardCommand(exam: ExamDetail) {
       }
       show(result.exam, command)
       toast.success(
-        context.previous ? doneMessage(command, context.previous) : DONE[command.kind],
+        context.previous ? doneMessage(command, context.previous) : DONE_MESSAGES[command.kind],
         {
           action: { label: "Cofnij", onClick: () => mutation.mutate(result.inverse) },
           duration: 6000,
@@ -88,7 +89,8 @@ function useBoardCommand(exam: ExamDetail) {
     },
     onSettled: (_result, _error, command) => {
       pending.current = queued(command)
-      if (pending.current.length === 0) void queryClient.invalidateQueries({ queryKey: key })
+      if (pending.current.length > 0) return
+      for (const queryKey of examKeys(exam.id)) void queryClient.invalidateQueries({ queryKey })
     },
   })
 
@@ -161,7 +163,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                   const prev = exam.slots[i - 1]
                   const firstOfDay = !prev || warsawDay(prev.startsAt) !== day
                   return (
-                    <SlotRow
+                    <BoardSlotRow
                       key={slot.id}
                       slot={slot}
                       team={exam.people.filter((p) => p.slotId === slot.id)}

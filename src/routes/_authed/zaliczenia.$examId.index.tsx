@@ -1,20 +1,15 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 
 import { ExamSettings } from "@/components/exam-settings"
 import { RosterSection } from "@/components/roster-section"
 import { SlotSection } from "@/components/slot-section"
 import { examQuery } from "@/server/exams"
 
+import { loadExam } from "./-load-exam"
+
 export const Route = createFileRoute("/_authed/zaliczenia/$examId/")({
-  loader: async ({ context, params }) => {
-    const exam = await context.queryClient.query({
-      ...examQuery(params.examId),
-      staleTime: "static",
-    })
-    if (!exam) throw notFound()
-    return { title: exam.name }
-  },
+  loader: loadExam,
   head: ({ loaderData }) => ({
     meta: [{ title: `${loaderData?.title ?? "Zaliczenie"} — Terminus` }],
   }),

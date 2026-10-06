@@ -1,19 +1,14 @@
 import { useIsMutating, useSuspenseQuery } from "@tanstack/react-query"
-import { Link, createFileRoute, notFound } from "@tanstack/react-router"
+import { Link, createFileRoute } from "@tanstack/react-router"
 
 import { EnrollmentBoard } from "@/components/enrollment-board"
 import { boardMutationKey } from "@/server/board"
 import { examQuery } from "@/server/exams"
 
+import { loadExam } from "./-load-exam"
+
 export const Route = createFileRoute("/_authed/zaliczenia/$examId/tablica")({
-  loader: async ({ context, params }) => {
-    const exam = await context.queryClient.query({
-      ...examQuery(params.examId),
-      staleTime: "static",
-    })
-    if (!exam) throw notFound()
-    return { title: exam.name }
-  },
+  loader: loadExam,
   head: ({ loaderData }) => ({
     meta: [{ title: `Tablica: ${loaderData?.title ?? "zaliczenie"} — Terminus` }],
   }),

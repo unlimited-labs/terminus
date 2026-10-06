@@ -13,6 +13,7 @@ import { errorMessage } from "@/messages.pl"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { addSlotWindow, deleteFreeSlotsOfDay, deleteSlot, updateSlot } from "@/server/slots"
+import { examKeys } from "@/server/exams"
 
 type Slot = ExamDetail["slots"][number]
 
@@ -45,7 +46,7 @@ export function SlotSection({ exam }: { exam: ExamDetail }) {
 }
 
 function WindowForm({ exam }: { exam: ExamDetail }) {
-  const add = useResultMutation(addSlotWindow, ["exam", exam.id], ({ count }) =>
+  const add = useResultMutation(addSlotWindow, examKeys(exam.id), ({ count }) =>
     toast.success(`Dodano sloty: ${count}.`),
   )
   const form = useAppForm({
@@ -118,7 +119,7 @@ function WindowPreview({
 function DaySlots({ exam, day, slots }: { exam: ExamDetail; day: string; slots: Slot[] }) {
   const removeFree = useResultMutation(
     deleteFreeSlotsOfDay,
-    ["exam", exam.id],
+    examKeys(exam.id),
     ({ deleted, skipped }) =>
       toast.success(
         `Usunięto wolne sloty: ${deleted}.${skipped > 0 ? ` Pominięto sloty z zapisami: ${skipped}.` : ""}`,
@@ -141,17 +142,17 @@ function DaySlots({ exam, day, slots }: { exam: ExamDetail; day: string; slots: 
       </div>
       <ul className="grid gap-1">
         {slots.map((slot) => (
-          <SlotRow key={slot.id} exam={exam} slot={slot} />
+          <SlotListItem key={slot.id} exam={exam} slot={slot} />
         ))}
       </ul>
     </section>
   )
 }
 
-function SlotRow({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
+function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
   const [editing, setEditing] = useState(false)
   const team = exam.people.filter((p) => p.slotId === slot.id)
-  const remove = useResultMutation(deleteSlot, ["exam", exam.id])
+  const remove = useResultMutation(deleteSlot, examKeys(exam.id))
   const roster = exam.rosters.find((r) => r.id === slot.rosterId)
 
   if (editing) return <SlotEditForm exam={exam} slot={slot} onDone={() => setEditing(false)} />
@@ -191,7 +192,7 @@ function SlotEditForm({
   slot: Slot
   onDone: () => void
 }) {
-  const update = useResultMutation(updateSlot, ["exam", exam.id], onDone)
+  const update = useResultMutation(updateSlot, examKeys(exam.id), onDone)
   const form = useAppForm({
     defaultValues: {
       examId: exam.id,

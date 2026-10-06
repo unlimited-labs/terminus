@@ -10,6 +10,7 @@ import { enrollmentSchema } from "@/schemas/enrollment"
 import type { Answers, ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/enroll"
+import { scheduleQuery } from "@/server/schedule"
 
 type Outcome = Awaited<ReturnType<typeof enroll>>
 type Failure = Extract<Outcome, { ok: false }>
@@ -95,7 +96,7 @@ function EnrollForm({
     onSuccess: (outcome) => {
       if (outcome.ok) onEnrolled(outcome.slotId, outcome.ticket)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ["schedule", examId] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
   })
   const form = useAppForm({
     defaultValues: {
