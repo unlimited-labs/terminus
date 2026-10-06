@@ -14,7 +14,7 @@ import { isFreeSlot } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { applyBoardCommand, boardMutationKey } from "@/server/board"
-import { examKeys, examQuery } from "@/server/exams"
+import { examChangeKeys, examQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
@@ -90,7 +90,8 @@ function useBoardCommand(exam: ExamDetail) {
     onSettled: (_result, _error, command) => {
       pending.current = queued(command)
       if (pending.current.length > 0) return
-      for (const queryKey of examKeys(exam.id)) void queryClient.invalidateQueries({ queryKey })
+      for (const queryKey of examChangeKeys(exam.id))
+        void queryClient.invalidateQueries({ queryKey })
     },
   })
 

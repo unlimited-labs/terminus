@@ -44,7 +44,10 @@ export const examQuery = (examId: string) =>
   queryOptions({ queryKey: ["exam", examId], queryFn: () => getExam({ data: { examId } }) })
 
 /** Co odświeżyć po zmianie zaliczenia: ono samo i lista zaliczeń (nazwa, liczniki). */
-export const examKeys = (examId: string) => [examQuery(examId).queryKey, examsQuery().queryKey]
+export const examChangeKeys = (examId: string) => [
+  examQuery(examId).queryKey,
+  examsQuery().queryKey,
+]
 
 export const createExam = createServerFn({ method: "POST" })
   .middleware([requireUser])

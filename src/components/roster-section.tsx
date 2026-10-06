@@ -29,13 +29,13 @@ import {
   deleteRosterEntry,
   previewRosterImport,
 } from "@/server/rosters"
-import { examKeys } from "@/server/exams"
+import { examChangeKeys } from "@/server/exams"
 
 export function RosterSection({ exam }: { exam: ExamDetail }) {
   const multi = exam.rosters.length > 1
   const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
-  const removeEntry = useResultMutation(deleteRosterEntry, examKeys(exam.id))
-  const removeRoster = useResultMutation(deleteRoster, examKeys(exam.id))
+  const removeEntry = useResultMutation(deleteRosterEntry, examChangeKeys(exam.id))
+  const removeRoster = useResultMutation(deleteRoster, examChangeKeys(exam.id))
 
   return (
     <Card>
@@ -113,7 +113,7 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
 }
 
 function AddEntryForm({ exam }: { exam: ExamDetail }) {
-  const add = useResultMutation(addRosterEntry, examKeys(exam.id), () =>
+  const add = useResultMutation(addRosterEntry, examChangeKeys(exam.id), () =>
     toast.success("Dodano osobę do listy."),
   )
   const form = useAppForm({
@@ -152,7 +152,7 @@ type ImportInput = { examId: string; rosterName: string; csv: string }
 function RosterImport({ exam }: { exam: ExamDetail }) {
   const [input, setInput] = useState<ImportInput | null>(null)
   const preview = useMutation({ mutationFn: (data: ImportInput) => previewRosterImport({ data }) })
-  const apply = useResultMutation(applyRosterImport, examKeys(exam.id), () => {
+  const apply = useResultMutation(applyRosterImport, examChangeKeys(exam.id), () => {
     setInput(null)
     preview.reset()
     toast.success("Zaimportowano listę.")

@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { formatDayTime, warsawDay, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { deleteExam, examKeys, examsQuery, updateExam } from "@/server/exams"
+import { deleteExam, examChangeKeys, examsQuery, updateExam } from "@/server/exams"
 
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
@@ -64,7 +64,7 @@ export function CapacitySummary({ exam }: { exam: ExamDetail }) {
 
 export function ExamSettings({ exam }: { exam: ExamDetail }) {
   const [editing, setEditing] = useState(false)
-  const update = useResultMutation(updateExam, examKeys(exam.id), () => {
+  const update = useResultMutation(updateExam, examChangeKeys(exam.id), () => {
     setEditing(false)
     toast.success("Zapisano zmiany.")
   })
