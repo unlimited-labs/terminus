@@ -166,7 +166,11 @@ function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: stri
     incoming?.kind === "person" &&
     team.length >= maxTeamSize &&
     !team.some((p) => p.studentNumber === incoming.studentNumber)
-  const tone = rejects ? "bg-destructive/15" : drop.isDropTarget ? "bg-primary/10" : ""
+  const tone = rejects
+    ? "bg-destructive/15 hover:bg-destructive/15"
+    : drop.isDropTarget
+      ? "bg-primary/10 hover:bg-primary/10"
+      : "hover:bg-transparent"
   return {
     attach: (el: HTMLElement | null) => {
       drop.ref(el)
@@ -232,7 +236,7 @@ export function SlotRow({
   return (
     <TableRow
       ref={attach}
-      className={`border-b-0 hover:bg-transparent ${dayLabel ? "border-t-2 border-t-foreground/25" : "border-t"} ${tone}`}
+      className={`border-b-0 ${dayLabel ? "border-t-2! border-t-foreground/25" : "border-t!"} ${tone}`}
     >
       <TableCell className="px-2 py-1.5 align-top font-bold capitalize">{dayLabel}</TableCell>
       <TableCell className="px-2 py-1.5 align-top">

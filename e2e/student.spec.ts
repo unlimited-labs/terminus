@@ -40,6 +40,7 @@ test("indeksu nie ma na liście — komunikat i podświetlone pole", async ({ pa
   await page.getByRole("button", { name: "Losuj slot" }).click()
   await expect(page.getByRole("alert")).toContainText("Tego indeksu nie ma na liście")
   await expect(page.getByLabel("Osoba 1 — numer indeksu")).toHaveAttribute("aria-invalid", "true")
+  await expect(page.getByLabel("Osoba 1 — numer indeksu")).toBeFocused()
 })
 
 test("brak wolnych slotów: zapisany indeks sprawdza swój slot, niezapisany dostaje komunikat", async ({

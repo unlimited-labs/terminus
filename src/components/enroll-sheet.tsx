@@ -110,6 +110,8 @@ function EnrollForm({
   const failure = draw.data && !draw.data.ok ? draw.data : null
   const submitted = draw.variables?.studentNumbers.length ?? 0
   const flagged = new Set(failure ? flaggedNumbers(failure, submitted) : [])
+  // Po odpowiedzi serwera formularz rysuje się od nowa — fokus na pierwszy wskazany indeks.
+  const firstFlagged = draw.variables?.studentNumbers.findIndex((n) => flagged.has(n.trim())) ?? -1
 
   if (draw.isPending) {
     return (
@@ -139,6 +141,7 @@ function EnrollForm({
                       autoComplete="off"
                       className="h-11 text-lg tabular-nums"
                       invalid={flagged.has(field.state.value.trim())}
+                      autoFocus={i === firstFlagged}
                       action={
                         i > 0 && (
                           <Button

@@ -42,5 +42,7 @@ test("nieudane wysłanie formularza: błąd ogłoszony, fokus na pierwszym błę
   const form = page.locator("form", { hasText: "Utwórz konto" })
   await form.getByRole("button", { name: "Utwórz konto" }).click()
   await expect(form.getByLabel("Imię i nazwisko")).toBeFocused()
-  await expect(form.getByRole("alert").first()).toContainText("Podaj imię i nazwisko.")
+  await expect(form.getByLabel("Imię i nazwisko")).toHaveAccessibleDescription(
+    "Podaj imię i nazwisko.",
+  )
 })

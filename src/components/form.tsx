@@ -27,7 +27,7 @@ function FieldErrors({ id }: { id: string }) {
       : []
   if (errors.length === 0) return null
   return (
-    <p id={id} role="alert" className="text-sm text-destructive">
+    <p id={id} aria-live="polite" className="text-sm text-destructive">
       {errors.map(issueMessage).join(" ")}
     </p>
   )
@@ -44,6 +44,7 @@ type TextFieldProps = {
   /** Przycisk obok etykiety (np. „Usuń” przy osobie w zespole). */
   action?: ReactNode
   className?: string
+  autoFocus?: boolean
 }
 
 function TextField({
@@ -55,6 +56,7 @@ function TextField({
   invalid,
   action,
   className,
+  autoFocus,
 }: TextFieldProps) {
   const field = useFieldContext<string>()
   const id = useId()
@@ -66,6 +68,7 @@ function TextField({
     "aria-invalid": invalid || field.state.meta.errors.length > 0 || undefined,
     "aria-describedby": `${id}-errors`,
     className,
+    autoFocus,
   }
   return (
     <div className="grid gap-1.5">

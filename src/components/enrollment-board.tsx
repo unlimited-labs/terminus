@@ -144,7 +144,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
         </header>
         <div className="grid items-start gap-4 md:grid-cols-[16rem_1fr]">
           <UnenrolledPanel exam={exam} highlight={highlight} onCommand={run} />
-          <div className="overflow-x-auto rounded-xl border bg-card">
+          <div className="rounded-xl border bg-card">
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
