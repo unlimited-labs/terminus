@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
+import { UNEXPECTED_ERROR } from "@/messages.pl"
 import { createAccountSchema, setPasswordSchema, updateAccountSchema } from "@/schemas/account"
 import {
   accountsQuery,
@@ -195,7 +196,8 @@ function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }
 /** SPEC: zaliczenia zablokowanego prowadzącego usuwa superadmin (klauzula informacyjna, pkt 6). */
 function BlockedAccountExams({ userId }: { userId: string }) {
   const query = blockedAccountExamsQuery(userId)
-  const { data: exams } = useQuery(query)
+  const { data: exams, isError } = useQuery(query)
+  if (isError) return <p className="text-sm text-destructive">{UNEXPECTED_ERROR}</p>
   if (!exams) return null
   if (exams.length === 0) {
     return <p className="text-sm text-muted-foreground">Brak zaliczeń tego konta.</p>
@@ -209,7 +211,7 @@ function BlockedAccountExams({ userId }: { userId: string }) {
           <span className="ml-auto">
             <DeleteExamButton
               exam={exam}
-              remove={deleteAccountExam}
+              deleteFn={deleteAccountExam}
               invalidate={[query.queryKey]}
               size="xs"
             />

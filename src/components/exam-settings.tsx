@@ -75,7 +75,7 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
           <DuplicateButton examId={exam.id} />
           <DeleteExamButton
             exam={exam}
-            remove={deleteExam}
+            deleteFn={deleteExam}
             invalidate={[examsQuery().queryKey]}
             onDeleted={() => void navigate({ to: "/" })}
           />

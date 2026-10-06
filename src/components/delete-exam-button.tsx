@@ -19,20 +19,20 @@ type DeleteInput = { examId: string; confirmName: string }
 /** Usunięcie zaliczenia po przepisaniu jego nazwy (prowadzący albo superadmin przy zablokowanym koncie). */
 export function DeleteExamButton({
   exam,
-  remove: removeFn,
+  deleteFn,
   invalidate,
   onDeleted,
   size = "sm",
 }: {
   exam: { id: string; name: string }
-  remove: (opts: { data: DeleteInput }) => Promise<Result>
+  deleteFn: (opts: { data: DeleteInput }) => Promise<Result>
   invalidate: QueryKey[]
   onDeleted?: () => void
   size?: "sm" | "xs"
 }) {
   const [open, setOpen] = useState(false)
   const [confirmName, setConfirmName] = useState("")
-  const remove = useResultMutation(removeFn, invalidate, () => {
+  const remove = useResultMutation(deleteFn, invalidate, () => {
     setOpen(false)
     onDeleted?.()
   })
