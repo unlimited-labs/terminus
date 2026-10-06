@@ -1,4 +1,5 @@
 import { formatDayTime, warsawTime } from "@/domain/time"
+import { SLOT_IS_FINAL } from "@/messages.pl"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 
 export function Ticket({ ticket, place }: { ticket: TicketData; place: string }) {
@@ -31,9 +32,7 @@ export function Ticket({ ticket, place }: { ticket: TicketData; place: string })
           </li>
         ))}
       </ul>
-      <p className="mt-3 text-sm opacity-90">
-        Slot jest przydzielony na stałe. Zmianę uzgodnij z prowadzącym.
-      </p>
+      <p className="mt-3 text-sm opacity-90">{SLOT_IS_FINAL} Zmianę uzgodnij z prowadzącym.</p>
     </div>
   )
 }

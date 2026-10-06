@@ -106,6 +106,12 @@ export function errorMessage(e: AppError): string {
 
 export const UNEXPECTED_ERROR = "Coś poszło nie tak. Spróbuj ponownie."
 
+export const SLOT_IS_FINAL = "Slot jest przydzielony na stałe."
+
+/** `ALREADY_ENROLLED` dla jednej osoby: to nie błąd, tylko jej slot. */
+export const ownSlotMessage = (startsAt: Date) =>
+  `Masz już zapis: ${formatDayTime(startsAt)}. ${SLOT_IS_FINAL}`
+
 /** Dlaczego wiersz pliku CSV nie zostanie zaimportowany (podgląd importu). */
 export const INVALID_ROW: Record<InvalidRowReason | "OTHER_ROSTER", string> = {
   NOT_DIGITS: "indeks nie z samych cyfr",

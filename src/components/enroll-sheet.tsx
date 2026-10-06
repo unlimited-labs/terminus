@@ -7,8 +7,7 @@ import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { formatDayTime } from "@/domain/time"
-import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
+import { errorMessage, ownSlotMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { enrollmentSchema } from "@/schemas/enrollment"
 import type { Answers, ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
@@ -233,12 +232,7 @@ function FailureMessage({ failure, submitted }: { failure: Failure; submitted: n
     return <Message tone="error">{errorMessage(failure)}</Message>
   const [own] = failure.enrolled
   if (submitted === 1 && own) {
-    return (
-      <Message tone="info">
-        Masz już zapis: <strong>{formatDayTime(own.startsAt)}</strong>. Slot jest przydzielony na
-        stałe.
-      </Message>
-    )
+    return <Message tone="info">{ownSlotMessage(own.startsAt)}</Message>
   }
   return <Message tone="error">{errorMessage(failure)} Nikogo nie zapisano.</Message>
 }

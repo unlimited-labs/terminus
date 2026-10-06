@@ -7,11 +7,11 @@ export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzin�
 
 export const examFieldSchema = z.object({
   id: z.string().min(1).max(40),
-  label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, "Najwyżej 60 znaków."),
+  label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, tooLong(60)),
   required: z.boolean(),
 })
 
-export const answersSchema = z.record(z.string(), z.string().max(500, "Najwyżej 500 znaków."))
+export const answersSchema = z.record(z.string(), z.string().max(500, tooLong(500)))
 
 export const examSchema = z.object({
   name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200, tooLong(200)),
