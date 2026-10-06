@@ -40,7 +40,8 @@ export function PrivacyNotice() {
         </li>
         <li>
           Pani/Pana dane osobowe będą przetwarzane przez okres niezbędny do organizacji i
-          przeprowadzenia zaliczenia, do czasu usunięcia zaliczenia przez prowadzącego;
+          przeprowadzenia zaliczenia, do czasu usunięcia zaliczenia przez prowadzącego lub
+          administratora aplikacji;
         </li>
         <li>
           posiada Pani/Pan prawo do żądania od Administratora dostępu do swoich danych oraz prawo

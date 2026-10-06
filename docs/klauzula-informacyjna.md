@@ -42,7 +42,7 @@ i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/W
    Pani/Pana dane osobowe;
 6. Pani/Pana dane osobowe będą przetwarzane przez okres niezbędny do organizacji
    i przeprowadzenia zaliczenia, do czasu usunięcia zaliczenia przez
-   prowadzącego;
+   prowadzącego lub administratora aplikacji;
 7. posiada Pani/Pan prawo do żądania od Administratora dostępu do swoich danych
    oraz prawo ich sprostowania, prawo do przenoszenia danych, prawo ograniczenia
    przetwarzania danych w przypadkach i na warunkach określonych w RODO;

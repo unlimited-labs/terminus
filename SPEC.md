@@ -18,7 +18,8 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
 - **Prowadzący** — konto Better Auth (e-mail + hasło). Widzi i edytuje tylko
   swoje zaliczenia. Sam zmienia tylko własne hasło (podając obecne).
 - **Superadmin** — prowadzący z rolą `admin` (plugin `admin` Better Auth).
-  Dodatkowo zarządza kontami; cudzych zaliczeń nie widzi.
+  Dodatkowo zarządza kontami; cudzych zaliczeń nie widzi — z jednym wyjątkiem
+  poniżej (zablokowane konto).
   - Zakłada konto: e-mail, imię i nazwisko, hasło przekazywane poza
     aplikacją; bez wymuszonej zmiany hasła.
   - Zmienia e-mail i imię i nazwisko prowadzącego; ustawia nowe hasło
@@ -28,7 +29,10 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
 - Rejestracja publiczna wyłączona (`emailAndPassword.disableSignUp: true`).
 - Kont się nie usuwa, tylko blokuje. Zablokowany prowadzący nie zaloguje się;
   jego zaliczenia i linki działają dalej. Przepisywania zaliczeń na inne
-  konto nie ma.
+  konto nie ma. Superadmin widzi w „Konta” przy zablokowanym koncie listę jego
+  zaliczeń (nazwa, liczba zapisów) i może każde usunąć, z potwierdzeniem —
+  tak klauzula („do czasu usunięcia zaliczenia przez prowadzącego lub
+  administratora aplikacji”) ma kogo wskazać, gdy prowadzący odszedł.
 - E-mail służy tylko do logowania: nie jest weryfikowany, aplikacja nic na
   niego nie wysyła.
 - Pierwszy superadmin: przy każdym starcie kontenera skrypt czyta
@@ -126,6 +130,9 @@ interfejsu i komunikaty.
   IP; próba zespołu kosztuje tyle punktów, ile numerów sprawdzono (`rate-limiter-flexible`, `RateLimiterMemory`; po restarcie liczniki się
   zerują). Udane zapisy i "indeks ma już zapis" się nie liczą — wielu
   studentów za jednym adresem uczelnianej sieci. Bez CAPTCHA.
+- Adres IP limitu nie trafia do klauzuli informacyjnej (decyzja z code
+  review): jest tylko kluczem licznika w pamięci procesu, najdłużej 10 minut,
+  bez zapisu do bazy i logów.
 - IP klienta wyłącznie z nagłówka `X-Real-IP` ustawianego przez reverse proxy.
 - Strony `/z/…` mają `noindex` i nie mają podglądu linku (Open Graph)
   z nazwiskami.
@@ -200,14 +207,17 @@ interfejsu i komunikaty.
   kolumny `indeks`, `imie` lub `nazwisko` → cały plik odrzucony.
 - Ponowny import do istniejącej listy: nowe indeksy dopisane, nazwiska
   zaktualizowane; indeksy nieobecne w pliku zostają (podgląd je wymienia);
-  `skreslony = 1` bez zapisu znika z listy, z zapisem zostaje i jest
-  oznaczony. Nic nie znika po cichu.
+  `skreslony = 1` znika z listy — także gdy ma zapis: zapis jest usuwany
+  (w zespole zostają pozostałe osoby). Podgląd wymienia osobno skreślonych
+  z zapisem (dzień i godzina slotu), zanim prowadzący zatwierdzi import. Nic
+  nie znika po cichu.
 - Ręczne dodanie pojedynczej osoby do listy: indeks, imię, nazwisko i lista.
   Gdy zaliczenie nie ma jeszcze żadnej listy, osoba trafia na nowo założoną
   listę "lista".
 - Zaliczenie z jedną listą nie pokazuje w interfejsie żadnych "list".
 - Usunięcie indeksu lub całej listy z zapisem jest zablokowane, dopóki zapis
-  nie zostanie przeniesiony lub usunięty.
+  nie zostanie przeniesiony lub usunięty (wyjątek: skreślony w ponownym
+  imporcie, wyżej).
 
 ### Sloty
 
