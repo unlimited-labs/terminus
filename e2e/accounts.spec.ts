@@ -33,3 +33,14 @@ test("superadmin zakłada konto, prowadzący się loguje, po blokadzie już nie"
   await jan.getByRole("button", { name: "Zaloguj się" }).click()
   await expect(jan.getByText("To konto jest zablokowane.")).toBeVisible()
 })
+
+test("nieudane wysłanie formularza: błąd ogłoszony, fokus na pierwszym błędnym polu", async ({
+  page,
+}) => {
+  await login(page)
+  await page.goto("/konta")
+  const form = page.locator("form", { hasText: "Utwórz konto" })
+  await form.getByRole("button", { name: "Utwórz konto" }).click()
+  await expect(form.getByLabel("Imię i nazwisko")).toBeFocused()
+  await expect(form.getByRole("alert").first()).toContainText("Podaj imię i nazwisko.")
+})

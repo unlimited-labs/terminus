@@ -22,7 +22,7 @@ test("eksport CSV: UTF-8 z BOM, ; i nazwa z datą", async ({ page }) => {
 
 test("duplikat z listami prowadzi do nowego zaliczenia", async ({ page }) => {
   await page.getByRole("button", { name: "Duplikuj" }).click()
-  await expect(page.getByLabel("Kopiuj listy indeksów")).toBeChecked()
+  await expect(page.getByRole("checkbox", { name: "Kopiuj listy indeksów" })).toBeChecked()
   await page.getByRole("button", { name: "Utwórz kopię" }).click()
   await expect(page.getByRole("heading", { name: "Tablica E2E (kopia)" })).toBeVisible()
   await expect(page.getByRole("cell", { name: "500003" })).toBeVisible()

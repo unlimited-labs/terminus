@@ -4,6 +4,7 @@ import { useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { TableCell, TableRow } from "@/components/ui/table"
 import { parseDragId, type BoardCommand } from "@/domain/board"
 import { formatDayShort, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -80,21 +81,22 @@ function PersonTile({
         </span>
       )}
       {!unenrolled && (
-        <button
-          ref={(el) => {
+        <Button
+          ref={(el: HTMLButtonElement | null) => {
             if (el && refocusPencil.current) {
               refocusPencil.current = false
               el.focus()
             }
           }}
-          type="button"
+          variant="ghost"
+          size="icon-xs"
           aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
           onPointerDown={(e) => e.stopPropagation()}
           onClick={() => setEditing(true)}
-          className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+          className="text-muted-foreground"
         >
           <PencilIcon className="size-3.5" />
-        </button>
+        </Button>
       )}
     </div>
   )
@@ -228,29 +230,32 @@ export function SlotRow({
   const label = `slot ${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}`
   const { attach, attachHandle, tone } = useSlotDnd(slot, team, maxTeamSize, label)
   return (
-    <tr
+    <TableRow
       ref={attach}
-      className={`${dayLabel ? "border-t-2 border-t-foreground/25" : "border-t"} ${tone}`}
+      className={`border-b-0 hover:bg-transparent ${dayLabel ? "border-t-2 border-t-foreground/25" : "border-t"} ${tone}`}
     >
-      <td className="px-2 py-1.5 align-top font-bold whitespace-nowrap capitalize">{dayLabel}</td>
-      <td className="px-2 py-1.5 align-top whitespace-nowrap">
+      <TableCell className="px-2 py-1.5 align-top font-bold capitalize">{dayLabel}</TableCell>
+      <TableCell className="px-2 py-1.5 align-top">
         <span className="flex items-center gap-1">
-          <button
+          <Button
             ref={attachHandle}
-            type="button"
+            variant="ghost"
+            size="icon-xs"
             disabled={team.length === 0}
             aria-label={`Przenieś cały zespół: ${label}`}
-            className="cursor-grab touch-none rounded p-0.5 text-muted-foreground disabled:invisible"
+            className="cursor-grab touch-none text-muted-foreground disabled:invisible"
           >
             <GripVerticalIcon className="size-4" />
-          </button>
+          </Button>
           <span className="font-semibold tabular-nums">
             {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
           </span>
         </span>
-      </td>
-      {rosterName !== undefined && <td className="px-2 py-1.5 align-top">{rosterName}</td>}
-      <td className="px-2 py-1.5">
+      </TableCell>
+      {rosterName !== undefined && (
+        <TableCell className="px-2 py-1.5 align-top">{rosterName}</TableCell>
+      )}
+      <TableCell className="px-2 py-1.5 whitespace-normal">
         <TeamCell
           slot={slot}
           team={team}
@@ -259,8 +264,8 @@ export function SlotRow({
           onCommand={onCommand}
         />
         {extra}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   )
 }
 

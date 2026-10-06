@@ -58,14 +58,14 @@ export function SlotAnswers({
           {f.label}: <span className="text-foreground">{answers[f.id]}</span>
         </span>
       ))}
-      <button
-        type="button"
+      <Button
+        variant="ghost"
+        size="icon-xs"
         aria-label="Zmień odpowiedzi zespołu"
         onClick={() => setDraft({ ...answers })}
-        className="rounded p-0.5 hover:text-foreground"
       >
         <PencilIcon className="size-3.5" />
-      </button>
+      </Button>
     </p>
   )
 }

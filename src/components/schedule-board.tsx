@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 import { isFreeSlot } from "@/domain/schedule"
@@ -14,11 +15,11 @@ const MIN_SLOT_PX = 40
 /** Rodzaj kafelka: kolor, tekst w kafelku i nazwa dla czytnika ekranu. */
 const KINDS = {
   mine: {
-    tone: "bg-primary text-primary-foreground",
+    tone: "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
     text: (n: string) => `Twój: ${n}`,
     a11y: "Twój slot",
   },
-  taken: { tone: "bg-taken", text: (n: string) => n, a11y: "zajęty" },
+  taken: { tone: "bg-taken hover:bg-taken/80", text: (n: string) => n, a11y: "zajęty" },
   free: { tone: "border-2 border-free bg-card text-free", text: () => "wolny", a11y: "wolny" },
   past: { tone: "bg-card text-muted-foreground", text: () => "", a11y: "miniony" },
 }
@@ -206,16 +207,16 @@ function SlotBlock({
   return (
     <li>
       {slot.team.length > 0 ? (
-        <button
-          type="button"
+        <Button
+          variant="ghost"
           aria-expanded={open}
           aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}, ${KINDS[kind].a11y}: ${names}`}
           onClick={() => setOpen(!open)}
-          className={className}
+          className={`h-auto justify-start font-normal whitespace-normal ${className}`}
           style={style}
         >
           {body}
-        </button>
+        </Button>
       ) : (
         <div className={className} style={style}>
           {body}

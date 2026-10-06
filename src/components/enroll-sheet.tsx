@@ -1,12 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useId } from "react"
 
 import { useAppForm } from "@/components/form"
 import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
 import { errorMessage, ownSlotMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { enrollmentSchema } from "@/schemas/enrollment"
 import type { Answers, ExamField } from "@/domain/fields"
@@ -133,21 +131,29 @@ function EnrollForm({
           {(list) => (
             <div className="grid gap-3">
               {list.state.value.map((_, i) => (
-                <form.Field key={i} name={`studentNumbers[${i}]`}>
+                <form.AppField key={i} name={`studentNumbers[${i}]`}>
                   {(field) => (
-                    <NumberInput
+                    <field.TextField
                       label={team ? `Osoba ${i + 1} — numer indeksu` : "Numer indeksu"}
-                      value={field.state.value}
-                      onChange={field.handleChange}
-                      onBlur={field.handleBlur}
-                      invalid={
-                        flagged.has(field.state.value.trim()) || field.state.meta.errors.length > 0
+                      inputMode="numeric"
+                      autoComplete="off"
+                      className="h-11 text-lg tabular-nums"
+                      invalid={flagged.has(field.state.value.trim())}
+                      action={
+                        i > 0 && (
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            onClick={() => list.removeValue(i)}
+                          >
+                            Usuń
+                          </Button>
+                        )
                       }
-                      error={field.state.meta.errors.map((e) => e?.message).join(" ")}
-                      onRemove={i > 0 ? () => list.removeValue(i) : undefined}
                     />
                   )}
-                </form.Field>
+                </form.AppField>
               ))}
               {team && list.state.value.length < maxTeamSize && (
                 <Button type="button" variant="outline" onClick={() => list.pushValue("")}>
@@ -168,56 +174,6 @@ function EnrollForm({
         <PrivacyNotice />
       </form.Form>
     </form.AppForm>
-  )
-}
-
-function NumberInput({
-  label,
-  value,
-  onChange,
-  onBlur,
-  invalid,
-  error,
-  onRemove,
-}: {
-  label: string
-  value: string
-  onChange: (value: string) => void
-  onBlur: () => void
-  invalid: boolean
-  error: string
-  onRemove?: () => void
-}) {
-  const id = useId()
-  return (
-    <div className="grid gap-1">
-      <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className="text-sm text-muted-foreground">
-          {label}
-        </label>
-        {onRemove && (
-          <Button type="button" variant="link" size="sm" onClick={onRemove}>
-            Usuń
-          </Button>
-        )}
-      </div>
-      <Input
-        id={id}
-        value={value}
-        inputMode="numeric"
-        autoComplete="off"
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={onBlur}
-        aria-invalid={invalid || undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        className="h-11 text-lg tabular-nums"
-      />
-      {error && (
-        <p id={`${id}-error`} className="text-sm text-destructive">
-          {error}
-        </p>
-      )}
-    </div>
   )
 }
 

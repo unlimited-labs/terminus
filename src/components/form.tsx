@@ -1,7 +1,8 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
-import { useId } from "react"
+import { useId, useRef, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -26,7 +27,7 @@ function FieldErrors({ id }: { id: string }) {
       : []
   if (errors.length === 0) return null
   return (
-    <p id={id} className="text-sm text-destructive">
+    <p id={id} role="alert" className="text-sm text-destructive">
       {errors.map(issueMessage).join(" ")}
     </p>
   )
@@ -37,9 +38,24 @@ type TextFieldProps = {
   type?: "text" | "email" | "password" | "date" | "time"
   autoComplete?: string
   multiline?: boolean
+  inputMode?: "numeric"
+  /** Błąd spoza walidacji formularza (np. indeks wskazany przez serwer). */
+  invalid?: boolean
+  /** Przycisk obok etykiety (np. „Usuń” przy osobie w zespole). */
+  action?: ReactNode
+  className?: string
 }
 
-function TextField({ label, type = "text", autoComplete, multiline }: TextFieldProps) {
+function TextField({
+  label,
+  type = "text",
+  autoComplete,
+  multiline,
+  inputMode,
+  invalid,
+  action,
+  className,
+}: TextFieldProps) {
   const field = useFieldContext<string>()
   const id = useId()
   const props = {
@@ -47,12 +63,16 @@ function TextField({ label, type = "text", autoComplete, multiline }: TextFieldP
     name: field.name,
     value: field.state.value,
     onBlur: field.handleBlur,
-    "aria-invalid": field.state.meta.errors.length > 0 || undefined,
+    "aria-invalid": invalid || field.state.meta.errors.length > 0 || undefined,
     "aria-describedby": `${id}-errors`,
+    className,
   }
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+      <div className="flex items-baseline justify-between">
+        <Label htmlFor={id}>{label}</Label>
+        {action}
+      </div>
       {multiline ? (
         <Textarea {...props} onChange={(e) => field.handleChange(e.target.value)} />
       ) : (
@@ -60,6 +80,7 @@ function TextField({ label, type = "text", autoComplete, multiline }: TextFieldP
           {...props}
           type={type}
           autoComplete={autoComplete}
+          inputMode={inputMode}
           onChange={(e) => field.handleChange(e.target.value)}
         />
       )}
@@ -111,7 +132,13 @@ function SelectField({
         value={field.state.value}
         onValueChange={(value) => field.handleChange(value ?? "")}
       >
-        <SelectTrigger id={id} onBlur={field.handleBlur} className="h-9 w-full bg-card">
+        <SelectTrigger
+          id={id}
+          onBlur={field.handleBlur}
+          aria-invalid={field.state.meta.errors.length > 0 || undefined}
+          aria-describedby={`${id}-errors`}
+          className="h-9 w-full bg-card"
+        >
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -138,27 +165,34 @@ function CheckboxField({ label }: { label: string }) {
   const field = useFieldContext<boolean>()
   const id = useId()
   return (
-    <label htmlFor={id} className="flex items-center gap-2 text-sm">
-      <input
+    <div className="flex items-center gap-2">
+      <Checkbox
         id={id}
-        type="checkbox"
         checked={field.state.value}
-        onChange={(e) => field.handleChange(e.target.checked)}
-        className="size-4 accent-primary"
+        onCheckedChange={(checked) => field.handleChange(checked)}
       />
-      {label}
-    </label>
+      <Label htmlFor={id} className="font-normal">
+        {label}
+      </Label>
+    </div>
   )
 }
 
+/** Po nieudanym wysłaniu fokus idzie do pierwszego błędnego pola (po przerysowaniu z `aria-invalid`). */
 function Form({ className, children }: { className?: string; children: React.ReactNode }) {
   const form = useFormContext()
+  const ref = useRef<HTMLFormElement>(null)
   return (
     <form
+      ref={ref}
       className={className}
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault()
-        void form.handleSubmit()
+        await form.handleSubmit()
+        if (form.state.isValid) return
+        requestAnimationFrame(() =>
+          ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
+        )
       }}
     >
       {children}

@@ -8,6 +8,7 @@ import { SlotRow, UnenrolledPanel } from "@/components/board-parts"
 import { CapacitySummary } from "@/components/exam-settings"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
@@ -144,16 +145,16 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
         <div className="grid items-start gap-4 md:grid-cols-[16rem_1fr]">
           <UnenrolledPanel exam={exam} highlight={highlight} onCommand={run} />
           <div className="overflow-x-auto rounded-xl border bg-card">
-            <table className="w-full text-sm">
-              <thead className="text-left text-muted-foreground">
-                <tr>
-                  <th className="px-2 py-2 font-semibold">Dzień</th>
-                  <th className="px-2 py-2 font-semibold">Godzina</th>
-                  {multi && <th className="px-2 py-2 font-semibold">Lista</th>}
-                  <th className="px-2 py-2 font-semibold">Zespół</th>
-                </tr>
-              </thead>
-              <tbody>
+            <Table>
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead>Dzień</TableHead>
+                  <TableHead>Godzina</TableHead>
+                  {multi && <TableHead>Lista</TableHead>}
+                  <TableHead>Zespół</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {exam.slots.map((slot, i) => {
                   const day = warsawDay(slot.startsAt)
                   const prev = exam.slots[i - 1]
@@ -182,8 +183,8 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                     />
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
             {exam.slots.length === 0 && (
               <p className="p-4 text-muted-foreground">Zaliczenie nie ma jeszcze slotów.</p>
             )}
