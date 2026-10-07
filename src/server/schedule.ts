@@ -18,7 +18,7 @@ const getSchedule = createServerFn()
         maxTeamSize: true,
         fields: true,
         enrollmentOpensAt: true,
-        owner: { select: { name: true } },
+        teachers: { orderBy: { name: "asc" }, select: { name: true } },
         rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
       },
     })
@@ -40,7 +40,7 @@ const getSchedule = createServerFn()
     return {
       name: exam.name,
       description: exam.description,
-      ownerName: exam.owner.name,
+      teacherNames: exam.teachers.map((t) => t.name).join(", "),
       maxTeamSize: exam.maxTeamSize,
       opensAt: exam.enrollmentOpensAt,
       fields: parseFields(exam.fields),

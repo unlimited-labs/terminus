@@ -21,6 +21,7 @@ export function copyExam(
     const copy = await tx.exam.create({
       data: {
         ownerId,
+        teachers: { connect: { id: ownerId } },
         name: `${source.name} (kopia)`,
         description: source.description,
         defaultSlotMinutes: source.defaultSlotMinutes,
@@ -89,6 +90,45 @@ export function removeExam(examId: string, ownerId: string, confirmName: string)
     const exam = await tx.exam.findUniqueOrThrow({ where: { id: examId } })
     if (exam.name !== confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
     await tx.exam.delete({ where: { id: examId } })
+    return { ok: true }
+  })
+}
+
+/** Dodanie prowadzącego po e-mailu konta (bez rozróżniania wielkości liter). */
+export function addTeacher(examId: string, userId: string, email: string): Promise<Result> {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+    const teacher = await tx.user.findFirst({
+      where: { email: { equals: email, mode: "insensitive" } },
+      select: {
+        id: true,
+        banned: true,
+        taughtExams: { where: { id: examId }, select: { id: true } },
+      },
+    })
+    if (!teacher) return { ok: false, code: "TEACHER_NOT_FOUND" }
+    if (teacher.banned) return { ok: false, code: "TEACHER_BANNED" }
+    if (teacher.taughtExams.length > 0) return { ok: false, code: "ALREADY_TEACHER" }
+    await tx.exam.update({
+      where: { id: examId },
+      data: { teachers: { connect: { id: teacher.id } } },
+    })
+    return { ok: true }
+  })
+}
+
+/** Usunięcie prowadzącego (także siebie); ostatniego nie można — zostaje usunięcie zaliczenia. */
+export function removeTeacher(examId: string, userId: string, teacherId: string): Promise<Result> {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+    const { teachers } = await tx.exam.findUniqueOrThrow({
+      where: { id: examId },
+      select: { teachers: { select: { id: true } } },
+    })
+    if (!teachers.some((t) => t.id === teacherId)) return { ok: false, code: "NOT_FOUND" }
+    if (teachers.length === 1) return { ok: false, code: "LAST_TEACHER" }
+    await tx.exam.update({
+      where: { id: examId },
+      data: { teachers: { disconnect: { id: teacherId } } },
+    })
     return { ok: true }
   })
 }

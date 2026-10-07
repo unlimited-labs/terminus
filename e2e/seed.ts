@@ -21,6 +21,7 @@ async function createExam(
   const exam = await db.exam.create({
     data: {
       ownerId: owner.id,
+      teachers: { connect: { id: owner.id } },
       name,
       description: "Sala 1.23",
       defaultSlotMinutes: 20,
@@ -92,7 +93,10 @@ async function blockedOwnerExam() {
       banned: true,
     },
   })
-  await db.exam.update({ where: { id }, data: { ownerId: owner.id } })
+  await db.exam.update({
+    where: { id },
+    data: { ownerId: owner.id, teachers: { set: [{ id: owner.id }] } },
+  })
   return id
 }
 

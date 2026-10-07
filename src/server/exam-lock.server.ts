@@ -5,14 +5,13 @@ import { db } from "./db.server.ts"
 export type Tx = Prisma.TransactionClient
 type NotFound = { ok: false; code: "NOT_FOUND" }
 
-/** Jedyna reguła własności: `ownerId` `null` = dostęp publiczny (zapis studenta). */
-const ownsExam = (exam: { ownerId: string }, ownerId: string | null) =>
-  ownerId === null || exam.ownerId === ownerId
+/** Jedyna reguła dostępu: prowadzący zaliczenia; `userId` `null` = dostęp publiczny (zapis studenta). */
+const examWhere = (examId: string, userId: string | null): Prisma.ExamWhereInput =>
+  userId === null ? { id: examId } : { id: examId, teachers: { some: { id: userId } } }
 
 /** Odczyt zaliczenia prowadzącego bez blokady: cudze = nie znaleziono (`null`). */
-export async function getOwnedExam(examId: string, ownerId: string) {
-  const exam = await db.exam.findUnique({ where: { id: examId } })
-  return exam && ownsExam(exam, ownerId) ? exam : null
+export function getOwnedExam(examId: string, userId: string) {
+  return db.exam.findFirst({ where: examWhere(examId, userId) })
 }
 
 /**
@@ -22,21 +21,21 @@ export async function getOwnedExam(examId: string, ownerId: string) {
  */
 export function withExamLock<T>(
   examId: string,
-  ownerId: string | null,
+  userId: string | null,
   fn: (tx: Tx) => Promise<T>,
   timeout = 10_000,
 ): Promise<T | NotFound> {
   return db.$transaction(
     async (tx) => {
-      // Właściciel przed blokadą: cudzy prowadzący nie czeka w kolejce do cudzego zaliczenia
-      // (`ownerId` zaliczenia się nie zmienia, więc sprawdzenie bez blokady jest trwałe).
-      const exam = await tx.exam.findUnique({ where: { id: examId }, select: { ownerId: true } })
       const notFound = { ok: false as const, code: "NOT_FOUND" as const }
-      if (!exam || !ownsExam(exam, ownerId)) return notFound
+      const allowed = () => tx.exam.count({ where: examWhere(examId, userId) })
+      // Przed blokadą: cudzy prowadzący nie czeka w kolejce do cudzego zaliczenia. Po blokadzie
+      // jeszcze raz, bo skład prowadzących zmienia się pod tą samą blokadą.
+      if (!(await allowed())) return notFound
       const locked = await tx.$queryRaw<
         unknown[]
       >`SELECT 1 FROM exam WHERE id = ${examId} FOR UPDATE`
-      return locked.length > 0 ? fn(tx) : notFound
+      return locked.length > 0 && (await allowed()) ? fn(tx) : notFound
     },
     { isolationLevel: "ReadCommitted", maxWait: 10_000, timeout },
   )

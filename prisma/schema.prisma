@@ -10,8 +10,11 @@ datasource db {
 
 model Exam {
   id                 String       @id @default(uuid())
+  /// Kto założył; bez znaczenia dla uprawnień (te daje `teachers`). Zostaje dla wycofania wersji.
   ownerId            String
-  owner              User         @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  owner              User         @relation("ExamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  /// Prowadzący zaliczenia: każdy może wszystko, zawsze co najmniej jeden.
+  teachers           User[]       @relation("ExamTeachers")
   name               String
   description        String
   defaultSlotMinutes Int
@@ -102,7 +105,8 @@ model User {
   banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
-  exams         Exam[]
+  exams         Exam[]    @relation("ExamOwner")
+  taughtExams   Exam[]    @relation("ExamTeachers")
 
   @@unique([email])
   @@map("user")

@@ -15,7 +15,10 @@ export async function loadExam(examId: string) {
   const exam = await db.exam.findUnique({
     where: { id: examId },
     include: {
-      owner: { select: { name: true } },
+      teachers: {
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, email: true, banned: true },
+      },
       rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
       enrollments: { select: { studentNumber: true, slotId: true, answers: true } },
     },
@@ -39,7 +42,7 @@ export async function loadExam(examId: string) {
     id: exam.id,
     name: exam.name,
     description: exam.description,
-    ownerName: exam.owner.name,
+    teachers: exam.teachers,
     defaultSlotMinutes: exam.defaultSlotMinutes,
     maxTeamSize: exam.maxTeamSize,
     enrollmentOpensAt: exam.enrollmentOpensAt,

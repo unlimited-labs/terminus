@@ -4,6 +4,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { ExamSettings } from "@/components/exam-settings"
 import { RosterSection } from "@/components/roster-section"
 import { SlotSection } from "@/components/slot-section"
+import { TeacherSection } from "@/components/teacher-section"
 import { examQuery } from "@/server/exams"
 
 import { loadExam } from "./-load-exam"
@@ -18,6 +19,7 @@ export const Route = createFileRoute("/_authed/zaliczenia/$examId/")({
 
 function ExamPage() {
   const { examId } = Route.useParams()
+  const { user } = Route.useRouteContext()
   const { data: exam } = useSuspenseQuery(examQuery(examId))
   if (!exam) return null
   return (
@@ -27,6 +29,7 @@ function ExamPage() {
         <SlotSection exam={exam} />
         <RosterSection exam={exam} />
       </div>
+      <TeacherSection exam={exam} userId={user.id} />
     </div>
   )
 }

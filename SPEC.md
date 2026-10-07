@@ -16,7 +16,8 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
 
 - **Student** — bez konta; rozpoznawany wyłącznie po numerze indeksu.
 - **Prowadzący** — konto Better Auth (e-mail + hasło). Widzi i edytuje tylko
-  swoje zaliczenia. Sam zmienia tylko własne hasło (podając obecne).
+  zaliczenia, których jest prowadzącym (sekcja 6, „Prowadzący zaliczenia”).
+  Sam zmienia tylko własne hasło (podając obecne).
 - **Superadmin** — prowadzący z rolą `admin` (plugin `admin` Better Auth).
   Dodatkowo zarządza kontami; cudzych zaliczeń nie widzi — z jednym wyjątkiem
   poniżej (zablokowane konto).
@@ -28,9 +29,10 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
     samego siebie.
 - Rejestracja publiczna wyłączona (`emailAndPassword.disableSignUp: true`).
 - Kont się nie usuwa, tylko blokuje. Zablokowany prowadzący nie zaloguje się;
-  jego zaliczenia i linki działają dalej. Przepisywania zaliczeń na inne
-  konto nie ma. Superadmin widzi w „Konta” przy zablokowanym koncie listę jego
-  zaliczeń (nazwa, liczba zapisów) i może każde usunąć, z potwierdzeniem —
+  jego zaliczenia i linki działają dalej; współprowadzący nadal nimi
+  zarządzają i mogą go z nich usunąć. Superadmin widzi w „Konta” przy
+  zablokowanym koncie listę jego zaliczeń, w których wszyscy prowadzący są
+  zablokowani (nazwa, liczba zapisów), i może każde usunąć, z potwierdzeniem —
   tak klauzula („do czasu usunięcia zaliczenia przez prowadzącego lub
   administratora aplikacji”) ma kogo wskazać, gdy prowadzący odszedł.
 - E-mail służy tylko do logowania: nie jest weryfikowany, aplikacja nic na
@@ -46,7 +48,7 @@ Aplikacja obsługuje wielu prowadzących i wiele zaliczeń. Interfejs po polsku.
 
 | Pojęcie | W kodzie | Opis |
 |---|---|---|
-| Zaliczenie | `Exam` | Właściciel, nazwa (z nazwą przedmiotu), opis/miejsce, domyślna długość slotu, maksymalna wielkość zespołu (1 = indywidualne). `id` (UUID v4) jest też linkiem `/z/<id>`. |
+| Zaliczenie | `Exam` | Prowadzący (jeden lub więcej), nazwa (z nazwą przedmiotu), opis/miejsce, domyślna długość slotu, maksymalna wielkość zespołu (1 = indywidualne). `id` (UUID v4) jest też linkiem `/z/<id>`. |
 | Lista indeksów | `Roster` | Nazwana (np. "g1") lista osób uprawnionych do zapisu; zwykle jedna grupa zajęć z systemu uczelni. Zaliczenie ma jedną lub kilka. |
 | Dozwolony indeks | `RosterEntry` | (lista, numer indeksu, imię, nazwisko). Indeks jest najwyżej na jednej liście w zaliczeniu. |
 | Numer indeksu | `studentNumber` | Tekst z samych cyfr, najwyżej 20 znaków. |
@@ -177,6 +179,16 @@ interfejsu i komunikaty.
   harmonogramie. Osoba dołączana na tablicy do istniejącego zespołu przejmuje
   jego odpowiedzi; przeniesiony cały zespół zachowuje swoje. Duplikat kopiuje
   definicje pól.
+- Prowadzący zaliczenia (2026-10-07): zaliczenie ma jednego lub kilku
+  prowadzących, równych w uprawnieniach — każdy edytuje, usuwa, duplikuje,
+  eksportuje i zmienia skład prowadzących; ten, kto założył, nie ma
+  wyróżnienia. Dodanie w sekcji "Prowadzący" po e-mailu konta (bez
+  rozróżniania wielkości liter): brak konta → "Nie ma prowadzącego z tym
+  adresem", konto zablokowane → odrzucone z tą informacją. Dodany widzi
+  zaliczenie od razu na swojej liście (bez zaproszenia i maili). Każdy może
+  usunąć dowolnego prowadzącego, także siebie ("Wypisz się"); ostatniego nie
+  można — zostaje usunięcie zaliczenia. Wspólne zaliczenia są na tej samej
+  liście co pozostałe. Strona studenta podaje wszystkich prowadzących.
 - Link zaliczenia z przyciskiem "kopiuj".
 - Przed udostępnieniem linku, osobno dla każdej listy: liczba indeksów vs.
   liczba miejsc w jej slotach, z ostrzeżeniem, gdy miejsc jest mniej.
@@ -185,6 +197,7 @@ interfejsu i komunikaty.
 - "Duplikuj zaliczenie" (poprawka = nowe zaliczenie): kopiuje nazwę
   z dopiskiem "(kopia)", opis, ustawienia oraz — przy zaznaczonym "Kopiuj
   listy indeksów" (domyślnie tak) — listy z nazwiskami. Bez slotów i zapisów.
+  Jedynym prowadzącym kopii jest duplikujący.
 - Edycja przy istniejących zapisach:
   - maksymalnej wielkości zespołu nie da się zmniejszyć poniżej największego
     istniejącego zespołu (komunikat wymienia te sloty); zwiększenie tylko
@@ -281,7 +294,7 @@ interfejsu i komunikaty.
 
 ### Eksport CSV
 
-- Tylko właściciel. Kolumny `data` (RRRR-MM-DD), `od`, `do`, `lista`,
+- Tylko prowadzący zaliczenia. Kolumny `data` (RRRR-MM-DD), `od`, `do`, `lista`,
   `indeks`, `nazwisko`, `imie`; wiersz na osobę; sortowanie po początku slotu,
   w slocie po nazwisku; niezapisani na końcu z pustymi kolumnami czasu; wolne
   sloty pominięte.
@@ -298,8 +311,9 @@ pliku schematu. Dokładne nazwy tabel (`@@map`) przy budowie.
 ```prisma
 model Exam {
   id                 String   @id @default(uuid())   // też link /z/<id>
-  ownerId            String
-  owner              User     @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  ownerId            String   // kto założył; bez znaczenia dla uprawnień, do usunięcia w kolejnym wydaniu
+  owner              User     @relation("ExamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  teachers           User[]   @relation("ExamTeachers")  // prowadzący; tabela _ExamTeachers, kaskada z obu stron
   name               String
   description        String
   defaultSlotMinutes Int
@@ -385,9 +399,11 @@ src/
 - Dostęp do bazy tylko w `server/` (tanie przejście na Prisma 8 w przyszłości).
 - Uprawnienia: middleware `requireUser` (sesja; zablokowane konto = odmowa)
   i `requireAdmin` podpinane `.middleware([...])` do każdej funkcji
-  serwerowej prowadzącego / superadmina; własność zaliczenia sprawdza jedna
-  funkcja w `server/exam-lock.server.ts` — zapisy przez `withExamLock`
-  (cudze zaliczenie = `NOT_FOUND`), odczyty przez `getOwnedExam` (= `null`).
+  serwerowej prowadzącego / superadmina; dostęp do zaliczenia (czy konto jest
+  jego prowadzącym) sprawdza jedna funkcja w `server/exam-lock.server.ts` —
+  zapisy przez `withExamLock` (cudze zaliczenie = `NOT_FOUND`; sprawdzenie
+  przed blokadą i ponownie po niej, bo skład prowadzących zmienia się pod tą
+  samą blokadą), odczyty przez `getOwnedExam` (= `null`).
   `beforeLoad` tylko przekierowuje.
 - Dane: TanStack Query zintegrowane z routerem przez
   `@tanstack/react-router-ssr-query` (`setupRouterSsrQueryIntegration({ router, queryClient })`);
@@ -551,8 +567,9 @@ Pierwsze kroki sprawdzają założenia, na których stoi reszta:
 - Zamiana slotów przez studentów; lista rezerwowa.
 - Osobna encja "przedmiot"; data zamknięcia zapisów.
 - Wklejanie list indeksów tekstem.
-- Usuwanie kont prowadzących; przepisywanie zaliczeń na inne konto;
-  wgląd superadmina w cudze zaliczenia.
+- Usuwanie kont prowadzących; osobne przekazanie zaliczenia (zastępuje je
+  dodanie prowadzącego i wypisanie się); wgląd superadmina w cudze zaliczenia.
+- Role prowadzących (np. tylko podgląd); zaproszenia i ich akceptacja.
 - Przerwy między slotami jako ustawienie; wybór wielu dat w formularzu okna;
   przesuwanie całego dnia.
 - Kopie zapasowe bazy (po stronie właściciela wspólnej bazy); CI; tryb ciemny.

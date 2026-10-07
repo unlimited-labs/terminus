@@ -5,7 +5,7 @@ Przydzielanie studentom losowych slotów czasowych na zaliczenia prowadzone prze
 ## Language
 
 **Zaliczenie**:
-Pojedyncze wydarzenie zaliczeniowe jednego prowadzącego, z własną listą indeksów i własnymi slotami. Nazwa przedmiotu jest częścią jego nazwy.
+Pojedyncze wydarzenie zaliczeniowe jednego lub kilku prowadzących zaliczenia, z własną listą indeksów i własnymi slotami. Nazwa przedmiotu jest częścią jego nazwy.
 _Avoid_: Egzamin, przedmiot, termin
 
 **Slot**:
@@ -40,8 +40,12 @@ _Avoid_: Lista zapisów, grafik
 Unikalny adres, pod którym studenci zapisują się na jedno zaliczenie.
 
 **Prowadzący**:
-Osoba z kontem, która tworzy zaliczenia i zarządza wyłącznie własnymi.
+Osoba z kontem, która tworzy zaliczenia i zarządza tymi, których jest prowadzącym zaliczenia.
 _Avoid_: Admin, wykładowca
+
+**Prowadzący zaliczenia**:
+Każde z kont przypiętych do zaliczenia; wszyscy mają równe uprawnienia (także usunięcie zaliczenia i zmianę składu), zaliczenie ma zawsze co najmniej jednego. Dodawany po e-mailu konta.
+_Avoid_: Właściciel, współprowadzący (w interfejsie dopuszczalne potocznie)
 
 **Superadmin**:
 Prowadzący, który dodatkowo zarządza kontami prowadzących (zakłada, blokuje, resetuje hasła); cudzych zaliczeń nie widzi.

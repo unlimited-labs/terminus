@@ -17,6 +17,7 @@ export async function createExam({ maxTeamSize = 1, fields = [], rosters }: Exam
   const exam = await db.exam.create({
     data: {
       ownerId: owner.id,
+      teachers: { connect: { id: owner.id } },
       name: "Kolokwium",
       description: "Sala 1",
       defaultSlotMinutes: 30,

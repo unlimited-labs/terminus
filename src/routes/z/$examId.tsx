@@ -86,7 +86,7 @@ function StudentPage() {
         {schedule.description && (
           <p className="whitespace-pre-line text-muted-foreground">{schedule.description}</p>
         )}
-        <p className="text-muted-foreground">Prowadzący: {schedule.ownerName}</p>
+        <p className="text-muted-foreground">Prowadzący: {schedule.teacherNames}</p>
       </header>
       {!mine && <EntryNotice schedule={schedule} anyFree={mode.anyFree} />}
       <ScheduleBoard

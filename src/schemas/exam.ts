@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { tooLong } from "../messages.pl.ts"
+import { email } from "./auth.ts"
 export const examIdSchema = z.object({ examId: z.uuid() })
 
 export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
@@ -41,3 +42,7 @@ export const examFormSchema = examSchema.refine((v) => !v.opensDate === !v.opens
 export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string() })
 
 export const duplicateExamSchema = examIdSchema.extend({ copyRosters: z.boolean() })
+
+export const addTeacherSchema = examIdSchema.extend({ email })
+
+export const removeTeacherSchema = examIdSchema.extend({ teacherId: z.string().min(1) })

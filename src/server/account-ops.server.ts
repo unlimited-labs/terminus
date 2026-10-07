@@ -83,27 +83,31 @@ export async function setAdmin(
   return { ok: true }
 }
 
+/** Zaliczenia, w których wszyscy prowadzący są zablokowani, a to konto jest jednym z nich. */
+const orphanedExam = { teachers: { every: { banned: true } } }
+
 /** Zaliczenia zablokowanego konta (SPEC: superadmin cudzych zaliczeń nie widzi — poza tym wyjątkiem). */
 export async function listBlockedAccountExams(headers: Headers, userId: string) {
   await assertAdmin(headers)
   const exams = await db.exam.findMany({
-    where: { ownerId: userId, owner: { banned: true } },
+    where: { AND: [{ teachers: { some: { id: userId } } }, orphanedExam] },
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, _count: { select: { enrollments: true } } },
   })
   return exams.map(({ _count, ...exam }) => ({ ...exam, enrollments: _count.enrollments }))
 }
 
-/** Usunięcie zaliczenia zablokowanego konta; zaliczenie aktywnego prowadzącego = nie znaleziono. */
+/** Usunięcie zaliczenia samych zablokowanych kont; z aktywnym prowadzącym = nie znaleziono. */
 export async function deleteBlockedAccountExam(
   headers: Headers,
   { examId, confirmName }: z.infer<typeof deleteExamSchema>,
 ): Promise<Result> {
   await assertAdmin(headers)
-  const exam = await db.exam.findUnique({
-    where: { id: examId },
-    select: { ownerId: true, owner: { select: { banned: true } } },
+  const exam = await db.exam.findFirst({
+    where: { id: examId, ...orphanedExam },
+    select: { teachers: { select: { id: true }, take: 1 } },
   })
-  if (!exam?.owner.banned) return { ok: false, code: "NOT_FOUND" }
-  return removeExam(examId, exam.ownerId, confirmName)
+  const teacherId = exam?.teachers[0]?.id
+  if (!teacherId) return { ok: false, code: "NOT_FOUND" }
+  return removeExam(examId, teacherId, confirmName)
 }

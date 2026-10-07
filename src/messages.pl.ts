@@ -30,6 +30,10 @@ export type AppError =
         | "NAME_MISMATCH"
         | "EMAIL_TAKEN"
         | "CANNOT_CHANGE_SELF"
+        | "TEACHER_NOT_FOUND"
+        | "TEACHER_BANNED"
+        | "ALREADY_TEACHER"
+        | "LAST_TEACHER"
     }
 
 export type Result<T = object> = ({ ok: true } & T) | ({ ok: false } & AppError)
@@ -94,6 +98,14 @@ export function errorMessage(e: AppError): string {
       return "Ten e-mail ma już inne konto."
     case "CANNOT_CHANGE_SELF":
       return "Nie możesz zablokować siebie ani odebrać sobie roli superadmina."
+    case "TEACHER_NOT_FOUND":
+      return "Nie ma prowadzącego z tym adresem."
+    case "TEACHER_BANNED":
+      return "To konto jest zablokowane."
+    case "ALREADY_TEACHER":
+      return "Ta osoba już prowadzi to zaliczenie."
+    case "LAST_TEACHER":
+      return "Zaliczenie musi mieć co najmniej jednego prowadzącego. Zamiast tego usuń zaliczenie."
     case "SLOT_FULL":
       return "Slot jest pełny."
     case "SLOT_NOT_FOUND":

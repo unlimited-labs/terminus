@@ -3,14 +3,23 @@ import { createServerFn } from "@tanstack/react-start"
 import type { Result } from "../messages.pl.ts"
 import { buildExportCsv, exportFileName } from "../domain/csv.ts"
 import {
+  addTeacherSchema,
   deleteExamSchema,
   duplicateExamSchema,
   examFormSchema,
   examIdSchema,
+  removeTeacherSchema,
 } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
-import { copyExam, examRecord, removeExam, updateExamSettings } from "./exam-ops.server.ts"
+import {
+  addTeacher,
+  copyExam,
+  examRecord,
+  removeExam,
+  removeTeacher,
+  updateExamSettings,
+} from "./exam-ops.server.ts"
 import { getOwnedExam } from "./exam-lock.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
@@ -19,7 +28,7 @@ const listExams = createServerFn()
   .middleware([requireUser])
   .handler(({ context }) =>
     db.exam.findMany({
-      where: { ownerId: context.user.id },
+      where: { teachers: { some: { id: context.user.id } } },
       orderBy: { createdAt: "desc" },
       select: {
         id: true,
@@ -53,7 +62,13 @@ export const createExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(examFormSchema)
   .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
-    const exam = await db.exam.create({ data: { ...examRecord(data), ownerId: context.user.id } })
+    const exam = await db.exam.create({
+      data: {
+        ...examRecord(data),
+        ownerId: context.user.id,
+        teachers: { connect: { id: context.user.id } },
+      },
+    })
     return { ok: true, examId: exam.id }
   })
 
@@ -75,6 +90,16 @@ export const duplicateExam = createServerFn({ method: "POST" })
   .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
     return copyExam(data.examId, context.user.id, data.copyRosters)
   })
+
+export const addExamTeacher = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(addTeacherSchema)
+  .handler(({ data, context }) => addTeacher(data.examId, context.user.id, data.email))
+
+export const removeExamTeacher = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(removeTeacherSchema)
+  .handler(({ data, context }) => removeTeacher(data.examId, context.user.id, data.teacherId))
 
 export const exportExamCsv = createServerFn()
   .middleware([requireUser])
