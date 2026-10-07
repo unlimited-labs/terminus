@@ -15,7 +15,7 @@ test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, wida�
   await page.getByLabel("Pole 1 — nazwa (np. Tytuł projektu)").fill("Tytuł projektu")
   await page.getByRole("checkbox", { name: "wymagane" }).check()
   await page.getByRole("button", { name: "Zapisz", exact: true }).click()
-  await expect(page.getByText("Pola dla studenta: Tytuł projektu")).toBeVisible()
+  await expect(page.getByText("Zapisano zmiany.")).toBeVisible()
 
   await page.goto(`/z/${boardExamId}`)
   await page.getByRole("button", { name: "Zapisz się" }).click()

@@ -4,7 +4,8 @@ import { toast } from "sonner"
 
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
-import { Button } from "@/components/ui/button"
+import { TeacherSection } from "@/components/teacher-section"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useResultMutation } from "@/components/use-result-mutation"
@@ -24,12 +25,9 @@ function ExamLink({ examId }: { examId: string }) {
     }
   }
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <code className="rounded-lg bg-muted px-2 py-1 text-sm break-all">{path}</code>
-      <Button variant="outline" size="sm" onClick={copy}>
-        Kopiuj link
-      </Button>
-    </div>
+    <Button variant="outline" size="sm" onClick={copy} title={path}>
+      Kopiuj link dla studentów
+    </Button>
   )
 }
 
@@ -54,7 +52,7 @@ export function CapacitySummary({ exam }: { exam: ExamDetail }) {
   )
 }
 
-export function ExamSettings({ exam }: { exam: ExamDetail }) {
+export function ExamSettings({ exam, userId }: { exam: ExamDetail; userId: string }) {
   const [editing, setEditing] = useState(false)
   const navigate = useNavigate()
   const update = useResultMutation(updateExam, examChangeKeys(exam.id), () => {
@@ -63,10 +61,15 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
   })
   return (
     <Card>
-      <CardHeader className="flex flex-wrap items-center gap-2">
-        <CardTitle className="text-2xl font-extrabold">
-          <h1>{exam.name}</h1>
-        </CardTitle>
+      <CardHeader className="flex flex-wrap items-start gap-2">
+        <div>
+          <CardTitle className="text-2xl font-extrabold">
+            <h1>{exam.name}</h1>
+          </CardTitle>
+          {!editing && exam.description && (
+            <p className="whitespace-pre-line text-muted-foreground">{exam.description}</p>
+          )}
+        </div>
         <div className="ml-auto flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
             {editing ? "Anuluj" : "Edytuj"}
@@ -81,52 +84,48 @@ export function ExamSettings({ exam }: { exam: ExamDetail }) {
           />
         </div>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="grid gap-3">
         {editing ? (
-          <ExamForm
-            defaultValues={{
-              name: exam.name,
-              description: exam.description,
-              defaultSlotMinutes: exam.defaultSlotMinutes,
-              maxTeamSize: exam.maxTeamSize,
-              fields: exam.fields,
-              opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
-              opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
-            }}
-            submitLabel="Zapisz"
-            onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
-          />
+          <>
+            <ExamForm
+              defaultValues={{
+                name: exam.name,
+                description: exam.description,
+                defaultSlotMinutes: exam.defaultSlotMinutes,
+                maxTeamSize: exam.maxTeamSize,
+                fields: exam.fields,
+                opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
+                opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
+              }}
+              submitLabel="Zapisz"
+              onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
+            />
+            <TeacherSection exam={exam} userId={userId} />
+          </>
         ) : (
           <>
-            <p className="whitespace-pre-line text-muted-foreground">{exam.description}</p>
-            <p className="text-sm">
-              Slot domyślnie {exam.defaultSlotMinutes} min ·{" "}
-              {exam.maxTeamSize === 1
-                ? "zaliczenie indywidualne"
-                : `zespoły do ${exam.maxTeamSize} os.`}
+            <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+              <span>Slot {exam.defaultSlotMinutes} min</span>
+              <span>
+                {exam.maxTeamSize === 1 ? "Indywidualnie" : `Zespoły do ${exam.maxTeamSize} os.`}
+              </span>
+              <span>
+                {exam.enrollmentOpensAt
+                  ? `Zapisy od ${formatDayTime(exam.enrollmentOpensAt)}`
+                  : "Zapisy otwarte"}
+              </span>
             </p>
-            <p className="text-sm">
-              {exam.enrollmentOpensAt
-                ? `Start zapisów: ${formatDayTime(exam.enrollmentOpensAt)}`
-                : "Zapisy otwarte od utworzenia zaliczenia"}
-            </p>
-            {exam.fields.length > 0 && (
-              <p className="text-sm">
-                Pola dla studenta:{" "}
-                {exam.fields
-                  .map((f) => (f.required ? f.label : `${f.label} (opcjonalne)`))
-                  .join(", ")}
-              </p>
-            )}
-            <ExamLink examId={exam.id} />
-            <Link
-              to="/zaliczenia/$examId/tablica"
-              params={{ examId: exam.id }}
-              className="font-semibold text-primary"
-            >
-              Tablica zapisów →
-            </Link>
             <CapacitySummary exam={exam} />
+            <div className="flex flex-wrap gap-2">
+              <Link
+                to="/zaliczenia/$examId/tablica"
+                params={{ examId: exam.id }}
+                className={buttonVariants({ size: "sm" })}
+              >
+                Tablica zapisów
+              </Link>
+              <ExamLink examId={exam.id} />
+            </div>
           </>
         )}
       </CardContent>
