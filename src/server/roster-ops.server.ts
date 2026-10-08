@@ -4,7 +4,7 @@ import { parseRosterCsv, planRosterImport } from "../domain/csv.ts"
 import type { Result } from "../messages.pl.ts"
 import type { addEntrySchema } from "../schemas/roster.ts"
 
-import { withExamLock, type Tx } from "./exam-lock.server.ts"
+import { withExamLock, type Tx } from "./exam-access.server.ts"
 
 async function planImport(tx: Tx, examId: string, rosterName: string, csv: string) {
   const parsed = parseRosterCsv(csv)
@@ -42,7 +42,7 @@ export async function previewImport(
   rosterName: string,
   csv: string,
 ): Promise<Result<ImportPreview>> {
-  return withExamLock(examId, userId, (tx) => planImport(tx, examId, rosterName, csv))
+  return withExamLock(examId, { teacher: userId }, (tx) => planImport(tx, examId, rosterName, csv))
 }
 
 export async function applyImport(
@@ -53,7 +53,7 @@ export async function applyImport(
   /** Skreśleni z zapisem z zatwierdzonego podglądu: inny skład = zapisy zmieniły się od podglądu. */
   previewedWithdrawnEnrolled: string[],
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const plan = await planImport(tx, examId, rosterName, csv)
     if (!plan.ok) return plan
     const now = plan.withdrawnEnrolled.map((e) => e.studentNumber).toSorted()
@@ -93,7 +93,7 @@ export async function addEntry(
   userId: string,
   { rosterId, studentNumber, firstName, lastName }: Omit<z.infer<typeof addEntrySchema>, "examId">,
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const current = await tx.rosterEntry.findUnique({
       where: { examId_studentNumber: { examId, studentNumber } },
       include: { roster: { select: { name: true } } },
@@ -120,7 +120,7 @@ export async function deleteEntry(
   userId: string,
   studentNumber: string,
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     if (
       await tx.enrollment.findUnique({
         where: { examId_studentNumber: { examId, studentNumber } },
@@ -139,7 +139,7 @@ export async function removeRoster(
   userId: string,
   rosterId: string,
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const enrolled = await tx.enrollment.count({
       where: { examId, OR: [{ entry: { rosterId } }, { slot: { rosterId } }] },
     })

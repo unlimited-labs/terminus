@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { withExamLock } from "@/server/exam-lock.server"
+import { withExamLock } from "@/server/exam-access.server"
 
 import { createExam, enroll, inDays, TEST_NOW } from "./fixtures"
 
@@ -94,7 +94,7 @@ test("przed startem zapisów zapis jest odrzucany, potem przechodzi", async () =
 async function holdLock(examId: string) {
   const locked = Promise.withResolvers<void>()
   const released = Promise.withResolvers<void>()
-  const done = withExamLock(examId, null, () => {
+  const done = withExamLock(examId, "public", () => {
     locked.resolve()
     return released.promise
   })

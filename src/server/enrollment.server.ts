@@ -4,7 +4,7 @@ import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
 import { checkAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
 import { Prisma } from "../generated/prisma/client.ts"
 
-import { withExamLock } from "./exam-lock.server.ts"
+import { withExamLock } from "./exam-access.server.ts"
 import { parseFields } from "./exam-state.server.ts"
 
 export type Ticket = {
@@ -41,7 +41,7 @@ export async function enrollTeam(
 ): Promise<EnrollmentOutcome> {
   return withExamLock(
     examId,
-    null,
+    "public",
     async (tx): Promise<EnrollmentOutcome> => {
       const exam = await tx.exam.findUniqueOrThrow({
         where: { id: examId },

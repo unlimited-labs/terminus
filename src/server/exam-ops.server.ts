@@ -4,7 +4,7 @@ import { warsawDateTime } from "../domain/slots.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
-import { withExamLock } from "./exam-lock.server.ts"
+import { withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { parseFields } from "./exam-state.server.ts"
 
 /** Poprawka = nowe zaliczenie: ustawienia i (opcjonalnie) listy z nazwiskami, bez slotów i zapisów. */
@@ -13,45 +13,49 @@ export function copyExam(
   userId: string,
   copyRosters: boolean,
 ): Promise<Result<{ examId: string }>> {
-  return withExamLock(examId, userId, async (tx): Promise<Result<{ examId: string }>> => {
-    const source = await tx.exam.findUniqueOrThrow({
-      where: { id: examId },
-      include: { rosters: { include: { entries: true } } },
-    })
-    const copy = await tx.exam.create({
-      data: {
-        ownerId: userId,
-        teachers: { connect: { id: userId } },
-        name: `${source.name} (kopia)`,
-        description: source.description,
-        defaultSlotMinutes: source.defaultSlotMinutes,
-        maxTeamSize: source.maxTeamSize,
-        fields: parseFields(source.fields),
-        enrollmentOpensAt: source.enrollmentOpensAt,
-      },
-    })
-    if (!copyRosters) return { ok: true, examId: copy.id }
-    await Promise.all(
-      source.rosters.map((roster) =>
-        tx.roster.create({
-          data: {
-            examId: copy.id,
-            name: roster.name,
-            entries: {
-              createMany: {
-                data: roster.entries.map(({ studentNumber, firstName, lastName }) => ({
-                  studentNumber,
-                  firstName,
-                  lastName,
-                })),
+  return withExamLock(
+    examId,
+    { teacher: userId },
+    async (tx): Promise<Result<{ examId: string }>> => {
+      const source = await tx.exam.findUniqueOrThrow({
+        where: { id: examId },
+        include: { rosters: { include: { entries: true } } },
+      })
+      const copy = await tx.exam.create({
+        data: {
+          ownerId: userId,
+          teachers: { connect: { id: userId } },
+          name: `${source.name} (kopia)`,
+          description: source.description,
+          defaultSlotMinutes: source.defaultSlotMinutes,
+          maxTeamSize: source.maxTeamSize,
+          fields: parseFields(source.fields),
+          enrollmentOpensAt: source.enrollmentOpensAt,
+        },
+      })
+      if (!copyRosters) return { ok: true, examId: copy.id }
+      await Promise.all(
+        source.rosters.map((roster) =>
+          tx.roster.create({
+            data: {
+              examId: copy.id,
+              name: roster.name,
+              entries: {
+                createMany: {
+                  data: roster.entries.map(({ studentNumber, firstName, lastName }) => ({
+                    studentNumber,
+                    firstName,
+                    lastName,
+                  })),
+                },
               },
             },
-          },
-        }),
-      ),
-    )
-    return { ok: true, examId: copy.id }
-  })
+          }),
+        ),
+      )
+      return { ok: true, examId: copy.id }
+    },
+  )
 }
 
 /** Maksymalnej wielkości zespołu nie da się zmniejszyć poniżej największego istniejącego zespołu. */
@@ -60,7 +64,7 @@ export async function updateExamSettings(
   userId: string,
   data: z.infer<typeof examSchema>,
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const teams = await tx.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
     const tooBig = teams.filter((t) => t._count > data.maxTeamSize).map((t) => t.slotId)
     if (tooBig.length > 0) {
@@ -85,8 +89,12 @@ export function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof exa
 }
 
 /** Usunięcie zaliczenia z listami, slotami i zapisami; trzeba przepisać jego nazwę. */
-export function removeExam(examId: string, userId: string, confirmName: string): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+export function removeExam(
+  examId: string,
+  access: ExamAccess,
+  confirmName: string,
+): Promise<Result> {
+  return withExamLock(examId, access, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({ where: { id: examId } })
     if (exam.name !== confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
     await tx.exam.delete({ where: { id: examId } })
@@ -96,7 +104,7 @@ export function removeExam(examId: string, userId: string, confirmName: string):
 
 /** Dodanie prowadzącego po e-mailu konta (bez rozróżniania wielkości liter). */
 export function addTeacher(examId: string, userId: string, email: string): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const teacher = await tx.user.findFirst({
       where: { email: { equals: email, mode: "insensitive" } },
       select: {
@@ -118,7 +126,7 @@ export function addTeacher(examId: string, userId: string, email: string): Promi
 
 /** Usunięcie prowadzącego (także siebie); ostatniego nie można — zostaje usunięcie zaliczenia. */
 export function removeTeacher(examId: string, userId: string, teacherId: string): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const { teachers } = await tx.exam.findUniqueOrThrow({
       where: { id: examId },
       select: { teachers: { select: { id: true } } },

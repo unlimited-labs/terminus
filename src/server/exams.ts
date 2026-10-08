@@ -20,7 +20,7 @@ import {
   removeTeacher,
   updateExamSettings,
 } from "./exam-ops.server.ts"
-import { getOwnedExam } from "./exam-lock.server.ts"
+import { getOwnedExam } from "./exam-access.server.ts"
 import { loadExam } from "./exam-state.server.ts"
 import { requireUser } from "./session.ts"
 
@@ -82,7 +82,9 @@ export const updateExam = createServerFn({ method: "POST" })
 export const deleteExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(deleteExamSchema)
-  .handler(({ data, context }) => removeExam(data.examId, context.user.id, data.confirmName))
+  .handler(({ data, context }) =>
+    removeExam(data.examId, { teacher: context.user.id }, data.confirmName),
+  )
 
 export const duplicateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])

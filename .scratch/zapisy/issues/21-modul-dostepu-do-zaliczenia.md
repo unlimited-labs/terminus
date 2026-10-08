@@ -58,6 +58,6 @@ w `src/server/exam-lock.server.ts`), ale:
 ## Commity (w tej kolejności)
 
 1. `ownerId` → `userId` / `teacherId` (bez migracji). ✅
-2. `exam-access.server.ts` + rodzaj dostępu „zablokowane konta”, bez `teachers[0]`.
+2. `exam-access.server.ts` + rodzaj dostępu „zablokowane konta”, bez `teachers[0]`. ✅
 3. Odczyty do ops + testy 1–3, 6.
 4. Podgląd bez blokady + test 4; podgląd po wyjściu z pola nazwy.

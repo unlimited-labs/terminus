@@ -6,7 +6,7 @@ import { listBlockedAccountExams } from "@/server/account-ops.server"
 import { auth } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { addTeacher, copyExam, removeExam, removeTeacher } from "@/server/exam-ops.server"
-import { getOwnedExam } from "@/server/exam-lock.server"
+import { getOwnedExam } from "@/server/exam-access.server"
 
 import { createExam } from "./fixtures"
 
@@ -55,7 +55,7 @@ test("prowadzący po mailu: pełny dostęp, usuwa nawet założyciela; ostatni z
     code: "LAST_TEACHER",
   })
   expect(await teacherIds(examId)).toEqual([second.id])
-  expect(await removeExam(examId, second.id, "Kolokwium")).toEqual({ ok: true })
+  expect(await removeExam(examId, { teacher: second.id }, "Kolokwium")).toEqual({ ok: true })
 })
 
 test("duplikat ma tylko duplikującego prowadzącego", async () => {

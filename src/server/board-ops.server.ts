@@ -2,7 +2,7 @@ import { applyCommand, changedPeople, type BoardCommand } from "../domain/board.
 import { checkAnswers, type Answers } from "../domain/fields.ts"
 import type { Result } from "../messages.pl.ts"
 
-import { withExamLock, type Tx } from "./exam-lock.server.ts"
+import { withExamLock, type Tx } from "./exam-access.server.ts"
 import { parseAnswers, parseFields } from "./exam-state.server.ts"
 
 type Person = {
@@ -73,7 +73,7 @@ export async function runBoardCommand(
   userId: string,
   command: BoardCommand,
 ): Promise<CommandResult> {
-  return withExamLock(examId, userId, async (tx): Promise<CommandResult> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<CommandResult> => {
     const before = await loadBoardState(tx, examId)
     const applied = applyCommand(before, command)
     if (!applied.ok) return applied
@@ -105,7 +105,7 @@ export async function setSlotAnswers(
   slotId: string,
   answers: Answers,
 ): Promise<Result> {
-  return withExamLock(examId, userId, async (tx): Promise<Result> => {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({
       where: { id: examId },
       select: { fields: true },
