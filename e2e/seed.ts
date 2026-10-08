@@ -17,11 +17,10 @@ async function createExam(
   enrolled: [string, number][],
   enrollmentOpensAt: Date | null = null,
 ) {
-  const owner = await db.user.findUniqueOrThrow({ where: { email: E2E.admin.email } })
+  const teacher = await db.user.findUniqueOrThrow({ where: { email: E2E.admin.email } })
   const exam = await db.exam.create({
     data: {
-      ownerId: owner.id,
-      teachers: { connect: { id: owner.id } },
+      teachers: { connect: { id: teacher.id } },
       name,
       description: "Sala 1.23",
       defaultSlotMinutes: 20,
@@ -85,7 +84,7 @@ async function blockedOwnerExam() {
     [at(16, 9)],
     [["970001", 0]],
   )
-  const owner = await db.user.create({
+  const teacher = await db.user.create({
     data: {
       id: crypto.randomUUID(),
       name: "Zablokowany E2E",
@@ -95,7 +94,7 @@ async function blockedOwnerExam() {
   })
   await db.exam.update({
     where: { id },
-    data: { ownerId: owner.id, teachers: { set: [{ id: owner.id }] } },
+    data: { teachers: { set: [{ id: teacher.id }] } },
   })
   return id
 }

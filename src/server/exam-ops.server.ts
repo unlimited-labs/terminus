@@ -34,7 +34,7 @@ export async function insertExam(
   data: z.infer<typeof examSchema>,
 ): Promise<Result<{ examId: string }>> {
   const exam = await db.exam.create({
-    data: { ...examRecord(data), ownerId: userId, teachers: { connect: { id: userId } } },
+    data: { ...examRecord(data), teachers: { connect: { id: userId } } },
   })
   return { ok: true, examId: exam.id }
 }
@@ -72,7 +72,6 @@ export function copyExam(
       })
       const copy = await tx.exam.create({
         data: {
-          ownerId: userId,
           teachers: { connect: { id: userId } },
           name: `${source.name} (kopia)`,
           description: source.description,

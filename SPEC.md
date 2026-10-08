@@ -311,8 +311,6 @@ pliku schematu. Dokładne nazwy tabel (`@@map`) przy budowie.
 ```prisma
 model Exam {
   id                 String   @id @default(uuid())   // też link /z/<id>
-  ownerId            String   // kto założył; bez znaczenia dla uprawnień, do usunięcia w kolejnym wydaniu
-  owner              User     @relation("ExamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   teachers           User[]   @relation("ExamTeachers")  // prowadzący; tabela _ExamTeachers, kaskada z obu stron
   name               String
   description        String

@@ -36,11 +36,8 @@ w `src/server/exam-lock.server.ts`), ale:
 - `deleteBlockedAccountExam` używa rodzaju dostępu „zablokowane konta” zamiast
   `teachers[0]`; warunek `orphanedExam` przenosi się do reguły dostępu.
 - Parametr `ownerId` → `userId` w operacjach, `teacherId` w fixture testów.
-- Kolumna `Exam.ownerId` zostaje do kolejnego wydania (README: migracje zgodne
-  wstecz; wersja sprzed `exam_teachers` sprawdza dostęp przez `ownerId`, więc
-  wycofanie do niej wymaga kolumny). Usunięcie (+ relacja `ExamOwner`, indeks,
-  `e2e/seed.ts`, SPEC) w osobnym commicie po wdrożeniu wydania z prowadzącymi
-  zaliczenia i decyzji, że wycofanie za nie nie jest już potrzebne.
+- Kolumna `Exam.ownerId` usunięta migracją `drop_exam_owner` (aplikacja nie była
+  jeszcze wdrożona, więc wycofanie do wersji z `ownerId` nie jest potrzebne).
 - Podgląd importu: bez blokady (reguła jak `getOwnedExam`); `applyImport`
   i tak pod blokadą wykrywa `IMPORT_PREVIEW_STALE`. W UI podgląd po zmianie
   nazwy odpala się przy wyjściu z pola albo Enterze, nie przy każdym znaku.

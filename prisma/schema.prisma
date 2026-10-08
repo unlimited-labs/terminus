@@ -10,9 +10,6 @@ datasource db {
 
 model Exam {
   id                 String       @id @default(uuid())
-  /// Kto założył; bez znaczenia dla uprawnień (te daje `teachers`). Zostaje dla wycofania wersji.
-  ownerId            String
-  owner              User         @relation("ExamOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   /// Prowadzący zaliczenia: każdy może wszystko, zawsze co najmniej jeden.
   teachers           User[]       @relation("ExamTeachers")
   name               String
@@ -27,7 +24,6 @@ model Exam {
   rosters            Roster[]
   enrollments        Enrollment[]
 
-  @@index([ownerId])
   @@map("exam")
 }
 
@@ -105,7 +101,6 @@ model User {
   banExpires    DateTime?
   sessions      Session[]
   accounts      Account[]
-  exams         Exam[]    @relation("ExamOwner")
   taughtExams   Exam[]    @relation("ExamTeachers")
 
   @@unique([email])
