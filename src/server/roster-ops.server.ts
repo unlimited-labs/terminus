@@ -4,7 +4,8 @@ import { parseRosterCsv, planRosterImport } from "../domain/csv.ts"
 import type { Result } from "../messages.pl.ts"
 import type { addEntrySchema } from "../schemas/roster.ts"
 
-import { withExamLock, type Tx } from "./exam-access.server.ts"
+import { db } from "./db.server.ts"
+import { getOwnedExam, withExamLock, type Tx } from "./exam-access.server.ts"
 
 async function planImport(tx: Tx, examId: string, rosterName: string, csv: string) {
   const parsed = parseRosterCsv(csv)
@@ -36,13 +37,15 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
 
 type ImportPreview = Extract<Awaited<ReturnType<typeof planImport>>, { ok: true }>
 
+/** Bez blokady, żeby nie wstrzymywać zapisów; `applyImport` pod blokadą i tak odrzuca nieaktualny podgląd. */
 export async function previewImport(
   examId: string,
   userId: string,
   rosterName: string,
   csv: string,
 ): Promise<Result<ImportPreview>> {
-  return withExamLock(examId, { teacher: userId }, (tx) => planImport(tx, examId, rosterName, csv))
+  if (!(await getOwnedExam(examId, userId))) return { ok: false, code: "NOT_FOUND" }
+  return planImport(db, examId, rosterName, csv)
 }
 
 export async function applyImport(

@@ -18,6 +18,7 @@ test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", a
 
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await page.getByLabel("Nazwa listy").fill("g2")
+  await page.getByLabel("Nazwa listy").press("Enter")
   await expect(page.getByText("Nowa lista.")).toBeVisible()
   await page.getByRole("button", { name: "Zapisz listę" }).click()
   await expect(page.getByText("Listy indeksów")).toBeVisible()

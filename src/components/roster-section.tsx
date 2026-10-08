@@ -168,11 +168,9 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
     setInput(next)
     preview.mutate(next)
   }
-  const rename = (rosterName: string) => {
-    if (!input) return
-    const next = { ...input, rosterName }
-    setInput(next)
-    if (rosterName.trim()) preview.mutate(next)
+  const previewedName = preview.variables?.rosterName
+  const refresh = () => {
+    if (input?.rosterName.trim() && input.rosterName !== previewedName) preview.mutate(input)
   }
   const result = preview.data
 
@@ -201,7 +199,9 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
             <Input
               id="roster-name"
               value={input.rosterName}
-              onChange={(e) => rename(e.target.value)}
+              onChange={(e) => setInput({ ...input, rosterName: e.target.value })}
+              onBlur={refresh}
+              onKeyDown={(e) => e.key === "Enter" && refresh()}
             />
           </div>
           <p>
@@ -237,7 +237,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           </PreviewList>
           <div className="flex gap-2">
             <Button
-              disabled={apply.isPending || preview.isPending}
+              disabled={apply.isPending || preview.isPending || input.rosterName !== previewedName}
               onClick={async () => {
                 const done = await apply.mutateAsync({
                   ...input,
