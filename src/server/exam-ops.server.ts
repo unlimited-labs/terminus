@@ -1,11 +1,60 @@
 import type { z } from "zod"
 
+import { buildExportCsv, exportFileName } from "../domain/csv.ts"
 import { warsawDateTime } from "../domain/slots.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
-import { withExamLock, type ExamAccess } from "./exam-access.server.ts"
-import { parseFields } from "./exam-state.server.ts"
+import { db } from "./db.server.ts"
+import { getOwnedExam, withExamLock, type ExamAccess } from "./exam-access.server.ts"
+import { loadExam, parseFields } from "./exam-state.server.ts"
+
+/** Zaliczenia, których konto jest prowadzącym, od najnowszych. */
+export function examsOf(userId: string) {
+  return db.exam.findMany({
+    where: { teachers: { some: { id: userId } } },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      _count: { select: { enrollments: true } },
+      rosters: { select: { _count: { select: { entries: true, slots: true } } } },
+    },
+  })
+}
+
+/** Pełny stan zaliczenia dla jego prowadzącego; cudze = `null`. */
+export async function readExam(examId: string, userId: string) {
+  return (await getOwnedExam(examId, userId)) ? loadExam(examId) : null
+}
+
+export async function insertExam(
+  userId: string,
+  data: z.infer<typeof examSchema>,
+): Promise<Result<{ examId: string }>> {
+  const exam = await db.exam.create({
+    data: { ...examRecord(data), ownerId: userId, teachers: { connect: { id: userId } } },
+  })
+  return { ok: true, examId: exam.id }
+}
+
+/** Eksport CSV dla prowadzącego; cudze = `NOT_FOUND`. */
+export async function examCsv(
+  examId: string,
+  userId: string,
+  now = new Date(),
+): Promise<Result<{ fileName: string; csv: string }>> {
+  const exam = await readExam(examId, userId)
+  if (!exam) return { ok: false, code: "NOT_FOUND" }
+  const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
+  const people = exam.people.map((p) => ({ ...p, rosterName: rosterName.get(p.rosterId) ?? "" }))
+  return {
+    ok: true,
+    fileName: exportFileName(exam.name, now),
+    csv: buildExportCsv(exam.slots, people, exam.fields),
+  }
+}
 
 /** Poprawka = nowe zaliczenie: ustawienia i (opcjonalnie) listy z nazwiskami, bez slotów i zapisów. */
 export function copyExam(
@@ -81,7 +130,7 @@ export async function updateExamSettings(
 }
 
 /** Wartości formularza zaliczenia → kolumny tabeli (start zapisów w czasie polskim). */
-export function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof examSchema>) {
+function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof examSchema>) {
   return {
     ...rest,
     enrollmentOpensAt: opensDate && opensTime ? warsawDateTime(opensDate, opensTime) : null,

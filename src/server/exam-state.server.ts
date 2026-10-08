@@ -55,3 +55,48 @@ export async function loadExam(examId: string) {
 }
 
 export type ExamDetail = NonNullable<Awaited<ReturnType<typeof loadExam>>>
+
+/** Publiczny harmonogram: sloty z imionami i nazwiskami, bez numerów indeksów. */
+export async function loadSchedule(examId: string) {
+  const exam = await db.exam.findUnique({
+    where: { id: examId },
+    select: {
+      name: true,
+      description: true,
+      maxTeamSize: true,
+      fields: true,
+      enrollmentOpensAt: true,
+      teachers: { orderBy: { name: "asc" }, select: { name: true } },
+      rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
+    },
+  })
+  if (!exam) return null
+  const slots = await db.slot.findMany({
+    where: { examId },
+    orderBy: { startsAt: "asc" },
+    select: {
+      id: true,
+      rosterId: true,
+      startsAt: true,
+      endsAt: true,
+      enrollments: {
+        select: { entry: { select: { firstName: true, lastName: true } } },
+        orderBy: { entry: { lastName: "asc" } },
+      },
+    },
+  })
+  return {
+    name: exam.name,
+    description: exam.description,
+    teacherNames: exam.teachers.map((t) => t.name).join(", "),
+    maxTeamSize: exam.maxTeamSize,
+    opensAt: exam.enrollmentOpensAt,
+    fields: parseFields(exam.fields),
+    rosters: exam.rosters,
+    now: new Date(),
+    slots: slots.map(({ enrollments, ...slot }) => ({
+      ...slot,
+      team: enrollments.map((e) => e.entry),
+    })),
+  }
+}

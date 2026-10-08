@@ -1,7 +1,8 @@
 import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { copyExam, updateExamSettings } from "@/server/exam-ops.server"
+import { loadSchedule } from "@/server/exam-state.server"
+import { copyExam, examCsv, examsOf, readExam, updateExamSettings } from "@/server/exam-ops.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
 
@@ -75,4 +76,30 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
   })
   const slots = await db.slot.findMany({ where: { examId } })
   expect(slots.every((s) => s.endsAt.getTime() - s.startsAt.getTime() === 30 * 60_000)).toBe(true)
+})
+
+test("prowadzący widzi i eksportuje tylko swoje zaliczenia", async () => {
+  const mine = await createExam({ rosters: { g1: { students: ["1"], slots: [inDays(1)] } } })
+  const other = await createExam({ rosters: {} })
+  await enroll(mine.examId, ["1"])
+
+  expect((await examsOf(mine.teacherId)).map((e) => e.id)).toEqual([mine.examId])
+  expect(await readExam(mine.examId, mine.teacherId)).toMatchObject({ id: mine.examId })
+  expect(await readExam(mine.examId, other.teacherId)).toBeNull()
+  expect(await examCsv(mine.examId, other.teacherId)).toEqual({ ok: false, code: "NOT_FOUND" })
+  const csv = await examCsv(mine.examId, mine.teacherId)
+  if (!csv.ok) throw new Error(csv.code)
+  expect(csv.csv).toContain("1")
+})
+
+test("harmonogram pokazuje zespół bez numerów indeksów", async () => {
+  const { examId } = await createExam({
+    rosters: { g1: { students: ["123456"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["123456"])
+
+  const schedule = await loadSchedule(examId)
+  const team = schedule!.slots[0]!.team
+  expect(team).toHaveLength(1)
+  expect(Object.keys(team[0]!).toSorted()).toEqual(["firstName", "lastName"])
 })

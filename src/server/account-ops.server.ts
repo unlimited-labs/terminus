@@ -26,6 +26,14 @@ async function assertAdmin(headers: Headers) {
   return user
 }
 
+export async function accountList(headers: Headers) {
+  await assertAdmin(headers)
+  return db.user.findMany({
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, email: true, role: true, banned: true },
+  })
+}
+
 export async function addAccount(
   headers: Headers,
   data: z.infer<typeof createAccountSchema>,

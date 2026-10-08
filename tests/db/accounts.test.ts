@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { expect, test } from "vitest"
 
 import {
+  accountList,
   addAccount,
   deleteBlockedAccountExam,
   setAdmin,
@@ -44,6 +45,7 @@ test("bez roli superadmina każda operacja jest odrzucona i niczego nie zmienia"
   const users = await db.user.count()
 
   for (const headers of [(await account()).headers, new Headers()]) {
+    await expect(accountList(headers)).rejects.toThrow("Brak dostępu")
     const email = `${randomUUID()}@example.com`
     await expect(addAccount(headers, { email, name: "X", password })).rejects.toThrow(
       "Brak dostępu",

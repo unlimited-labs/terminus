@@ -13,6 +13,7 @@ import {
 import { deleteExamSchema } from "../schemas/exam.ts"
 
 import {
+  accountList,
   addAccount,
   deleteBlockedAccountExam,
   editAccount,
@@ -21,17 +22,11 @@ import {
   setBanned,
   setPassword,
 } from "./account-ops.server.ts"
-import { db } from "./db.server.ts"
 import { requireAdmin } from "./session.ts"
 
 export const listAccounts = createServerFn()
   .middleware([requireAdmin])
-  .handler(() =>
-    db.user.findMany({
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, email: true, role: true, banned: true },
-    }),
-  )
+  .handler(() => accountList(getRequestHeaders()))
 
 export const accountsQuery = () =>
   queryOptions({ queryKey: ["accounts"], queryFn: () => listAccounts() })
