@@ -137,21 +137,21 @@ test("zablokowane konto z żywą sesją nie jest zalogowanym prowadzącym", asyn
 
 test("zaliczenia zablokowanego konta: superadmin widzi je i usuwa; aktywnego konta — nie", async () => {
   const admin = await account("admin")
-  const { examId, ownerId } = await createExam({
+  const { examId, teacherId } = await createExam({
     rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
   })
   await enroll(examId, ["1"])
   const remove = (confirmName = "Kolokwium") =>
     deleteBlockedAccountExam(admin.headers, { examId, confirmName })
 
-  expect(await listBlockedAccountExams(admin.headers, ownerId)).toEqual([])
+  expect(await listBlockedAccountExams(admin.headers, teacherId)).toEqual([])
   expect(await remove()).toEqual({ ok: false, code: "NOT_FOUND" })
 
-  await db.user.update({ where: { id: ownerId }, data: { banned: true } })
-  expect(await listBlockedAccountExams(admin.headers, ownerId)).toEqual([
+  await db.user.update({ where: { id: teacherId }, data: { banned: true } })
+  expect(await listBlockedAccountExams(admin.headers, teacherId)).toEqual([
     { id: examId, name: "Kolokwium", enrollments: 1 },
   ])
-  await expect(listBlockedAccountExams((await account()).headers, ownerId)).rejects.toThrow(
+  await expect(listBlockedAccountExams((await account()).headers, teacherId)).rejects.toThrow(
     "Brak dostępu",
   )
   await expect(

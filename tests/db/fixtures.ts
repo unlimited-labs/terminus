@@ -11,13 +11,13 @@ type ExamFixture = {
 
 /** Zaliczenie z listami, wpisami i slotami (każdy slot 30 min); zwraca identyfikatory. */
 export async function createExam({ maxTeamSize = 1, fields = [], rosters }: ExamFixture) {
-  const owner = await db.user.create({
+  const teacher = await db.user.create({
     data: { id: randomUUID(), name: "Prowadzący", email: `${randomUUID()}@example.com` },
   })
   const exam = await db.exam.create({
     data: {
-      ownerId: owner.id,
-      teachers: { connect: { id: owner.id } },
+      ownerId: teacher.id,
+      teachers: { connect: { id: teacher.id } },
       name: "Kolokwium",
       description: "Sala 1",
       defaultSlotMinutes: 30,
@@ -47,7 +47,7 @@ export async function createExam({ maxTeamSize = 1, fields = [], rosters }: Exam
       })),
     })
   }
-  return { examId: exam.id, ownerId: owner.id, rosterIds }
+  return { examId: exam.id, teacherId: teacher.id, rosterIds }
 }
 
 export const inDays = (days: number, hour = 9) => new Date(Date.UTC(2030, 0, 1 + days, hour))

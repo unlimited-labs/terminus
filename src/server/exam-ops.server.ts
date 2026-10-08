@@ -10,18 +10,18 @@ import { parseFields } from "./exam-state.server.ts"
 /** Poprawka = nowe zaliczenie: ustawienia i (opcjonalnie) listy z nazwiskami, bez slotów i zapisów. */
 export function copyExam(
   examId: string,
-  ownerId: string,
+  userId: string,
   copyRosters: boolean,
 ): Promise<Result<{ examId: string }>> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result<{ examId: string }>> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result<{ examId: string }>> => {
     const source = await tx.exam.findUniqueOrThrow({
       where: { id: examId },
       include: { rosters: { include: { entries: true } } },
     })
     const copy = await tx.exam.create({
       data: {
-        ownerId,
-        teachers: { connect: { id: ownerId } },
+        ownerId: userId,
+        teachers: { connect: { id: userId } },
         name: `${source.name} (kopia)`,
         description: source.description,
         defaultSlotMinutes: source.defaultSlotMinutes,
@@ -57,10 +57,10 @@ export function copyExam(
 /** Maksymalnej wielkości zespołu nie da się zmniejszyć poniżej największego istniejącego zespołu. */
 export async function updateExamSettings(
   examId: string,
-  ownerId: string,
+  userId: string,
   data: z.infer<typeof examSchema>,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const teams = await tx.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
     const tooBig = teams.filter((t) => t._count > data.maxTeamSize).map((t) => t.slotId)
     if (tooBig.length > 0) {
@@ -85,8 +85,8 @@ export function examRecord({ opensDate, opensTime, ...rest }: z.infer<typeof exa
 }
 
 /** Usunięcie zaliczenia z listami, slotami i zapisami; trzeba przepisać jego nazwę. */
-export function removeExam(examId: string, ownerId: string, confirmName: string): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+export function removeExam(examId: string, userId: string, confirmName: string): Promise<Result> {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({ where: { id: examId } })
     if (exam.name !== confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
     await tx.exam.delete({ where: { id: examId } })

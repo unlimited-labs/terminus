@@ -19,7 +19,7 @@ async function setup() {
     orderBy: { startsAt: "asc" },
   })
   const [s1, s2, s3, g2] = slots.map((s) => s.id)
-  const run = (command: BoardCommand) => runBoardCommand(fixture.examId, fixture.ownerId, command)
+  const run = (command: BoardCommand) => runBoardCommand(fixture.examId, fixture.teacherId, command)
   const slotOf = async (studentNumber: string) =>
     (
       await db.enrollment.findUnique({
@@ -78,7 +78,7 @@ describe("runBoardCommand", () => {
 
     const other = await createExam({ rosters: {} })
     expect(
-      await runBoardCommand(examId, other.ownerId, {
+      await runBoardCommand(examId, other.teacherId, {
         kind: "move",
         studentNumber: "4",
         toSlotId: null,
@@ -89,13 +89,13 @@ describe("runBoardCommand", () => {
   // Jeden pusty slot na 2 osoby: bez blokady obie strony widzą go pustego i wstawiają razem 3 osoby.
   test("zapis zespołu i przeniesienie na tablicy równolegle nie przepełniają jedynego slotu", async () => {
     for (let round = 0; round < 10; round++) {
-      const { examId, ownerId } = await createExam({
+      const { examId, teacherId } = await createExam({
         maxTeamSize: 2,
         rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1)] } },
       })
       const slot = await db.slot.findFirstOrThrow({ where: { examId } })
       const results = await Promise.all([
-        runBoardCommand(examId, ownerId, { kind: "move", studentNumber: "1", toSlotId: slot.id }),
+        runBoardCommand(examId, teacherId, { kind: "move", studentNumber: "1", toSlotId: slot.id }),
         enroll(examId, ["2", "3"]),
       ])
       expect(results.filter((r) => r.ok)).toHaveLength(1)

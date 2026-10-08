@@ -70,10 +70,10 @@ type CommandResult = Result<{ inverse: BoardCommand }>
 
 export async function runBoardCommand(
   examId: string,
-  ownerId: string,
+  userId: string,
   command: BoardCommand,
 ): Promise<CommandResult> {
-  return withExamLock(examId, ownerId, async (tx): Promise<CommandResult> => {
+  return withExamLock(examId, userId, async (tx): Promise<CommandResult> => {
     const before = await loadBoardState(tx, examId)
     const applied = applyCommand(before, command)
     if (!applied.ok) return applied
@@ -101,11 +101,11 @@ export async function runBoardCommand(
 /** Prowadzący poprawia odpowiedzi zespołu w slocie (bez sprawdzania wymaganych pól). */
 export async function setSlotAnswers(
   examId: string,
-  ownerId: string,
+  userId: string,
   slotId: string,
   answers: Answers,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({
       where: { id: examId },
       select: { fields: true },

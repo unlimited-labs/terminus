@@ -17,11 +17,11 @@ async function overlapError(tx: Tx, examId: string, added: Interval[], ignoreId?
 
 export async function addWindow(
   examId: string,
-  ownerId: string,
+  userId: string,
   window: Omit<z.infer<typeof windowSchema>, "examId">,
 ): Promise<Result<{ count: number }>> {
   const { rosterId } = window
-  return withExamLock(examId, ownerId, async (tx): Promise<Result<{ count: number }>> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result<{ count: number }>> => {
     if (!(await tx.roster.findFirst({ where: { id: rosterId, examId } }))) {
       return { ok: false, code: "ROSTER_REQUIRED" }
     }
@@ -36,10 +36,10 @@ export async function addWindow(
 
 export async function editSlot(
   examId: string,
-  ownerId: string,
+  userId: string,
   { slotId, rosterId, date, from, to }: Omit<z.infer<typeof updateSlotSchema>, "examId">,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const [slot, roster] = await Promise.all([
       tx.slot.findFirst({ where: { id: slotId, examId } }),
       tx.roster.findFirst({ where: { id: rosterId, examId } }),
@@ -54,8 +54,8 @@ export async function editSlot(
   })
 }
 
-export async function removeSlot(examId: string, ownerId: string, slotId: string): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+export async function removeSlot(examId: string, userId: string, slotId: string): Promise<Result> {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const slot = await tx.slot.findFirst({
       where: { id: slotId, examId },
       select: { _count: { select: { enrollments: true } } },
@@ -69,10 +69,10 @@ export async function removeSlot(examId: string, ownerId: string, slotId: string
 
 export async function removeFreeSlotsOfDay(
   examId: string,
-  ownerId: string,
+  userId: string,
   day: string,
 ): Promise<Result<{ deleted: number; skipped: number }>> {
-  return withExamLock(examId, ownerId, async (tx) => {
+  return withExamLock(examId, userId, async (tx) => {
     const slots = await tx.slot.findMany({
       where: { examId },
       select: { id: true, startsAt: true, _count: { select: { enrollments: true } } },

@@ -38,22 +38,22 @@ type ImportPreview = Extract<Awaited<ReturnType<typeof planImport>>, { ok: true 
 
 export async function previewImport(
   examId: string,
-  ownerId: string,
+  userId: string,
   rosterName: string,
   csv: string,
 ): Promise<Result<ImportPreview>> {
-  return withExamLock(examId, ownerId, (tx) => planImport(tx, examId, rosterName, csv))
+  return withExamLock(examId, userId, (tx) => planImport(tx, examId, rosterName, csv))
 }
 
 export async function applyImport(
   examId: string,
-  ownerId: string,
+  userId: string,
   rosterName: string,
   csv: string,
   /** Skreśleni z zapisem z zatwierdzonego podglądu: inny skład = zapisy zmieniły się od podglądu. */
   previewedWithdrawnEnrolled: string[],
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const plan = await planImport(tx, examId, rosterName, csv)
     if (!plan.ok) return plan
     const now = plan.withdrawnEnrolled.map((e) => e.studentNumber).toSorted()
@@ -90,10 +90,10 @@ export async function applyImport(
 /** Bez wskazanej listy osoba trafia na nową listę „lista” — tylko gdy zaliczenie nie ma jeszcze żadnej. */
 export async function addEntry(
   examId: string,
-  ownerId: string,
+  userId: string,
   { rosterId, studentNumber, firstName, lastName }: Omit<z.infer<typeof addEntrySchema>, "examId">,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const current = await tx.rosterEntry.findUnique({
       where: { examId_studentNumber: { examId, studentNumber } },
       include: { roster: { select: { name: true } } },
@@ -117,10 +117,10 @@ export async function addEntry(
 
 export async function deleteEntry(
   examId: string,
-  ownerId: string,
+  userId: string,
   studentNumber: string,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     if (
       await tx.enrollment.findUnique({
         where: { examId_studentNumber: { examId, studentNumber } },
@@ -136,10 +136,10 @@ export async function deleteEntry(
 /** Listy nie da się usunąć, dopóki ktoś z niej jest zapisany albo ktoś siedzi w jej slocie. */
 export async function removeRoster(
   examId: string,
-  ownerId: string,
+  userId: string,
   rosterId: string,
 ): Promise<Result> {
-  return withExamLock(examId, ownerId, async (tx): Promise<Result> => {
+  return withExamLock(examId, userId, async (tx): Promise<Result> => {
     const enrolled = await tx.enrollment.count({
       where: { examId, OR: [{ entry: { rosterId } }, { slot: { rosterId } }] },
     })

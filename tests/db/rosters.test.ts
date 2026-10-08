@@ -25,11 +25,11 @@ const people = async (examId: string) =>
   ).map((e) => [e.roster.name, e.studentNumber, e.firstName, e.lastName])
 
 test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — także z zapisem", async () => {
-  const { examId, ownerId } = await createExam({ rosters: {} })
+  const { examId, teacherId } = await createExam({ rosters: {} })
   expect(
     await applyImport(
       examId,
-      ownerId,
+      teacherId,
       "g1",
       csv("1;Ala;A;0", "2;Bob;B;0", "3;Cyd;C;0", "5;Eda;E;0"),
       [],
@@ -49,7 +49,7 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — tak
   await db.enrollment.create({ data: { examId, studentNumber: "3", slotId: slot.id } })
 
   const next = csv("1;Ala;Nowak;0", "2;Bob;B;1", "3;Cyd;C;1", "4;Dan;D;0")
-  expect(await previewImport(examId, ownerId, "g1", next)).toMatchObject({
+  expect(await previewImport(examId, teacherId, "g1", next)).toMatchObject({
     ok: true,
     rosterId: roster.id,
     add: [{ studentNumber: "4" }],
@@ -58,12 +58,12 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — tak
     withdrawnEnrolled: [{ studentNumber: "3", slotStartsAt: inDays(1) }],
     notInFile: [{ studentNumber: "5" }],
   })
-  expect(await applyImport(examId, ownerId, "g1", next, [])).toEqual({
+  expect(await applyImport(examId, teacherId, "g1", next, [])).toEqual({
     ok: false,
     code: "IMPORT_PREVIEW_STALE",
   })
   expect(await people(examId)).toHaveLength(4)
-  expect(await applyImport(examId, ownerId, "g1", next, ["3"])).toEqual({ ok: true })
+  expect(await applyImport(examId, teacherId, "g1", next, ["3"])).toEqual({ ok: true })
   expect(await people(examId)).toEqual([
     ["g1", "1", "Ala", "Nowak"],
     ["g1", "4", "Dan", "D"],
@@ -74,7 +74,7 @@ test("pierwszy import tworzy listę; ponowny dodaje, poprawia i skreśla — tak
 })
 
 test("skreślony z zespołu traci zapis; druga osoba zostaje w slocie z odpowiedziami", async () => {
-  const { examId, ownerId } = await createExam({
+  const { examId, teacherId } = await createExam({
     maxTeamSize: 2,
     fields: [{ id: "t", label: "Temat", required: false }],
     rosters: { g1: { students: ["1", "2"], slots: [inDays(1)] } },
@@ -82,7 +82,7 @@ test("skreślony z zespołu traci zapis; druga osoba zostaje w slocie z odpowied
   const enrolled = await enroll(examId, ["1", "2"], { t: "Robot" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
-  expect(await applyImport(examId, ownerId, "g1", csv("1;A;A;0", "2;B;B;1"), ["2"])).toEqual({
+  expect(await applyImport(examId, teacherId, "g1", csv("1;A;A;0", "2;B;B;1"), ["2"])).toEqual({
     ok: true,
   })
   expect(await db.enrollment.findMany({ where: { examId } })).toMatchObject([
@@ -92,35 +92,37 @@ test("skreślony z zespołu traci zapis; druga osoba zostaje w slocie z odpowied
 })
 
 test("import nie przenosi osoby z innej listy i odrzuca plik bez wymaganych kolumn", async () => {
-  const { examId, ownerId } = await createExam({ rosters: { g1: { students: ["1"], slots: [] } } })
-  expect(await previewImport(examId, ownerId, "g2", csv("1;X;Y;0", "5;E;E;0"))).toMatchObject({
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [] } },
+  })
+  expect(await previewImport(examId, teacherId, "g2", csv("1;X;Y;0", "5;E;E;0"))).toMatchObject({
     ok: true,
     rosterId: null,
     add: [{ studentNumber: "5" }],
     otherRoster: [{ studentNumber: "1" }],
   })
-  expect(await applyImport(examId, ownerId, "g2", csv("1;X;Y;0", "5;E;E;0"), [])).toEqual({
+  expect(await applyImport(examId, teacherId, "g2", csv("1;X;Y;0", "5;E;E;0"), [])).toEqual({
     ok: true,
   })
   expect(await people(examId)).toEqual([
     ["g1", "1", "Imię1", "Nazwisko1"],
     ["g2", "5", "E", "E"],
   ])
-  expect(await applyImport(examId, ownerId, "g2", "indeks;imie\n1;X", [])).toMatchObject({
+  expect(await applyImport(examId, teacherId, "g2", "indeks;imie\n1;X", [])).toMatchObject({
     ok: false,
     code: "MISSING_COLUMNS",
   })
 })
 
 test("ręczne dodanie i usunięcie osoby", async () => {
-  const { examId, ownerId, rosterIds } = await createExam({
+  const { examId, teacherId, rosterIds } = await createExam({
     rosters: { g1: { students: ["1"], slots: [inDays(1)] }, g2: { students: [], slots: [] } },
   })
   const person = { studentNumber: "7", firstName: "Ewa", lastName: "E" }
-  expect(await addEntry(examId, ownerId, { ...person, rosterId: rosterIds.g2! })).toEqual({
+  expect(await addEntry(examId, teacherId, { ...person, rosterId: rosterIds.g2! })).toEqual({
     ok: true,
   })
-  expect(await addEntry(examId, ownerId, { ...person, rosterId: rosterIds.g1! })).toEqual({
+  expect(await addEntry(examId, teacherId, { ...person, rosterId: rosterIds.g1! })).toEqual({
     ok: false,
     code: "ENTRY_EXISTS",
     rosterName: "g2",
@@ -129,35 +131,35 @@ test("ręczne dodanie i usunięcie osoby", async () => {
 
   const slot = await db.slot.findFirstOrThrow({ where: { examId } })
   await db.enrollment.create({ data: { examId, studentNumber: "1", slotId: slot.id } })
-  expect(await deleteEntry(examId, ownerId, "1")).toEqual({
+  expect(await deleteEntry(examId, teacherId, "1")).toEqual({
     ok: false,
     code: "ENTRY_HAS_ENROLLMENT",
   })
-  expect(await deleteEntry(examId, ownerId, "7")).toEqual({ ok: true })
+  expect(await deleteEntry(examId, teacherId, "7")).toEqual({ ok: true })
   expect(await people(examId)).toEqual([["g1", "1", "Imię1", "Nazwisko1"]])
 })
 
 test("ręczne dodanie bez list zakłada listę „lista”", async () => {
-  const { examId, ownerId } = await createExam({ rosters: {} })
+  const { examId, teacherId } = await createExam({ rosters: {} })
   const person = { rosterId: "", studentNumber: "7", firstName: "Ewa", lastName: "E" }
-  expect(await addEntry(examId, ownerId, person)).toEqual({ ok: true })
+  expect(await addEntry(examId, teacherId, person)).toEqual({ ok: true })
   expect(await people(examId)).toEqual([["lista", "7", "Ewa", "E"]])
 })
 
 test("ręczne dodanie do nieistniejącej listy albo bez wyboru przy kilku listach jest odrzucone", async () => {
-  const { examId, ownerId } = await createExam({
+  const { examId, teacherId } = await createExam({
     rosters: { lista: { students: [], slots: [] }, g2: { students: [], slots: [] } },
   })
   const person = { studentNumber: "7", firstName: "Ewa", lastName: "E" }
 
   const foreign = await createExam({ rosters: { g1: { students: [], slots: [] } } })
   for (const rosterId of [randomUUID(), foreign.rosterIds.g1!]) {
-    expect(await addEntry(examId, ownerId, { ...person, rosterId })).toEqual({
+    expect(await addEntry(examId, teacherId, { ...person, rosterId })).toEqual({
       ok: false,
       code: "NOT_FOUND",
     })
   }
-  expect(await addEntry(examId, ownerId, { ...person, rosterId: "" })).toEqual({
+  expect(await addEntry(examId, teacherId, { ...person, rosterId: "" })).toEqual({
     ok: false,
     code: "ROSTER_NOT_CHOSEN",
   })
@@ -166,23 +168,23 @@ test("ręczne dodanie do nieistniejącej listy albo bez wyboru przy kilku listac
 })
 
 test("usunięcie listy: zablokowane, gdy ktoś z niej siedzi w slocie innej listy", async () => {
-  const { examId, ownerId, rosterIds } = await createExam({
+  const { examId, teacherId, rosterIds } = await createExam({
     rosters: { g1: { students: ["1"], slots: [] }, g2: { students: ["2"], slots: [inDays(1)] } },
   })
   const g2Slot = await db.slot.findFirstOrThrow({ where: { examId } })
   await db.enrollment.create({ data: { examId, studentNumber: "1", slotId: g2Slot.id } })
 
-  expect(await removeRoster(examId, ownerId, rosterIds.g1!)).toEqual({
+  expect(await removeRoster(examId, teacherId, rosterIds.g1!)).toEqual({
     ok: false,
     code: "ROSTER_HAS_ENROLLMENTS",
   })
-  expect(await removeRoster(examId, ownerId, rosterIds.g2!)).toEqual({
+  expect(await removeRoster(examId, teacherId, rosterIds.g2!)).toEqual({
     ok: false,
     code: "ROSTER_HAS_ENROLLMENTS",
   })
 
   await db.enrollment.deleteMany({ where: { examId } })
-  expect(await removeRoster(examId, ownerId, rosterIds.g1!)).toEqual({ ok: true })
+  expect(await removeRoster(examId, teacherId, rosterIds.g1!)).toEqual({ ok: true })
   expect(await people(examId)).toEqual([["g2", "2", "Imię2", "Nazwisko2"]])
 })
 
@@ -190,7 +192,7 @@ test("cudzy prowadzący dostaje NOT_FOUND i niczego nie zmienia", async () => {
   const { examId, rosterIds } = await createExam({
     rosters: { g1: { students: ["1"], slots: [] } },
   })
-  const stranger = (await createExam({ rosters: {} })).ownerId
+  const stranger = (await createExam({ rosters: {} })).teacherId
   const notFound = { ok: false, code: "NOT_FOUND" }
 
   expect(await previewImport(examId, stranger, "g1", csv("2;B;B;0"))).toEqual(notFound)

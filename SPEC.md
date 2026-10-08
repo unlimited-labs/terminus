@@ -400,10 +400,13 @@ src/
 - Uprawnienia: middleware `requireUser` (sesja; zablokowane konto = odmowa)
   i `requireAdmin` podpinane `.middleware([...])` do każdej funkcji
   serwerowej prowadzącego / superadmina; dostęp do zaliczenia (czy konto jest
-  jego prowadzącym) sprawdza jedna funkcja w `server/exam-lock.server.ts` —
-  zapisy przez `withExamLock` (cudze zaliczenie = `NOT_FOUND`; sprawdzenie
-  przed blokadą i ponownie po niej, bo skład prowadzących zmienia się pod tą
-  samą blokadą), odczyty przez `getOwnedExam` (= `null`).
+  jego prowadzącym) sprawdza jedna reguła w `server/exam-access.server.ts`
+  (prowadzący zaliczenia / publiczny / superadmin wobec zaliczenia samych
+  zablokowanych kont) — zapisy przez `withExamLock` (cudze zaliczenie =
+  `NOT_FOUND`; sprawdzenie przed blokadą i ponownie po niej, bo skład
+  prowadzących zmienia się pod tą samą blokadą), odczyty bez blokady przez
+  `getOwnedExam` (= `null`), także podgląd importu listy. Odczyty, tak jak
+  zapisy, żyją w `*-ops.server.ts` z testami na bazie.
   `beforeLoad` tylko przekierowuje.
 - Dane: TanStack Query zintegrowane z routerem przez
   `@tanstack/react-router-ssr-query` (`setupRouterSsrQueryIntegration({ router, queryClient })`);

@@ -46,38 +46,38 @@ test("zapis wymaga wymaganych pól i zapisuje odpowiedzi całemu zespołowi; bil
 })
 
 test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zespół zachowuje swoje", async () => {
-  const { examId, ownerId, answersOf } = await setup()
+  const { examId, teacherId, answersOf } = await setup()
   const first = await enroll(examId, ["1"], { title: "Robot" })
   if (!first.ok) throw new Error(first.code)
   const slots = await db.slot.findMany({ where: { examId }, orderBy: { startsAt: "asc" } })
   const free = slots.find((s) => s.id !== first.slotId)!
 
-  await runBoardCommand(examId, ownerId, {
+  await runBoardCommand(examId, teacherId, {
     kind: "move",
     studentNumber: "2",
     toSlotId: first.slotId,
   })
   expect(await answersOf("2")).toEqual({ title: "Robot" })
 
-  await runBoardCommand(examId, ownerId, { kind: "swapSlots", a: first.slotId, b: free.id })
+  await runBoardCommand(examId, teacherId, { kind: "swapSlots", a: first.slotId, b: free.id })
   expect([await answersOf("1"), await answersOf("2")]).toEqual([
     { title: "Robot" },
     { title: "Robot" },
   ])
 
   expect(
-    await setSlotAnswers(examId, ownerId, free.id, { title: "Dron", notes: "spóźni się" }),
+    await setSlotAnswers(examId, teacherId, free.id, { title: "Dron", notes: "spóźni się" }),
   ).toEqual({ ok: true })
   expect(await answersOf("1")).toEqual({ title: "Dron", notes: "spóźni się" })
   expect(await answersOf("2")).toEqual({ title: "Dron", notes: "spóźni się" })
 })
 
 test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
-  const { examId, ownerId, answersOf } = await setup()
+  const { examId, teacherId, answersOf } = await setup()
   const enrolled = await enroll(examId, ["1"], { title: "Robot", notes: "x" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
-  const removed = await runBoardCommand(examId, ownerId, {
+  const removed = await runBoardCommand(examId, teacherId, {
     kind: "move",
     studentNumber: "1",
     toSlotId: null,
@@ -85,18 +85,18 @@ test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
   if (!removed.ok) throw new Error(removed.code)
   expect(await answersOf("1")).toBeUndefined()
 
-  expect(await runBoardCommand(examId, ownerId, removed.inverse)).toMatchObject({ ok: true })
+  expect(await runBoardCommand(examId, teacherId, removed.inverse)).toMatchObject({ ok: true })
   expect(await answersOf("1")).toEqual({ title: "Robot", notes: "x" })
 })
 
 test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedzi", async () => {
-  const { examId, ownerId, answersOf } = await setup()
+  const { examId, teacherId, answersOf } = await setup()
   const enrolled = await enroll(examId, ["1", "2"], { title: "Robot" })
   if (!enrolled.ok) throw new Error(enrolled.code)
 
   const inverses = []
   for (const studentNumber of ["1", "2"]) {
-    const removed = await runBoardCommand(examId, ownerId, {
+    const removed = await runBoardCommand(examId, teacherId, {
       kind: "move",
       studentNumber,
       toSlotId: null,
@@ -104,7 +104,7 @@ test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedz
     if (!removed.ok) throw new Error(removed.code)
     inverses.push(removed.inverse)
   }
-  for (const inverse of inverses.toReversed()) await runBoardCommand(examId, ownerId, inverse)
+  for (const inverse of inverses.toReversed()) await runBoardCommand(examId, teacherId, inverse)
 
   expect([await answersOf("1"), await answersOf("2")]).toEqual([
     { title: "Robot" },

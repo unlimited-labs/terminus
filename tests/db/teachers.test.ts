@@ -24,7 +24,7 @@ const teacherIds = async (examId: string) =>
   ).teachers.map((t) => t.id)
 
 test("prowadzący po mailu: pełny dostęp, usuwa nawet założyciela; ostatni zostaje", async () => {
-  const { examId, ownerId } = await createExam({ rosters: {} })
+  const { examId, teacherId } = await createExam({ rosters: {} })
   const second = await user()
   const stranger = await user()
 
@@ -33,23 +33,23 @@ test("prowadzący po mailu: pełny dostęp, usuwa nawet założyciela; ostatni z
     ok: false,
     code: "NOT_FOUND",
   })
-  expect(await addTeacher(examId, ownerId, second.email.toUpperCase())).toEqual({ ok: true })
-  expect(await addTeacher(examId, ownerId, second.email)).toEqual({
+  expect(await addTeacher(examId, teacherId, second.email.toUpperCase())).toEqual({ ok: true })
+  expect(await addTeacher(examId, teacherId, second.email)).toEqual({
     ok: false,
     code: "ALREADY_TEACHER",
   })
-  expect(await addTeacher(examId, ownerId, "nikt@example.com")).toEqual({
+  expect(await addTeacher(examId, teacherId, "nikt@example.com")).toEqual({
     ok: false,
     code: "TEACHER_NOT_FOUND",
   })
-  expect(await addTeacher(examId, ownerId, (await user(true)).email)).toEqual({
+  expect(await addTeacher(examId, teacherId, (await user(true)).email)).toEqual({
     ok: false,
     code: "TEACHER_BANNED",
   })
   expect(await getOwnedExam(examId, second.id)).toMatchObject({ id: examId })
 
-  expect(await removeTeacher(examId, second.id, ownerId)).toEqual({ ok: true })
-  expect(await getOwnedExam(examId, ownerId)).toBeNull()
+  expect(await removeTeacher(examId, second.id, teacherId)).toEqual({ ok: true })
+  expect(await getOwnedExam(examId, teacherId)).toBeNull()
   expect(await removeTeacher(examId, second.id, second.id)).toEqual({
     ok: false,
     code: "LAST_TEACHER",
@@ -59,9 +59,9 @@ test("prowadzący po mailu: pełny dostęp, usuwa nawet założyciela; ostatni z
 })
 
 test("duplikat ma tylko duplikującego prowadzącego", async () => {
-  const { examId, ownerId } = await createExam({ rosters: {} })
+  const { examId, teacherId } = await createExam({ rosters: {} })
   const second = await user()
-  await addTeacher(examId, ownerId, second.email)
+  await addTeacher(examId, teacherId, second.email)
   const copy = await copyExam(examId, second.id, false)
   if (!copy.ok) throw new Error(copy.code)
   expect(await teacherIds(copy.examId)).toEqual([second.id])
@@ -76,14 +76,14 @@ test("superadmin widzi zaliczenie zablokowanego dopiero, gdy zablokowani są wsz
   })
   const headers = new Headers({ cookie: res.headers.getSetCookie()[0]!.split(";")[0]! })
 
-  const { examId, ownerId } = await createExam({ rosters: {} })
+  const { examId, teacherId } = await createExam({ rosters: {} })
   const second = await user()
-  await addTeacher(examId, ownerId, second.email)
-  await db.user.update({ where: { id: ownerId }, data: { banned: true } })
-  expect(await listBlockedAccountExams(headers, ownerId)).toEqual([])
+  await addTeacher(examId, teacherId, second.email)
+  await db.user.update({ where: { id: teacherId }, data: { banned: true } })
+  expect(await listBlockedAccountExams(headers, teacherId)).toEqual([])
 
   await db.user.update({ where: { id: second.id }, data: { banned: true } })
-  expect(await listBlockedAccountExams(headers, ownerId)).toEqual([
+  expect(await listBlockedAccountExams(headers, teacherId)).toEqual([
     { id: examId, name: "Kolokwium", enrollments: 0 },
   ])
 })
