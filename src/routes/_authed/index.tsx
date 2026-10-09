@@ -6,6 +6,10 @@ import { ExamForm } from "@/components/exam-form"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
+import type { ExamPhase } from "@/domain/schedule"
+import { formatDateRange, formatWarsaw } from "@/domain/time"
+import { PHASE_LABEL, phaseStatus } from "@/messages.pl"
+import type { examsOf } from "@/server/exam-ops.server"
 import { createExam, examsQuery } from "@/server/exams"
 
 export const Route = createFileRoute("/_authed/")({
@@ -13,6 +17,10 @@ export const Route = createFileRoute("/_authed/")({
   head: () => ({ meta: [{ title: "Moje zaliczenia — Terminus" }] }),
   component: ExamList,
 })
+
+type Exam = Awaited<ReturnType<typeof examsOf>>[number]
+
+const SECTIONS: ExamPhase[] = ["open", "scheduled", "draft", "done"]
 
 function ExamList() {
   const { data: exams } = useSuspenseQuery(examsQuery())
@@ -23,9 +31,9 @@ function ExamList() {
   )
 
   return (
-    <div className="grid gap-6">
-      <div className="flex items-center gap-4">
-        <h1 className="text-2xl font-extrabold">Moje zaliczenia</h1>
+    <div className="grid max-w-3xl gap-8">
+      <div className="flex items-end gap-4">
+        <h1 className="text-3xl font-extrabold tracking-tight">Moje zaliczenia</h1>
         {!creating && (
           <Button className="ml-auto" onClick={() => setCreating(true)}>
             Nowe zaliczenie
@@ -55,31 +63,105 @@ function ExamList() {
         </Card>
       )}
       {exams.length === 0 && !creating && (
-        <p className="text-muted-foreground">Nie masz jeszcze żadnego zaliczenia.</p>
+        <p className="text-muted-foreground">
+          Nie masz jeszcze żadnego zaliczenia. Utwórz pierwsze, a potem dodaj listę indeksów i
+          sloty.
+        </p>
       )}
-      <ul className="grid gap-3 sm:grid-cols-2">
-        {exams.map((exam) => {
-          const entries = exam.rosters.reduce((n, r) => n + r._count.entries, 0)
-          const slots = exam.rosters.reduce((n, r) => n + r._count.slots, 0)
-          return (
-            <li key={exam.id}>
-              <Link to="/zaliczenia/$examId" params={{ examId: exam.id }}>
-                <Card className="h-full transition hover:ring-primary">
-                  <CardHeader>
-                    <CardTitle>{exam.name}</CardTitle>
-                  </CardHeader>
-                  <CardContent className="grid gap-1 text-muted-foreground">
-                    <p className="line-clamp-2">{exam.description}</p>
-                    <p className="tabular-nums">
-                      zapisani {exam._count.enrollments} / {entries} · sloty {slots}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            </li>
-          )
-        })}
-      </ul>
+      {SECTIONS.map((phase) => {
+        const items = exams.filter((e) => e.phase === phase)
+        if (!items.length) return null
+        const heading = (
+          <>
+            {PHASE_LABEL[phase]} <span className="text-muted-foreground">({items.length})</span>
+          </>
+        )
+        const list = (
+          <ul className="divide-y rounded-2xl border bg-card">
+            {items.map((exam) => (
+              <ExamRow key={exam.id} exam={exam} />
+            ))}
+          </ul>
+        )
+        return phase === "done" ? (
+          <details key={phase}>
+            <summary className="cursor-pointer text-lg font-bold">{heading}</summary>
+            <div className="mt-3">{list}</div>
+          </details>
+        ) : (
+          <section key={phase} className="grid gap-3">
+            <h2 className="text-lg font-bold">{heading}</h2>
+            {list}
+          </section>
+        )
+      })}
     </div>
   )
+}
+
+function ExamRow({ exam }: { exam: Exam }) {
+  const details = [status(exam), dateRange(exam), coTeachers(exam)].filter(Boolean).join(", ")
+  return (
+    <li>
+      <Link
+        to="/zaliczenia/$examId"
+        params={{ examId: exam.id }}
+        className="grid grid-cols-[3.5rem_1fr] items-center gap-4 px-4 py-3 outline-none first:rounded-t-2xl last:rounded-b-2xl hover:bg-secondary/50 focus-visible:bg-secondary sm:grid-cols-[3.5rem_1fr_11rem]"
+      >
+        <DateLeaf date={exam.firstSlotStart} />
+        <div className="min-w-0">
+          <p className="truncate font-bold">{exam.name}</p>
+          <p className="truncate text-sm text-muted-foreground">{details}</p>
+        </div>
+        {exam.phase !== "draft" && (
+          <div className="col-span-2 grid gap-1 sm:col-span-1">
+            <p className="text-sm tabular-nums">
+              <strong>{exam.enrolled}</strong>{" "}
+              <span className="text-muted-foreground">z {exam.entries} zapisanych</span>
+            </p>
+            <div
+              role="meter"
+              aria-label="Zapisani"
+              aria-valuenow={exam.enrolled}
+              aria-valuemax={exam.entries}
+              className="h-1.5 overflow-hidden rounded-full bg-secondary"
+            >
+              <div
+                className="h-full rounded-full bg-free"
+                style={{ width: `${(exam.enrolled / exam.entries) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
+      </Link>
+    </li>
+  )
+}
+
+function DateLeaf({ date }: { date: Date | null }) {
+  if (!date) return <div className="h-14 rounded-xl border border-dashed" />
+  return (
+    <div className="grid h-14 place-items-center rounded-xl bg-secondary text-center leading-none">
+      <span>
+        <span className="block text-xl font-extrabold tabular-nums">{formatWarsaw(date, "d")}</span>
+        <span className="text-xs text-muted-foreground">{formatWarsaw(date, "LLL")}</span>
+      </span>
+    </div>
+  )
+}
+
+function status(exam: Exam) {
+  if (exam.phase === "draft") {
+    if (!exam.firstSlotStart && !exam.entries) return "Brak list i slotów"
+    return exam.firstSlotStart ? "Brak listy indeksów" : "Brak slotów"
+  }
+  return exam.phase === "open" ? null : phaseStatus(exam.phase, exam.opensAt)
+}
+
+function dateRange({ firstSlotStart: first, lastSlotEnd: last }: Exam) {
+  return first && last ? formatDateRange(first, last, new Date()) : null
+}
+
+function coTeachers(exam: Exam) {
+  return exam.coTeachers.length ? `razem z: ${exam.coTeachers.join(", ")}` : null
 }

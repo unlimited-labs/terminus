@@ -25,15 +25,16 @@ test("duplikat z listami prowadzi do nowego zaliczenia", async ({ page }) => {
   await expect(page.getByRole("checkbox", { name: "Kopiuj listy indeksów" })).toBeChecked()
   await page.getByRole("button", { name: "Utwórz kopię" }).click()
   await expect(page.getByRole("heading", { name: "Tablica E2E (kopia)" })).toBeVisible()
+  await expect(page.getByRole("tab", { name: "Sloty (0)" })).toBeVisible()
+  await page.getByRole("tab", { name: /Lista indeksów/ }).click()
   await expect(page.getByRole("cell", { name: "500003" })).toBeVisible()
-  await expect(page.getByText("Sloty (0)")).toBeVisible()
 })
 
 test("zmiana nazwy zaliczenia widoczna na liście bez przeładowania", async ({ page }) => {
   await page.goto("/")
   await expect(page.getByText("Stara nazwa E2E")).toBeVisible()
   await page.getByText("Stara nazwa E2E").click()
-  await page.getByRole("button", { name: "Edytuj" }).first().click()
+  await page.getByRole("tab", { name: "Ustawienia" }).click()
   await page.getByLabel("Nazwa (z nazwą przedmiotu)").fill("Nowa nazwa E2E")
   await page.getByRole("button", { name: "Zapisz", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Nowa nazwa E2E" })).toBeVisible()

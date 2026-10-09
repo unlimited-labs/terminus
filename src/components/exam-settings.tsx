@@ -1,15 +1,15 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
 import { toast } from "sonner"
 
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
-import { TeacherSection } from "@/components/teacher-section"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useResultMutation } from "@/components/use-result-mutation"
-import { formatDayTime, warsawDay, warsawTime } from "@/domain/time"
+import { examCounts } from "@/domain/schedule"
+import { warsawDay, warsawTime } from "@/domain/time"
+import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { deleteExam, examChangeKeys, examsQuery, updateExam } from "@/server/exams"
 
@@ -25,109 +25,81 @@ function ExamLink({ examId }: { examId: string }) {
     }
   }
   return (
-    <Button variant="outline" size="sm" onClick={copy} title={path}>
+    <Button variant="secondary" onClick={copy} title={path}>
       Kopiuj link dla studentów
     </Button>
   )
 }
 
-export function CapacitySummary({ exam }: { exam: ExamDetail }) {
-  const single = exam.rosters.length === 1
+export function ExamHeader({ exam }: { exam: ExamDetail }) {
+  const { enrolled, freeSlots } = examCounts(exam, exam.now)
   return (
-    <ul className="grid gap-1 text-sm">
-      {exam.rosters.map((roster) => {
-        const people = exam.people.filter((p) => p.rosterId === roster.id).length
-        const places = exam.slots.filter((s) => s.rosterId === roster.id).length * exam.maxTeamSize
-        return (
-          <li key={roster.id} className={places < people ? "text-destructive" : undefined}>
-            {single ? "" : `${roster.name}: `}
-            <span className="tabular-nums">
-              indeksy: {people}, miejsca w slotach: {places}
-            </span>
-            {places < people && " — za mało miejsc!"}
-          </li>
-        )
-      })}
-    </ul>
+    <header className="flex flex-wrap items-start gap-4 rounded-2xl bg-primary p-6 text-primary-foreground">
+      <div className="grid gap-1">
+        <p className="text-sm opacity-80">{phaseStatus(exam.phase, exam.enrollmentOpensAt)}</p>
+        <h1 className="text-3xl font-extrabold tracking-tight">{exam.name}</h1>
+        <p className="opacity-90 tabular-nums">
+          {exam.people.length
+            ? `${enrolled} z ${exam.people.length} zapisanych, wolnych slotów ${freeSlots}`
+            : "Brak listy indeksów"}
+        </p>
+        {exam.description && (
+          <p className="max-w-prose whitespace-pre-line text-sm opacity-80">{exam.description}</p>
+        )}
+      </div>
+      <div className="ml-auto flex flex-wrap gap-2">
+        <Link
+          to="/zaliczenia/$examId/tablica"
+          params={{ examId: exam.id }}
+          className={buttonVariants({ variant: "secondary" })}
+        >
+          Tablica zapisów
+        </Link>
+        <ExamLink examId={exam.id} />
+      </div>
+    </header>
   )
 }
 
-export function ExamSettings({ exam, userId }: { exam: ExamDetail; userId: string }) {
-  const [editing, setEditing] = useState(false)
+export function ExamActions({ exam }: { exam: ExamDetail }) {
   const navigate = useNavigate()
-  const update = useResultMutation(updateExam, examChangeKeys(exam.id), () => {
-    setEditing(false)
-    toast.success("Zapisano zmiany.")
-  })
+  return (
+    <div className="flex flex-wrap gap-2">
+      <ExportButton examId={exam.id} />
+      <DuplicateButton examId={exam.id} />
+      <DeleteExamButton
+        exam={exam}
+        deleteFn={deleteExam}
+        invalidate={[examsQuery().queryKey]}
+        onDeleted={() => void navigate({ to: "/" })}
+      />
+    </div>
+  )
+}
+
+export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
+  const update = useResultMutation(updateExam, examChangeKeys(exam.id), () =>
+    toast.success("Zapisano zmiany."),
+  )
   return (
     <Card>
-      <CardHeader className="flex flex-wrap items-start gap-2">
-        <div>
-          <CardTitle className="text-2xl font-extrabold">
-            <h1>{exam.name}</h1>
-          </CardTitle>
-          {!editing && exam.description && (
-            <p className="whitespace-pre-line text-muted-foreground">{exam.description}</p>
-          )}
-        </div>
-        <div className="ml-auto flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" onClick={() => setEditing(!editing)}>
-            {editing ? "Anuluj" : "Edytuj"}
-          </Button>
-          <ExportButton examId={exam.id} />
-          <DuplicateButton examId={exam.id} />
-          <DeleteExamButton
-            exam={exam}
-            deleteFn={deleteExam}
-            invalidate={[examsQuery().queryKey]}
-            onDeleted={() => void navigate({ to: "/" })}
-          />
-        </div>
+      <CardHeader>
+        <CardTitle className="text-lg font-extrabold">Ustawienia</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-3">
-        {editing ? (
-          <>
-            <ExamForm
-              defaultValues={{
-                name: exam.name,
-                description: exam.description,
-                defaultSlotMinutes: exam.defaultSlotMinutes,
-                maxTeamSize: exam.maxTeamSize,
-                fields: exam.fields,
-                opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
-                opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
-              }}
-              submitLabel="Zapisz"
-              onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
-            />
-            <TeacherSection exam={exam} userId={userId} />
-          </>
-        ) : (
-          <>
-            <p className="flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-              <span>Slot {exam.defaultSlotMinutes} min</span>
-              <span>
-                {exam.maxTeamSize === 1 ? "Indywidualnie" : `Zespoły do ${exam.maxTeamSize} os.`}
-              </span>
-              <span>
-                {exam.enrollmentOpensAt
-                  ? `Zapisy od ${formatDayTime(exam.enrollmentOpensAt)}`
-                  : "Zapisy otwarte"}
-              </span>
-            </p>
-            <CapacitySummary exam={exam} />
-            <div className="flex flex-wrap gap-2">
-              <Link
-                to="/zaliczenia/$examId/tablica"
-                params={{ examId: exam.id }}
-                className={buttonVariants({ size: "sm" })}
-              >
-                Tablica zapisów
-              </Link>
-              <ExamLink examId={exam.id} />
-            </div>
-          </>
-        )}
+      <CardContent>
+        <ExamForm
+          defaultValues={{
+            name: exam.name,
+            description: exam.description,
+            defaultSlotMinutes: exam.defaultSlotMinutes,
+            maxTeamSize: exam.maxTeamSize,
+            fields: exam.fields,
+            opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
+            opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
+          }}
+          submitLabel="Zapisz"
+          onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
+        />
       </CardContent>
     </Card>
   )

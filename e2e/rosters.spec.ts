@@ -6,7 +6,7 @@ const FIXTURE = "src/domain/fixtures/studenci_110-ITE-2S-027_g1_2026-09-30.csv"
 
 test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", async ({ page }) => {
   await login(page)
-  await page.goto(`/zaliczenia/${exams().rosters}`)
+  await page.goto(`/zaliczenia/${exams().rosters}?tab=lista`)
 
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await expect(page.getByLabel("Nazwa listy")).toHaveValue("g1")
@@ -23,6 +23,8 @@ test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", a
   await page.getByRole("button", { name: "Zapisz listę" }).click()
   await expect(page.getByText("Listy indeksów")).toBeVisible()
 
+  await page.getByRole("tab", { name: /Sloty/ }).click()
+
   const windowForm = page.locator("form", { hasText: "Dodaj okno" })
   await windowForm.getByLabel("Data").fill(day(7))
   await windowForm.getByLabel("Od").fill("12:00")
@@ -37,7 +39,7 @@ test("ponowny import: skreślony z zapisem widoczny w podglądzie ze slotem, pot
   page,
 }) => {
   await login(page)
-  await page.goto(`/zaliczenia/${exams().withdrawn}`)
+  await page.goto(`/zaliczenia/${exams().withdrawn}?tab=lista`)
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await expect(page.getByText("Ponowny import do istniejącej listy.")).toBeVisible()
   await expect(page.getByText(/^400003 Zając Ewa — slot .*10:00/)).toBeVisible()

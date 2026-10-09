@@ -3,6 +3,7 @@ import type { InvalidRowReason } from "./domain/csv.ts"
 import type { EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
+import type { ExamPhase } from "./domain/schedule.ts"
 import { formatDayTime, warsawTime } from "./domain/time.ts"
 
 type Failure<T> = T extends { ok: false } ? Omit<T, "ok"> : never
@@ -160,4 +161,18 @@ export function authErrorMessage(code: string | undefined): string {
     default:
       return UNEXPECTED_ERROR
   }
+}
+
+export const PHASE_LABEL: Record<ExamPhase, string> = {
+  draft: "Do przygotowania",
+  scheduled: "Zapisy jeszcze nie ruszyły",
+  open: "Zapisy trwają",
+  done: "Zakończone",
+}
+
+/** Etap zaliczenia jednym zdaniem; przed zapisami z datą startu. */
+export function phaseStatus(phase: ExamPhase, opensAt: Date | null): string {
+  return phase === "scheduled" && opensAt
+    ? `Zapisy od ${formatDayTime(opensAt)}`
+    : PHASE_LABEL[phase]
 }

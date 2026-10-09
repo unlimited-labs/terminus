@@ -5,12 +5,12 @@ import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
-import { CapacitySummary } from "@/components/exam-settings"
+import { CapacitySummary } from "@/components/slot-section"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
-import { isFreeSlot } from "@/domain/schedule"
+import { examCounts } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { applyBoardCommand, boardMutationKey } from "@/server/board"
@@ -124,9 +124,8 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
     if (command) run(command)
   }
 
-  const enrolled = exam.people.filter((p) => p.slotId !== null).length
+  const { enrolled, freeSlots } = examCounts(exam, exam.now)
   const taken = new Set(exam.people.map((p) => p.slotId))
-  const freeSlots = exam.slots.filter((s) => isFreeSlot(s, taken.has(s.id), exam.now)).length
 
   return (
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>

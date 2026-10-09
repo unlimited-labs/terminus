@@ -1,6 +1,7 @@
 import type { z } from "zod"
 
 import { buildExportCsv, exportFileName } from "../domain/csv.ts"
+import { examPhase } from "../domain/schedule.ts"
 import { warsawDateTime } from "../domain/slots.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
@@ -9,18 +10,46 @@ import { db } from "./db.server.ts"
 import { getOwnedExam, withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { loadExam, parseFields } from "./exam-state.server.ts"
 
-/** Zaliczenia, których konto jest prowadzącym, od najnowszych. */
-export function examsOf(userId: string) {
-  return db.exam.findMany({
-    where: { teachers: { some: { id: userId } } },
-    orderBy: { createdAt: "desc" },
-    select: {
-      id: true,
-      name: true,
-      description: true,
-      _count: { select: { enrollments: true } },
-      rosters: { select: { _count: { select: { entries: true, slots: true } } } },
-    },
+/** Zaliczenia, których konto jest prowadzącym, od najnowszych, z etapem i terminami do listy. */
+export async function examsOf(userId: string, now = new Date()) {
+  const mine = { teachers: { some: { id: userId } } }
+  const [exams, spans] = await Promise.all([
+    db.exam.findMany({
+      where: mine,
+      orderBy: { createdAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        enrollmentOpensAt: true,
+        teachers: { where: { id: { not: userId } }, select: { name: true } },
+        _count: { select: { enrollments: true } },
+        rosters: { select: { _count: { select: { entries: true } } } },
+      },
+    }),
+    db.slot.groupBy({
+      by: ["examId"],
+      where: { roster: { exam: mine } },
+      _min: { startsAt: true },
+      _max: { endsAt: true },
+    }),
+  ])
+  const spanOf = new Map(spans.map((s) => [s.examId, s]))
+  return exams.map((exam) => {
+    const entries = exam.rosters.reduce((n, r) => n + r._count.entries, 0)
+    const span = spanOf.get(exam.id)
+    const lastSlotEnd = span?._max?.endsAt ?? null
+    const opensAt = exam.enrollmentOpensAt
+    return {
+      id: exam.id,
+      name: exam.name,
+      phase: examPhase({ entries, lastSlotEnd, opensAt }, now),
+      entries,
+      enrolled: exam._count.enrollments,
+      firstSlotStart: span?._min?.startsAt ?? null,
+      lastSlotEnd,
+      opensAt,
+      coTeachers: exam.teachers.map((t) => t.name),
+    }
   })
 }
 

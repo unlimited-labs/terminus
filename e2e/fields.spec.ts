@@ -10,7 +10,7 @@ test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, wida�
   const boardExamId = exams().fields
   await login(page)
   await page.goto(`/zaliczenia/${boardExamId}`)
-  await page.getByRole("button", { name: "Edytuj" }).first().click()
+  await page.getByRole("tab", { name: "Ustawienia" }).click()
   await page.getByRole("button", { name: "Dodaj pole" }).click()
   await page.getByLabel("Pole 1 — nazwa (np. Tytuł projektu)").fill("Tytuł projektu")
   await page.getByRole("checkbox", { name: "wymagane" }).check()

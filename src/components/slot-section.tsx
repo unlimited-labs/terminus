@@ -17,31 +17,60 @@ import { examChangeKeys } from "@/server/exams"
 
 type Slot = ExamDetail["slots"][number]
 
+export function CapacitySummary({ exam }: { exam: ExamDetail }) {
+  const single = exam.rosters.length === 1
+  return (
+    <ul className="grid gap-1 text-sm">
+      {exam.rosters.map((roster) => {
+        const people = exam.people.filter((p) => p.rosterId === roster.id).length
+        const places = exam.slots.filter((s) => s.rosterId === roster.id).length * exam.maxTeamSize
+        return (
+          <li key={roster.id} className={places < people ? "text-destructive" : undefined}>
+            {single ? "" : `${roster.name}: `}
+            <span className="tabular-nums">
+              indeksy: {people}, miejsca w slotach: {places}
+            </span>
+            {places < people && " — za mało miejsc!"}
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
+
 export function SlotSection({ exam }: { exam: ExamDetail }) {
   const days = Map.groupBy(exam.slots, (s) => warsawDay(s.startsAt))
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-extrabold">
-          Sloty{" "}
-          <span className="font-normal text-muted-foreground tabular-nums">
-            ({exam.slots.length})
-          </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-6">
-        {exam.rosters.length === 0 ? (
-          <p className="text-muted-foreground">
-            Najpierw dodaj listę indeksów — każdy slot należy do listy.
-          </p>
-        ) : (
-          <WindowForm exam={exam} />
-        )}
-        {[...days].map(([day, slots]) => (
-          <DaySlots key={day} exam={exam} day={day} slots={slots} />
-        ))}
-      </CardContent>
-    </Card>
+    <div className="grid gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-extrabold">Sloty</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          {exam.rosters.length === 0 ? (
+            <p className="text-muted-foreground">
+              Najpierw dodaj listę indeksów — każdy slot należy do listy.
+            </p>
+          ) : (
+            <>
+              <WindowForm exam={exam} />
+              <CapacitySummary exam={exam} />
+            </>
+          )}
+        </CardContent>
+      </Card>
+      {days.size > 0 && (
+        <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {[...days].map(([day, slots]) => (
+            <Card key={day}>
+              <CardContent>
+                <DaySlots exam={exam} day={day} slots={slots} />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -157,15 +186,27 @@ function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
 
   if (editing) return <SlotEditForm exam={exam} slot={slot} onDone={() => setEditing(false)} />
   return (
-    <li className="flex flex-wrap items-center gap-3 text-sm">
-      <span className="font-semibold tabular-nums">
-        {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
+    <li className="grid grid-cols-[auto_1fr_auto] items-start gap-x-3 py-0.5 text-sm">
+      <span className="grid">
+        <span className="font-semibold tabular-nums">
+          {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
+        </span>
+        {exam.rosters.length > 1 && (
+          <span className="text-xs text-muted-foreground">{roster?.name}</span>
+        )}
       </span>
-      {exam.rosters.length > 1 && <span className="text-muted-foreground">{roster?.name}</span>}
-      <span className={team.length ? "" : "text-free"}>
-        {team.length ? team.map((p) => `${p.firstName} ${p.lastName}`).join(", ") : "wolny"}
-      </span>
-      <span className="ml-auto flex gap-1">
+      {team.length ? (
+        <span className="grid min-w-0">
+          {team.map((p) => (
+            <span key={p.studentNumber}>
+              {p.firstName} {p.lastName}
+            </span>
+          ))}
+        </span>
+      ) : (
+        <span className="text-free">wolny</span>
+      )}
+      <span className="flex gap-1">
         <Button variant="ghost" size="xs" onClick={() => setEditing(true)}>
           Edytuj
         </Button>

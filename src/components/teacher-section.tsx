@@ -5,6 +5,7 @@ import { ConfirmButton } from "@/components/confirm-button"
 import { useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { addTeacherSchema } from "@/schemas/exam"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -21,46 +22,50 @@ export function TeacherSection({ exam, userId }: { exam: ExamDetail; userId: str
   const last = exam.teachers.length === 1
 
   return (
-    <section className="grid gap-3 border-t pt-4">
-      <h2 className="text-base font-extrabold">Prowadzący</h2>
-      <ul className="grid gap-2">
-        {exam.teachers.map((t) => (
-          <li key={t.id} className="flex flex-wrap items-center gap-2 text-sm">
-            <span className="font-semibold">{t.name}</span>
-            <span className="text-muted-foreground">{t.email}</span>
-            {t.id === userId && <Badge variant="secondary">Ty</Badge>}
-            {t.banned && <Badge variant="destructive">zablokowane</Badge>}
-            <span className="ml-auto">
-              {t.id === userId ? (
-                <ConfirmButton
-                  title="Wypisać się z zaliczenia?"
-                  description="Stracisz do niego dostęp. Przywrócić może cię inny prowadzący."
-                  confirmLabel="Wypisz się"
-                  disabled={last}
-                  onConfirm={() => leave.mutateAsync({ examId: exam.id, teacherId: t.id })}
-                >
-                  Wypisz się
-                </ConfirmButton>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => remove.mutate({ examId: exam.id, teacherId: t.id })}
-                >
-                  Usuń
-                </Button>
-              )}
-            </span>
-          </li>
-        ))}
-      </ul>
-      {last && (
-        <p className="text-sm text-muted-foreground">
-          Jedyny prowadzący nie może się wypisać — może usunąć zaliczenie.
-        </p>
-      )}
-      <AddTeacherForm examId={exam.id} />
-    </section>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-extrabold">Prowadzący</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3">
+        <ul className="grid gap-2">
+          {exam.teachers.map((t) => (
+            <li key={t.id} className="flex flex-wrap items-center gap-2 text-sm">
+              <span className="font-semibold">{t.name}</span>
+              <span className="text-muted-foreground">{t.email}</span>
+              {t.id === userId && <Badge variant="secondary">Ty</Badge>}
+              {t.banned && <Badge variant="destructive">zablokowane</Badge>}
+              <span className="ml-auto">
+                {t.id === userId ? (
+                  <ConfirmButton
+                    title="Wypisać się z zaliczenia?"
+                    description="Stracisz do niego dostęp. Przywrócić może cię inny prowadzący."
+                    confirmLabel="Wypisz się"
+                    disabled={last}
+                    onConfirm={() => leave.mutateAsync({ examId: exam.id, teacherId: t.id })}
+                  >
+                    Wypisz się
+                  </ConfirmButton>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    onClick={() => remove.mutate({ examId: exam.id, teacherId: t.id })}
+                  >
+                    Usuń
+                  </Button>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+        {last && (
+          <p className="text-sm text-muted-foreground">
+            Jedyny prowadzący nie może się wypisać — może usunąć zaliczenie.
+          </p>
+        )}
+        <AddTeacherForm examId={exam.id} />
+      </CardContent>
+    </Card>
   )
 }
 

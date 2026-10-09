@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import type { Answers, ExamField } from "../domain/fields.ts"
+import { examPhase } from "../domain/schedule.ts"
 import { answersSchema, examFieldSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
@@ -38,6 +39,8 @@ export async function loadExam(examId: string) {
   ])
   const slotOf = new Map(exam.enrollments.map((e) => [e.studentNumber, e.slotId]))
   const slotAnswers = new Map(exam.enrollments.map((e) => [e.slotId, parseAnswers(e.answers)]))
+  const now = new Date()
+  const lastSlotEnd = slots.reduce<Date | null>((m, s) => (!m || s.endsAt > m ? s.endsAt : m), null)
   return {
     id: exam.id,
     name: exam.name,
@@ -50,7 +53,11 @@ export async function loadExam(examId: string) {
     rosters: exam.rosters,
     slots: slots.map((s) => ({ ...s, answers: slotAnswers.get(s.id) ?? {} })),
     people: entries.map((e) => ({ ...e, slotId: slotOf.get(e.studentNumber) ?? null })),
-    now: new Date(),
+    phase: examPhase(
+      { entries: entries.length, lastSlotEnd, opensAt: exam.enrollmentOpensAt },
+      now,
+    ),
+    now,
   }
 }
 
