@@ -38,17 +38,7 @@ async function loadBoardState(tx: Tx, examId: string) {
   }
 }
 
-/**
- * Kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi; przeniesiony cały zespół
- * zachowuje swoje; Cofnij wypisania wraca z odpowiedziami z polecenia.
- */
-async function savePerson(
-  tx: Tx,
-  examId: string,
-  prev: Person,
-  next: Person,
-  teamAnswers?: Answers,
-) {
+async function savePerson(tx: Tx, examId: string, prev: Person, next: Person) {
   const key = { examId_studentNumber: { examId, studentNumber: next.studentNumber } }
   if (prev.firstName !== next.firstName || prev.lastName !== next.lastName) {
     await tx.rosterEntry.update({
@@ -57,7 +47,7 @@ async function savePerson(
     })
   }
   if (prev.slotId === next.slotId) return
-  const answers = teamAnswers ?? next.answers
+  const { answers } = next
   if (next.slotId === null) await tx.enrollment.delete({ where: key })
   else if (prev.slotId === null) {
     await tx.enrollment.create({
@@ -78,20 +68,9 @@ export async function runBoardCommand(
     const applied = applyCommand(before, command)
     if (!applied.ok) return applied
     const old = new Map(before.people.map((p) => [p.studentNumber, p]))
-    const stayers = new Map(
-      applied.state.people
-        .filter((p) => p.slotId !== null && old.get(p.studentNumber)?.slotId === p.slotId)
-        .map((p) => [p.slotId, p.answers]),
-    )
     await Promise.all(
       changedPeople(before, applied.state).map((p) =>
-        savePerson(
-          tx,
-          examId,
-          old.get(p.studentNumber)!,
-          p,
-          p.slotId ? stayers.get(p.slotId) : undefined,
-        ),
+        savePerson(tx, examId, old.get(p.studentNumber)!, p),
       ),
     )
     return { ok: true, inverse: applied.inverse }

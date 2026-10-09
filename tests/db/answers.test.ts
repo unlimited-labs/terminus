@@ -45,12 +45,10 @@ test("zapis wymaga wymaganych pól i zapisuje odpowiedzi całemu zespołowi; bil
   ])
 })
 
-test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zespół zachowuje swoje", async () => {
+test("na tablicy: dołączający dostaje w bazie odpowiedzi zespołu; poprawka odpowiedzi trafia do całego zespołu", async () => {
   const { examId, teacherId, answersOf } = await setup()
   const first = await enroll(examId, ["1"], { title: "Robot" })
   if (!first.ok) throw new Error(first.code)
-  const slots = await db.slot.findMany({ where: { examId }, orderBy: { startsAt: "asc" } })
-  const free = slots.find((s) => s.id !== first.slotId)!
 
   await runBoardCommand(examId, teacherId, {
     kind: "move",
@@ -59,34 +57,11 @@ test("na tablicy: dołączający przejmuje odpowiedzi zespołu, przeniesiony zes
   })
   expect(await answersOf("2")).toEqual({ title: "Robot" })
 
-  await runBoardCommand(examId, teacherId, { kind: "swapSlots", a: first.slotId, b: free.id })
-  expect([await answersOf("1"), await answersOf("2")]).toEqual([
-    { title: "Robot" },
-    { title: "Robot" },
-  ])
-
   expect(
-    await setSlotAnswers(examId, teacherId, free.id, { title: "Dron", notes: "spóźni się" }),
+    await setSlotAnswers(examId, teacherId, first.slotId, { title: "Dron", notes: "spóźni się" }),
   ).toEqual({ ok: true })
   expect(await answersOf("1")).toEqual({ title: "Dron", notes: "spóźni się" })
   expect(await answersOf("2")).toEqual({ title: "Dron", notes: "spóźni się" })
-})
-
-test("Cofnij po wypisaniu osoby przywraca jej odpowiedzi", async () => {
-  const { examId, teacherId, answersOf } = await setup()
-  const enrolled = await enroll(examId, ["1"], { title: "Robot", notes: "x" })
-  if (!enrolled.ok) throw new Error(enrolled.code)
-
-  const removed = await runBoardCommand(examId, teacherId, {
-    kind: "move",
-    studentNumber: "1",
-    toSlotId: null,
-  })
-  if (!removed.ok) throw new Error(removed.code)
-  expect(await answersOf("1")).toBeUndefined()
-
-  expect(await runBoardCommand(examId, teacherId, removed.inverse)).toMatchObject({ ok: true })
-  expect(await answersOf("1")).toEqual({ title: "Robot", notes: "x" })
 })
 
 test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedzi", async () => {

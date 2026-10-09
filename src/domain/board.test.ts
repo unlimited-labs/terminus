@@ -8,6 +8,7 @@ import {
   type BoardCommand,
   type BoardState,
 } from "./board"
+import type { Answers } from "./fields"
 
 const state: BoardState = {
   maxTeamSize: 2,
@@ -21,6 +22,7 @@ const state: BoardState = {
 }
 
 const slotOf = (s: BoardState, n: string) => s.people.find((p) => p.studentNumber === n)?.slotId
+const answersOf = (s: BoardState, n: string) => s.people.find((p) => p.studentNumber === n)?.answers
 
 function applyOk(s: BoardState, command: BoardCommand) {
   const result = applyCommand(s, command)
@@ -57,6 +59,61 @@ describe("applyCommand", () => {
       title: "Dron",
     })
     expect(back.inverse).toEqual({ kind: "move", studentNumber: "4", toSlotId: null })
+  })
+
+  describe("odpowiedzi zespołu", () => {
+    const titles: Record<string, string> = { s1: "Robot", s2: "Dron" }
+    const answered: BoardState = {
+      ...state,
+      people: state.people.map((p) => {
+        const answers: Answers = p.slotId ? { t: titles[p.slotId]! } : {}
+        return { ...p, answers }
+      }),
+    }
+
+    function next(command: BoardCommand, from = answered) {
+      const result = applyCommand(from, command)
+      if (!result.ok) throw new Error(result.code)
+      return result.state
+    }
+
+    test("dołączający do zespołu przejmuje jego odpowiedzi", () => {
+      expect(answersOf(next({ kind: "move", studentNumber: "4", toSlotId: "s2" }), "4")).toEqual({
+        t: "Dron",
+      })
+    })
+
+    test("zamiana osób: dołączający przejmuje odpowiedzi, kto trafia do opuszczonego slotu, zachowuje swoje", () => {
+      const s = next({ kind: "swapPeople", a: "3", b: "1" })
+      expect([answersOf(s, "1"), answersOf(s, "3")]).toEqual([{ t: "Robot" }, { t: "Robot" }])
+    })
+
+    test("osoba sama w slocie przenosi swoje odpowiedzi do pustego slotu", () => {
+      expect(answersOf(next({ kind: "move", studentNumber: "3", toSlotId: "s3" }), "3")).toEqual({
+        t: "Dron",
+      })
+    })
+
+    test("przeniesiony cały zespół zachowuje swoje odpowiedzi", () => {
+      const s = next({ kind: "swapSlots", a: "s1", b: "s2" })
+      expect([answersOf(s, "1"), answersOf(s, "2"), answersOf(s, "3")]).toEqual([
+        { t: "Robot" },
+        { t: "Robot" },
+        { t: "Dron" },
+      ])
+    })
+
+    test("Cofnij wypisania osoby, gdy jej zespół istnieje: odpowiedzi zespołu wygrywają", () => {
+      const removed = applyCommand(answered, { kind: "move", studentNumber: "1", toSlotId: null })
+      if (!removed.ok) throw new Error(removed.code)
+      const edited: BoardState = {
+        ...removed.state,
+        people: removed.state.people.map((p) =>
+          p.studentNumber === "2" ? { ...p, answers: { t: "Nowy" } } : p,
+        ),
+      }
+      expect(answersOf(next(removed.inverse, edited), "1")).toEqual({ t: "Nowy" })
+    })
   })
 
   test("osoba → slot z wolnym miejscem: przeniesienie (Cofnij wraca)", () => {

@@ -158,13 +158,26 @@ function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P>
   }
 }
 
+function inheritTeamAnswers<P extends BoardPerson>(before: P[], after: P[]): P[] {
+  const slotBefore = new Map(before.map((p) => [p.studentNumber, p.slotId]))
+  const moved = (p: P) => p.slotId !== null && slotBefore.get(p.studentNumber) !== p.slotId
+  const teamAnswers = new Map(
+    after.filter((p) => p.slotId !== null && !moved(p)).map((p) => [p.slotId, p.answers]),
+  )
+  return after.map((p) => {
+    const answers = moved(p) ? teamAnswers.get(p.slotId) : undefined
+    return answers ? { ...p, answers } : p
+  })
+}
+
 export function applyCommand<P extends BoardPerson, S extends BoardState<P>>(
   state: S,
   command: BoardCommand,
 ): BoardResult<S> {
   const result = step(state, command)
   if (typeof result === "string") return { ok: false, code: result }
-  return { ok: true, state: { ...state, people: result.people }, inverse: result.inverse }
+  const people = inheritTeamAnswers(state.people, result.people)
+  return { ok: true, state: { ...state, people }, inverse: result.inverse }
 }
 
 export function changedPeople<P extends BoardPerson>(
