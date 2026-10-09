@@ -33,6 +33,14 @@ describe("parseRosterCsv", () => {
     ])
   })
 
+  test("za długi indeks i brak nazwiska to błędne wiersze, jak w formularzu", () => {
+    const csv = `indeks;imie;nazwisko\n${"1".repeat(21)};Anna;Nowak\n500002;Jan;\n500003;Ewa;${"x".repeat(101)}\n`
+    const result = parseRosterCsv(csv)
+    if (!result.ok) throw new Error("parse")
+    expect(result.rows).toEqual([])
+    expect(result.invalid.map((r) => r.reason)).toEqual(["TOO_LONG", "BAD_NAME", "BAD_NAME"])
+  })
+
   test("brak wymaganej kolumny odrzuca cały plik", () => {
     expect(parseRosterCsv('"nazwisko";"imie";"email"\r\n"A";"B";"c"\r\n')).toEqual({
       ok: false,
@@ -116,6 +124,7 @@ describe("planRosterImport", () => {
 test("suggestRosterName bierze grupę z nazwy pliku uczelni", () => {
   expect(suggestRosterName("studenci_110-ITE-2S-027_g1_2026-09-30.csv")).toBe("g1")
   expect(suggestRosterName("lista.csv")).toBe("lista")
+  expect(suggestRosterName(`${"a".repeat(60)}.csv`)).toHaveLength(50)
 })
 
 test("exportFileName: nazwa zaliczenia i data eksportu", () => {

@@ -150,6 +150,8 @@ export function failureNotice(
 /** Dlaczego wiersz pliku CSV nie zostanie zaimportowany (podgląd importu). */
 export const INVALID_ROW: Record<InvalidRowReason | "OTHER_ROSTER", string> = {
   NOT_DIGITS: "indeks nie z samych cyfr",
+  TOO_LONG: "za długi indeks",
+  BAD_NAME: "brak albo za długie imię lub nazwisko",
   DUPLICATE_IN_FILE: "powtórzony w pliku",
   OTHER_ROSTER: "już na innej liście",
 }

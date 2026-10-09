@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
+import type { z } from "zod"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
@@ -18,11 +19,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roster-choice"
-import { useExamMutation } from "@/components/use-result-mutation"
+import { toastUnexpected, useExamMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { formatDayTime } from "@/domain/time"
-import { errorMessage, INVALID_ROW } from "@/messages.pl"
-import { addEntrySchema } from "@/schemas/roster"
+import { errorMessage, INVALID_ROW, UNEXPECTED_ERROR } from "@/messages.pl"
+import { addEntrySchema, rosterImportSchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
   addRosterEntry,
@@ -148,11 +149,19 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
   )
 }
 
-type ImportInput = { examId: string; rosterName: string; csv: string }
+type ImportInput = z.input<typeof rosterImportSchema>
 
 function RosterImport({ exam }: { exam: ExamDetail }) {
   const [input, setInput] = useState<ImportInput | null>(null)
-  const preview = useMutation({ mutationFn: (data: ImportInput) => previewRosterImport({ data }) })
+  const preview = useMutation({
+    mutationFn: (data: ImportInput) => previewRosterImport({ data }),
+    onError: toastUnexpected,
+  })
+  const previewChecked = (data: ImportInput) => {
+    const parsed = rosterImportSchema.safeParse(data)
+    if (parsed.success) preview.mutate(data)
+    else toast.error(parsed.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+  }
   const apply = useExamMutation(applyRosterImport, exam.id, () => {
     setInput(null)
     preview.reset()
@@ -166,11 +175,11 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
       csv: await file.text(),
     }
     setInput(next)
-    preview.mutate(next)
+    previewChecked(next)
   }
   const previewedName = preview.variables?.rosterName
   const refresh = () => {
-    if (input?.rosterName.trim() && input.rosterName !== previewedName) preview.mutate(input)
+    if (input?.rosterName.trim() && input.rosterName !== previewedName) previewChecked(input)
   }
   const result = preview.data
 

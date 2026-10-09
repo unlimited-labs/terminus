@@ -1,9 +1,10 @@
 import Papa from "papaparse"
 
+import { PERSON_NAME_MAX, ROSTER_NAME_MAX, STUDENT_NUMBER_MAX } from "./limits.ts"
 import { warsawDay, warsawTime } from "./time.ts"
 
 export type RosterRow = { line: number; studentNumber: string; firstName: string; lastName: string }
-export type InvalidRowReason = "NOT_DIGITS" | "DUPLICATE_IN_FILE"
+export type InvalidRowReason = "NOT_DIGITS" | "TOO_LONG" | "BAD_NAME" | "DUPLICATE_IN_FILE"
 type InvalidRow = { line: number; studentNumber: string; reason: InvalidRowReason }
 
 export type ParsedRoster =
@@ -18,6 +19,16 @@ export type ParsedRoster =
 
 const REQUIRED_COLUMNS = ["indeks", "imie", "nazwisko"]
 const DIGITS = /^\d+$/
+
+const badName = (name: string) => name === "" || name.length > PERSON_NAME_MAX
+
+function invalidReason(row: RosterRow, seen: Set<string>): InvalidRowReason | null {
+  if (!DIGITS.test(row.studentNumber)) return "NOT_DIGITS"
+  if (row.studentNumber.length > STUDENT_NUMBER_MAX) return "TOO_LONG"
+  if (badName(row.firstName) || badName(row.lastName)) return "BAD_NAME"
+  if (seen.has(row.studentNumber)) return "DUPLICATE_IN_FILE"
+  return null
+}
 
 export function parseRosterCsv(text: string): ParsedRoster {
   const { data, meta } = Papa.parse<Record<string, string | undefined>>(text.replace(/^﻿/, ""), {
@@ -43,18 +54,15 @@ export function parseRosterCsv(text: string): ParsedRoster {
     }
     if (record.skreslony === "1" || record.rezygnacja === "1") {
       withdrawn.push(row)
-    } else if (!DIGITS.test(row.studentNumber)) {
-      invalid.push({ line: row.line, studentNumber: row.studentNumber, reason: "NOT_DIGITS" })
-    } else if (seen.has(row.studentNumber)) {
-      invalid.push({
-        line: row.line,
-        studentNumber: row.studentNumber,
-        reason: "DUPLICATE_IN_FILE",
-      })
-    } else {
-      seen.add(row.studentNumber)
-      rows.push(row)
+      return
     }
+    const reason = invalidReason(row, seen)
+    if (reason) {
+      invalid.push({ line: row.line, studentNumber: row.studentNumber, reason })
+      return
+    }
+    seen.add(row.studentNumber)
+    rows.push(row)
   })
   return { ok: true, rows, withdrawn, invalid }
 }
@@ -120,7 +128,7 @@ export function planRosterImport(
 /** `studenci_110-ITE-2S-027_g1_2026-09-30.csv` → `g1`; inaczej nazwa pliku bez rozszerzenia. */
 export function suggestRosterName(fileName: string): string {
   const base = fileName.replace(/\.csv$/i, "")
-  return /_([^_]+)_\d{4}-\d{2}-\d{2}$/.exec(base)?.[1] ?? base
+  return (/_([^_]+)_\d{4}-\d{2}-\d{2}$/.exec(base)?.[1] ?? base).slice(0, ROSTER_NAME_MAX)
 }
 
 export function exportFileName(examName: string, now: Date): string {
