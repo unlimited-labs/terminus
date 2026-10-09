@@ -13,7 +13,7 @@ export function toastUnexpected(error: unknown) {
 }
 
 /**
- * Mutacja funkcji serwerowej zwracającej `Result`: błąd domeny → komunikat, potem odświeżenie zapytań `invalidate`.
+ * Mutacja funkcji serwerowej zwracającej `Result`: błąd domeny → komunikat; odświeżenie zapytań `invalidate`, potem `onOk`.
  * `mutate` ignoruje wywołania w trakcie poprzedniego (podwójne kliknięcie, przytrzymany Enter):
  * `isPending` dociera do komponentu asynchronicznie, więc samo `disabled` nie wystarcza.
  */
@@ -27,12 +27,13 @@ export function useResultMutation<TInput, TOut extends object>(
   const mutation = useMutation({
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: (result) => {
-      if (result.ok) onOk?.(result)
-      else toastFailure(result)
+      if (!result.ok) toastFailure(result)
     },
     onError: toastUnexpected,
-    onSettled: () =>
-      Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
+    onSettled: async (result) => {
+      await Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey })))
+      if (result?.ok) onOk?.(result)
+    },
   })
   const mutate = (data: TInput) => {
     if (inFlight.current) return

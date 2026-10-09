@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate, useRouter } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
@@ -89,7 +89,11 @@ export function ExamActions({ exam }: { exam: ExamDetail }) {
 }
 
 export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
-  const update = useExamMutation(updateExam, exam.id, () => toast.success("Zapisano zmiany."))
+  const router = useRouter()
+  const update = useExamMutation(updateExam, exam.id, () => {
+    toast.success("Zapisano zmiany.")
+    void router.invalidate() // tytuł karty z loadera
+  })
   return (
     <SectionCard title="Ustawienia">
       <ExamForm

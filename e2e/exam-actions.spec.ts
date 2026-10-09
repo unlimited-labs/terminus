@@ -38,6 +38,7 @@ test("zmiana nazwy zaliczenia widoczna na liście bez przeładowania", async ({ 
   await page.getByLabel("Nazwa (z nazwą przedmiotu)").fill("Nowa nazwa E2E")
   await page.getByRole("button", { name: "Zapisz", exact: true }).click()
   await expect(page.getByRole("heading", { name: "Nowa nazwa E2E" })).toBeVisible()
+  await expect(page).toHaveTitle("Nowa nazwa E2E — Terminus")
   await page.getByRole("link", { name: "Moje zaliczenia" }).click()
   await expect(page.getByText("Nowa nazwa E2E")).toBeVisible()
 })

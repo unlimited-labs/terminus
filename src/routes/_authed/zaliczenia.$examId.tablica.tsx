@@ -20,6 +20,7 @@ function BoardPage() {
   const { data: exam } = useSuspenseQuery({
     ...examQuery(examId),
     refetchInterval: mutating ? false : 30_000,
+    refetchOnWindowFocus: !mutating,
   })
   if (!exam) throw notFound()
   return (
