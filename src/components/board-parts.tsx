@@ -124,7 +124,8 @@ function RenameForm({
   onDone,
 }: {
   person: Person
-  onSave: (firstName: string, lastName: string) => void
+  /** `false` = odrzucone od razu; formularz zostaje otwarty. */
+  onSave: (firstName: string, lastName: string) => boolean
   onDone: () => void
 }) {
   const [firstName, setFirstName] = useState(person.firstName)
@@ -135,8 +136,7 @@ function RenameForm({
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!firstName.trim() || !lastName.trim()) return
-    onSave(firstName.trim(), lastName.trim())
-    onDone()
+    if (onSave(firstName.trim(), lastName.trim())) onDone()
   }
   return (
     <form onSubmit={onSubmit} className="flex shrink-0 gap-1 rounded-lg border bg-card p-1">

@@ -20,6 +20,8 @@ import {
 } from "@/domain/board"
 import { examCounts, fullName } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
+import { UNEXPECTED_ERROR } from "@/messages.pl"
+import { boardCommandSchema } from "@/schemas/board"
 import { applyBoardCommand } from "@/server/board"
 import { examChangeKeys, examQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -84,6 +86,11 @@ function useBoardCommand(exam: ExamDetail) {
   })
 
   function run(command: BoardCommand) {
+    const checked = boardCommandSchema.safeParse(command)
+    if (!checked.success) {
+      toast.error(checked.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+      return false
+    }
     const before = queryClient.getQueryData<ExamDetail>(key) ?? exam
     const added = enqueue(queue.current, before, command)
     if (!added.ok) {

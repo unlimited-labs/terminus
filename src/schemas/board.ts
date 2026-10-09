@@ -3,7 +3,7 @@ import { z } from "zod"
 import { answersSchema, examIdSchema } from "./exam.ts"
 import { personName, studentNumber } from "./roster.ts"
 
-const boardCommandSchema = z.discriminatedUnion("kind", [
+export const boardCommandSchema = z.discriminatedUnion("kind", [
   z.object({
     kind: z.literal("move"),
     studentNumber,

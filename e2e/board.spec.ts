@@ -49,3 +49,15 @@ test("myszą: cały zespół uchwytem na wolny slot", async ({ page }) => {
   await expect(row(page, "09:20–09:40")).toContainText("wolny")
   await expect(row(page, "09:00–09:20")).toContainText("Anna Adamska")
 })
+
+test("za długie nazwisko: komunikat z limitem, formularz zostaje otwarty", async ({ page }) => {
+  await openBoard(page, exams().boardKeyboard)
+  await page
+    .getByRole("button", { name: "Zmień imię i nazwisko: Bartosz Bąk", exact: true })
+    .click()
+  await page.getByLabel("Nazwisko", { exact: true }).fill("x".repeat(101))
+  await page.getByRole("button", { name: "Zapisz" }).click()
+  await expect(page.getByText("Najwyżej 100 znaków.")).toBeVisible()
+  await expect(page.getByLabel("Nazwisko", { exact: true })).toBeVisible()
+  await expect(page.getByText("Coś poszło nie tak")).toHaveCount(0)
+})
