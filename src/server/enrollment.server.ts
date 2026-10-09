@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto"
 
 import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
-import { checkAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
+import { checkAnswers, filledAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
 import { Prisma } from "../generated/prisma/client.ts"
 
 import { withExamLock } from "./exam-access.server.ts"
@@ -95,9 +95,7 @@ export async function enrollTeam(
           orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
         }),
       ])
-      const shown = fields
-        .filter((f) => answers[f.id])
-        .map((f) => ({ label: f.label, value: answers[f.id]! }))
+      const shown = filledAnswers(fields, answers)
       return { ok: true, slotId: plan.slotId, ticket: { ...slot, team, answers: shown } }
     },
     timeout,

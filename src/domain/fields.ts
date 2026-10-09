@@ -6,24 +6,29 @@ export type AnswersCheck =
   | { ok: true; answers: Answers }
   | { ok: false; code: "MISSING_ANSWER"; labels: string[] }
 
-/** Poprawka prowadzącego: czyszczenie jak przy zapisie, bez sprawdzania wymaganych pól. */
-export function teacherAnswers(fields: ExamField[], raw: Answers): Answers {
-  const cleaned = checkAnswers(
-    fields.map((f) => ({ ...f, required: false })),
-    raw,
-  )
-  return cleaned.ok ? cleaned.answers : {}
-}
-
-/** Zostawia tylko odpowiedzi na pola zaliczenia (przycięte, niepuste); brak wymaganej = błąd. */
-export function checkAnswers(fields: ExamField[], raw: Answers): AnswersCheck {
+/** Zostawia tylko odpowiedzi na pola zaliczenia (przycięte, niepuste). */
+export function cleanAnswers(fields: ExamField[], raw: Answers): Answers {
   const answers: Answers = {}
   for (const field of fields) {
     const value = raw[field.id]?.trim()
     if (value) answers[field.id] = value
   }
+  return answers
+}
+
+/** `cleanAnswers` + brak wymaganej odpowiedzi = błąd. */
+export function checkAnswers(fields: ExamField[], raw: Answers): AnswersCheck {
+  const answers = cleanAnswers(fields, raw)
   const missing = fields.filter((f) => f.required && !answers[f.id]).map((f) => f.label)
   return missing.length > 0
     ? { ok: false, code: "MISSING_ANSWER", labels: missing }
     : { ok: true, answers }
+}
+
+/** Wypełnione odpowiedzi z nazwami pól, w kolejności pól. */
+export function filledAnswers(
+  fields: ExamField[],
+  answers: Answers,
+): { label: string; value: string }[] {
+  return fields.flatMap((f) => (answers[f.id] ? [{ label: f.label, value: answers[f.id]! }] : []))
 }

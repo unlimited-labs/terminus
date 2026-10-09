@@ -3,7 +3,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { teacherAnswers, type Answers, type ExamField } from "@/domain/fields"
+import { cleanAnswers, filledAnswers, type Answers, type ExamField } from "@/domain/fields"
 
 export function SlotAnswers({
   fields,
@@ -17,7 +17,7 @@ export function SlotAnswers({
 }) {
   const [draft, setDraft] = useState<Answers | null>(null)
   const submit = (values: Answers) => {
-    if (onSave(teacherAnswers(fields, values))) setDraft(null)
+    if (onSave(cleanAnswers(fields, values))) setDraft(null)
   }
 
   if (draft) {
@@ -44,12 +44,11 @@ export function SlotAnswers({
       </div>
     )
   }
-  const filled = fields.filter((f) => answers[f.id])
   return (
     <p className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-      {filled.map((f) => (
-        <span key={f.id}>
-          {f.label}: <span className="text-foreground">{answers[f.id]}</span>
+      {filledAnswers(fields, answers).map((a) => (
+        <span key={a.label}>
+          {a.label}: <span className="text-foreground">{a.value}</span>
         </span>
       ))}
       <Button
