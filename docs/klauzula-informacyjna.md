@@ -5,14 +5,8 @@ aplikacji; zmiana tekstu = zmiana tego pliku i kodu.
 
 Źródło: klauzula AGH "Kandydat na studia lub student", wersja 0.6.2 z 3.10.2022,
 <https://bezpieczenstwo.agh.edu.pl/ochrona-danych-osobowych/kandydat-na-studia-lub-student>.
-Punkty 1, 2, 5, 7, 8 przepisane z niej dosłownie (poza zakresem danych); punkty
-3, 4, 6, 9–11 dopasowane do aplikacji.
+dopasowane do aplikacji.
 
-**Szkic do akceptacji Inspektora Ochrony Danych AGH przed uruchomieniem.** To nie
-jest porada prawna. Do potwierdzenia szczególnie: podstawa prawna (pkt 3),
-jawność nazwisk dla posiadaczy linku (pkt 4), okres przechowywania (pkt 6)
-oraz czy losowy przydział terminu jest "zautomatyzowanym podejmowaniem decyzji"
-w rozumieniu art. 22 RODO (pkt 9).
 
 ---
 
@@ -27,7 +21,7 @@ i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/W
 1. Administratorem Pani/Pana danych osobowych jest Akademia Górniczo-Hutnicza
    im. Stanisława Staszica w Krakowie, al. A. Mickiewicza 30, 30-059 Kraków;
 2. dane kontaktowe Inspektora Ochrony Danych Osobowych dostępne są w sekcji
-   „Kontakt” na stronie internetowej agh.edu.pl/uczelnia/kontakt, e-mail:
+   "Kontakt" na stronie internetowej agh.edu.pl/uczelnia/kontakt, e-mail:
    iodo(at)agh.edu.pl, tel.: 12 617 53 25;
 3. Pani/Pana dane osobowe (numer albumu, imię i nazwisko oraz informacje wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą
    w celu organizacji zaliczenia, w tym przydziału terminu zaliczenia, w ramach
@@ -52,4 +46,8 @@ i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/W
    jest przydzielany losowo i może zostać zmieniony przez prowadzącego;
 10. Pani/Pana dane osobowe nie będą przekazywane państwom trzecim;
 11. podanie danych osobowych jest warunkiem zapisu na zaliczenie przez tę
-    aplikację.
+    aplikację;
+12. przy każdej próbie zapisu adres IP, z którego wysłano formularz, oraz wpisane
+    numery albumu są zapisywane w dzienniku zdarzeń serwera w celu wyjaśniania
+    zapisów dokonanych bez wiedzy zapisanej osoby; dziennik ma ograniczony
+    rozmiar, a najstarsze wpisy są usuwane automatycznie w miarę dopisywania nowych.
