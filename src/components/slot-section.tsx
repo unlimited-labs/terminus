@@ -5,7 +5,8 @@ import { ConfirmButton } from "@/components/confirm-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { currentRosterId, hasManyRosters } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SectionCard } from "@/components/section-card"
+import { Card, CardContent } from "@/components/ui/card"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
@@ -43,23 +44,18 @@ export function SlotSection({ exam }: { exam: ExamDetail }) {
   const teams = Map.groupBy(exam.people, (p) => p.slotId)
   return (
     <div className="grid gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg font-extrabold">Sloty</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
-          {exam.rosters.length === 0 ? (
-            <p className="text-muted-foreground">
-              Najpierw dodaj listę indeksów — każdy slot należy do listy.
-            </p>
-          ) : (
-            <>
-              <WindowForm exam={exam} />
-              <CapacitySummary exam={exam} />
-            </>
-          )}
-        </CardContent>
-      </Card>
+      <SectionCard title="Sloty" contentClassName="grid gap-4">
+        {exam.rosters.length === 0 ? (
+          <p className="text-muted-foreground">
+            Najpierw dodaj listę indeksów — każdy slot należy do listy.
+          </p>
+        ) : (
+          <>
+            <WindowForm exam={exam} />
+            <CapacitySummary exam={exam} />
+          </>
+        )}
+      </SectionCard>
       {days.size > 0 && (
         <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[...days].map(([day, slots]) => (

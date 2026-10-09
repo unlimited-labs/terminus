@@ -4,6 +4,7 @@ import { useState } from "react"
 import { z } from "zod"
 
 import { EnrollSheet } from "@/components/enroll-sheet"
+import { Notice } from "@/components/notice"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
@@ -33,20 +34,17 @@ export const Route = createFileRoute("/z/$examId")({
 function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boolean }) {
   if (schedule.opensAt && !isEnrollmentOpen(schedule.opensAt, schedule.now)) {
     return (
-      <p role="status" className="rounded-lg border-l-4 border-primary bg-primary/10 px-3 py-2">
+      <Notice tone="notice" role="status">
         {errorMessage({ code: "NOT_OPEN_YET", opensAt: schedule.opensAt })} Strona odświeży się
         sama.
-      </p>
+      </Notice>
     )
   }
   if (anyFree) return null
   return (
-    <p
-      role="status"
-      className="rounded-lg border-l-4 border-destructive bg-destructive/10 px-3 py-2"
-    >
+    <Notice tone="error" role="status">
       {errorMessage({ code: "NO_FREE_SLOTS" })}
-    </p>
+    </Notice>
   )
 }
 

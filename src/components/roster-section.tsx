@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SectionCard } from "@/components/section-card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -38,77 +38,77 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
   const removeRoster = useExamMutation(deleteRoster, exam.id)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-extrabold">
+    <SectionCard
+      title={
+        <>
           {multi ? "Listy indeksów" : "Lista indeksów"}{" "}
           <span className="font-normal text-muted-foreground tabular-nums">
             ({exam.people.length})
           </span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-6">
-        <RosterImport exam={exam} />
-        <AddEntryForm exam={exam} />
-        {multi && (
-          <ul className="flex flex-wrap gap-2">
-            {exam.rosters.map((r) => (
-              <li
-                key={r.id}
-                className="flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-sm"
+        </>
+      }
+      contentClassName="grid gap-6"
+    >
+      <RosterImport exam={exam} />
+      <AddEntryForm exam={exam} />
+      {multi && (
+        <ul className="flex flex-wrap gap-2">
+          {exam.rosters.map((r) => (
+            <li
+              key={r.id}
+              className="flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-sm"
+            >
+              {r.name}
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => removeRoster.mutate({ examId: exam.id, rosterId: r.id })}
               >
-                {r.name}
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  onClick={() => removeRoster.mutate({ examId: exam.id, rosterId: r.id })}
-                >
-                  Usuń listę
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {exam.people.length > 0 && (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Indeks</TableHead>
-                <TableHead>Nazwisko i imię</TableHead>
-                {multi && <TableHead>Lista</TableHead>}
-                <TableHead>Zapis</TableHead>
-                <TableHead />
+                Usuń listę
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {exam.people.length > 0 && (
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Indeks</TableHead>
+              <TableHead>Nazwisko i imię</TableHead>
+              {multi && <TableHead>Lista</TableHead>}
+              <TableHead>Zapis</TableHead>
+              <TableHead />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {exam.people.map((p) => (
+              <TableRow key={p.studentNumber}>
+                <TableCell className="tabular-nums">{p.studentNumber}</TableCell>
+                <TableCell>
+                  {p.lastName} {p.firstName}
+                </TableCell>
+                {multi && <TableCell>{rosterName.get(p.rosterId)}</TableCell>}
+                <TableCell>{p.slotId ? <Badge>zapisany</Badge> : null}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="xs"
+                    disabled={p.slotId !== null}
+                    title={p.slotId ? "Najpierw przenieś albo usuń zapis" : undefined}
+                    onClick={() =>
+                      removeEntry.mutate({ examId: exam.id, studentNumber: p.studentNumber })
+                    }
+                  >
+                    Usuń
+                  </Button>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {exam.people.map((p) => (
-                <TableRow key={p.studentNumber}>
-                  <TableCell className="tabular-nums">{p.studentNumber}</TableCell>
-                  <TableCell>
-                    {p.lastName} {p.firstName}
-                  </TableCell>
-                  {multi && <TableCell>{rosterName.get(p.rosterId)}</TableCell>}
-                  <TableCell>{p.slotId ? <Badge>zapisany</Badge> : null}</TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      disabled={p.slotId !== null}
-                      title={p.slotId ? "Najpierw przenieś albo usuń zapis" : undefined}
-                      onClick={() =>
-                        removeEntry.mutate({ examId: exam.id, studentNumber: p.studentNumber })
-                      }
-                    >
-                      Usuń
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </CardContent>
-    </Card>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </SectionCard>
   )
 }
 
@@ -220,18 +220,15 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
             ]}
           </PreviewList>
           <PreviewList title="Znikną z listy (skreśleni, bez zapisu)">
-            {result.remove
-              .filter((e) => !e.slotStartsAt)
-              .map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}
+            {result.remove.filter((e) => !e.slotStartsAt).map(entryLine)}
           </PreviewList>
           <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
             {result.withdrawnEnrolled.map(
-              (e) =>
-                `${e.studentNumber} ${e.lastName} ${e.firstName} — slot ${formatDayTime(e.slotStartsAt)}`,
+              (e) => `${entryLine(e)} — slot ${formatDayTime(e.slotStartsAt)}`,
             )}
           </PreviewList>
           <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
-            {result.notInFile.map((e) => `${e.studentNumber} ${e.lastName} ${e.firstName}`)}
+            {result.notInFile.map(entryLine)}
           </PreviewList>
           <div className="flex gap-2">
             <Button
@@ -271,3 +268,6 @@ function PreviewList({ title, children }: { title: string; children: string[] })
     </div>
   )
 }
+
+const entryLine = (e: { studentNumber: string; lastName: string; firstName: string }) =>
+  `${e.studentNumber} ${e.lastName} ${e.firstName}`

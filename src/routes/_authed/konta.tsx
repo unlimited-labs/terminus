@@ -7,7 +7,8 @@ import { DeleteExamButton } from "@/components/delete-exam-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SectionCard } from "@/components/section-card"
+import { Card, CardContent } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { UNEXPECTED_ERROR } from "@/messages.pl"
 import { createAccountSchema, setPasswordSchema, updateAccountSchema } from "@/schemas/account"
@@ -58,29 +59,24 @@ function CreateAccountForm() {
     ...schemaSubmit(createAccountSchema, create.mutateAsync, { resetOnOk: true }),
   })
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Nowe konto</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form.AppForm>
-          <form.Form className="grid items-start gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
-            <form.AppField name="name">
-              {(f) => <f.TextField label="Imię i nazwisko" />}
-            </form.AppField>
-            <form.AppField name="email">
-              {(f) => <f.TextField label="E-mail" type="email" />}
-            </form.AppField>
-            <form.AppField name="password">
-              {(f) => <f.TextField label="Hasło" type="text" autoComplete="off" />}
-            </form.AppField>
-            <div className="self-end">
-              <form.SubmitButton>Utwórz konto</form.SubmitButton>
-            </div>
-          </form.Form>
-        </form.AppForm>
-      </CardContent>
-    </Card>
+    <SectionCard title="Nowe konto">
+      <form.AppForm>
+        <form.Form className="grid items-start gap-3 sm:grid-cols-[repeat(auto-fit,minmax(12rem,1fr))]">
+          <form.AppField name="name">
+            {(f) => <f.TextField label="Imię i nazwisko" />}
+          </form.AppField>
+          <form.AppField name="email">
+            {(f) => <f.TextField label="E-mail" type="email" />}
+          </form.AppField>
+          <form.AppField name="password">
+            {(f) => <f.TextField label="Hasło" type="text" autoComplete="off" />}
+          </form.AppField>
+          <div className="self-end">
+            <form.SubmitButton>Utwórz konto</form.SubmitButton>
+          </div>
+        </form.Form>
+      </form.AppForm>
+    </SectionCard>
   )
 }
 

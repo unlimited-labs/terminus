@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SectionCard } from "@/components/section-card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { examCounts } from "@/domain/schedule"
@@ -80,25 +80,20 @@ export function ExamActions({ exam }: { exam: ExamDetail }) {
 export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
   const update = useExamMutation(updateExam, exam.id, () => toast.success("Zapisano zmiany."))
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-extrabold">Ustawienia</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ExamForm
-          defaultValues={{
-            name: exam.name,
-            description: exam.description,
-            defaultSlotMinutes: exam.defaultSlotMinutes,
-            maxTeamSize: exam.maxTeamSize,
-            fields: exam.fields,
-            opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
-            opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
-          }}
-          submitLabel="Zapisz"
-          onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
-        />
-      </CardContent>
-    </Card>
+    <SectionCard title="Ustawienia">
+      <ExamForm
+        defaultValues={{
+          name: exam.name,
+          description: exam.description,
+          defaultSlotMinutes: exam.defaultSlotMinutes,
+          maxTeamSize: exam.maxTeamSize,
+          fields: exam.fields,
+          opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
+          opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
+        }}
+        submitLabel="Zapisz"
+        onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
+      />
+    </SectionCard>
   )
 }

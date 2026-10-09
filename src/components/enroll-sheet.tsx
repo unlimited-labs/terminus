@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
 import { schemaSubmit, useAppForm } from "@/components/form"
+import { Notice } from "@/components/notice"
 import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
@@ -128,7 +129,7 @@ function EnrollForm({
     <form.AppForm>
       <form.Form className="grid gap-4">
         {failure && <FailureMessage failure={failure} submitted={submitted} />}
-        {draw.isError && <Message tone="error">{UNEXPECTED_ERROR}</Message>}
+        {draw.isError && <Notice tone="error">{UNEXPECTED_ERROR}</Notice>}
         <form.Field name="studentNumbers" mode="array">
           {(list) => (
             <div className="grid gap-3">
@@ -188,23 +189,10 @@ function flaggedNumbers(failure: Failure, submitted: number): string[] {
 
 function FailureMessage({ failure, submitted }: { failure: Failure; submitted: number }) {
   if (failure.code !== "ALREADY_ENROLLED")
-    return <Message tone="error">{errorMessage(failure)}</Message>
+    return <Notice tone="error">{errorMessage(failure)}</Notice>
   const [own] = failure.enrolled
   if (submitted === 1 && own) {
-    return <Message tone="info">{ownSlotMessage(own.startsAt)}</Message>
+    return <Notice tone="info">{ownSlotMessage(own.startsAt)}</Notice>
   }
-  return <Message tone="error">{errorMessage(failure)} Nikogo nie zapisano.</Message>
-}
-
-function Message({ tone, children }: { tone: "info" | "error"; children: React.ReactNode }) {
-  return (
-    <div
-      role="alert"
-      className={`rounded-lg border-l-4 px-3 py-2 ${
-        tone === "info" ? "border-free bg-free/10" : "border-destructive bg-destructive/10"
-      }`}
-    >
-      {children}
-    </div>
-  )
+  return <Notice tone="error">{errorMessage(failure)} Nikogo nie zapisano.</Notice>
 }

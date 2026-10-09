@@ -5,7 +5,7 @@ import { useState } from "react"
 
 import { ExamForm } from "@/components/exam-form"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { SectionCard } from "@/components/section-card"
 import { useResultMutation } from "@/components/use-result-mutation"
 import type { ExamPhase } from "@/domain/schedule"
 import { formatDateRange, formatWarsaw } from "@/domain/time"
@@ -42,26 +42,21 @@ function ExamList() {
         )}
       </div>
       {creating && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Nowe zaliczenie</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ExamForm
-              defaultValues={{
-                name: "",
-                description: "",
-                defaultSlotMinutes: 15,
-                maxTeamSize: 1,
-                fields: [],
-                opensDate: "",
-                opensTime: "",
-              }}
-              submitLabel="Utwórz"
-              onSubmit={create.mutateAsync}
-            />
-          </CardContent>
-        </Card>
+        <SectionCard title="Nowe zaliczenie">
+          <ExamForm
+            defaultValues={{
+              name: "",
+              description: "",
+              defaultSlotMinutes: 15,
+              maxTeamSize: 1,
+              fields: [],
+              opensDate: "",
+              opensTime: "",
+            }}
+            submitLabel="Utwórz"
+            onSubmit={create.mutateAsync}
+          />
+        </SectionCard>
       )}
       {exams.length === 0 && !creating && (
         <p className="text-muted-foreground">
