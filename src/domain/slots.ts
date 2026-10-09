@@ -8,13 +8,26 @@ export type WindowCut =
   | { ok: true; slots: Interval[]; unusedMinutes: number }
   | { ok: false; code: "WINDOW_END_BEFORE_START" | "WINDOW_TOO_SHORT" }
 
+export type SlotInterval =
+  | { ok: true; interval: Interval }
+  | { ok: false; code: "WINDOW_END_BEFORE_START" }
+
 const MINUTE = 60_000
+
+/** Przedział "od"–"do" jednego dnia w czasie polskim; koniec musi być po początku. */
+export function slotInterval(date: string, from: string, to: string): SlotInterval {
+  const interval = { startsAt: warsawDateTime(date, from), endsAt: warsawDateTime(date, to) }
+  return interval.endsAt > interval.startsAt
+    ? { ok: true, interval }
+    : { ok: false, code: "WINDOW_END_BEFORE_START" }
+}
 
 /** Tnie okno (jeden dzień, czas polski) na sloty równej długości; reszta z dzielenia przepada. */
 export function cutWindow({ date, from, to, minutes }: WindowInput): WindowCut {
-  const start = warsawDateTime(date, from).getTime()
-  const end = warsawDateTime(date, to).getTime()
-  if (end <= start) return { ok: false, code: "WINDOW_END_BEFORE_START" }
+  const range = slotInterval(date, from, to)
+  if (!range.ok) return range
+  const start = range.interval.startsAt.getTime()
+  const end = range.interval.endsAt.getTime()
   const count = Math.floor((end - start) / (minutes * MINUTE))
   if (count === 0) return { ok: false, code: "WINDOW_TOO_SHORT" }
   const slots = Array.from({ length: count }, (_, i) => ({

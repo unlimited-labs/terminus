@@ -6,6 +6,8 @@ export const examIdSchema = z.object({ examId: z.uuid() })
 
 export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
 
+export const isoDate = z.iso.date("Podaj datę.")
+
 export const examFieldSchema = z.object({
   id: z.string().min(1).max(40),
   label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, tooLong(60)),
@@ -30,7 +32,7 @@ export const examSchema = z.object({
     .min(1, "Zespół ma co najmniej 1 osobę.")
     .max(20, "Zespół może mieć najwyżej 20 osób."),
   fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
-  opensDate: z.union([z.literal(""), z.iso.date("Podaj datę.")]),
+  opensDate: z.union([z.literal(""), isoDate]),
   opensTime: z.union([z.literal(""), hhmm]),
 })
 

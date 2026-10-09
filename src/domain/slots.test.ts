@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { cutWindow, findOverlap } from "./slots"
+import { cutWindow, findOverlap, slotInterval } from "./slots"
 
 describe("cutWindow", () => {
   test("tnie okno na sloty, reszta przepada", () => {
@@ -71,5 +71,23 @@ describe("findOverlap", () => {
       { startsAt: new Date("2026-10-05T07:10:00Z"), endsAt: new Date("2026-10-05T07:40:00Z") },
     ]
     expect(findOverlap(moved, existing, "a")).toBeUndefined()
+  })
+})
+
+describe("slotInterval", () => {
+  test("przedział w czasie polskim", () => {
+    expect(slotInterval("2026-10-05", "09:00", "09:20")).toEqual({
+      ok: true,
+      interval: {
+        startsAt: new Date("2026-10-05T07:00:00Z"),
+        endsAt: new Date("2026-10-05T07:20:00Z"),
+      },
+    })
+  })
+
+  test("koniec nie później niż początek", () => {
+    const err = { ok: false, code: "WINDOW_END_BEFORE_START" }
+    expect(slotInterval("2026-10-05", "09:00", "09:00")).toEqual(err)
+    expect(slotInterval("2026-10-05", "10:00", "09:00")).toEqual(err)
   })
 })

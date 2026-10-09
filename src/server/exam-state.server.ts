@@ -39,7 +39,8 @@ export async function loadExam(examId: string) {
   ])
   const enrollmentOf = new Map(exam.enrollments.map((e) => [e.studentNumber, e]))
   const now = new Date()
-  const lastSlotEnd = slots.reduce<Date | null>((m, s) => (!m || s.endsAt > m ? s.endsAt : m), null)
+  // Sloty są posortowane po startsAt i nie nachodzą na siebie (findOverlap), więc ostatni kończy się najpóźniej.
+  const lastSlotEnd = slots.at(-1)?.endsAt ?? null
   return {
     id: exam.id,
     name: exam.name,

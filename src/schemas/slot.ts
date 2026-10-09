@@ -1,12 +1,10 @@
 import { z } from "zod"
 
-import { examIdSchema, hhmm, slotMinutes } from "./exam.ts"
-
-const date = z.iso.date("Podaj datę.")
+import { examIdSchema, hhmm, isoDate, slotMinutes } from "./exam.ts"
 
 export const windowSchema = examIdSchema.extend({
   rosterId: z.uuid("Wybierz listę."),
-  date,
+  date: isoDate,
   from: hhmm,
   to: hhmm,
   minutes: slotMinutes,
@@ -15,11 +13,11 @@ export const windowSchema = examIdSchema.extend({
 export const updateSlotSchema = examIdSchema.extend({
   slotId: z.uuid(),
   rosterId: z.uuid(),
-  date,
+  date: isoDate,
   from: hhmm,
   to: hhmm,
 })
 
 export const slotRefSchema = examIdSchema.extend({ slotId: z.uuid() })
 
-export const dayRefSchema = examIdSchema.extend({ day: date })
+export const dayRefSchema = examIdSchema.extend({ day: isoDate })

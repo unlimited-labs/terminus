@@ -1,7 +1,6 @@
 import type { z } from "zod"
 
-import { cutWindow, findOverlap, type Interval } from "../domain/slots.ts"
-import { warsawDateTime } from "../domain/time.ts"
+import { cutWindow, findOverlap, slotInterval, type Interval } from "../domain/slots.ts"
 import { warsawDay } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import type { updateSlotSchema, windowSchema } from "../schemas/slot.ts"
@@ -50,11 +49,11 @@ export async function editSlot(
       tx.roster.findFirst({ where: { id: rosterId, examId } }),
     ])
     if (!slot || !roster) return { ok: false, code: "NOT_FOUND" }
-    const interval = { startsAt: warsawDateTime(date, from), endsAt: warsawDateTime(date, to) }
-    if (interval.endsAt <= interval.startsAt) return { ok: false, code: "WINDOW_END_BEFORE_START" }
-    const overlap = await overlapError(tx, examId, [interval], slotId)
+    const range = slotInterval(date, from, to)
+    if (!range.ok) return range
+    const overlap = await overlapError(tx, examId, [range.interval], slotId)
     if (overlap) return overlap
-    await tx.slot.update({ where: { id: slotId }, data: { ...interval, rosterId } })
+    await tx.slot.update({ where: { id: slotId }, data: { ...range.interval, rosterId } })
     return { ok: true }
   })
 }
