@@ -28,10 +28,12 @@ type Kind = keyof typeof KINDS
 const PRESSED =
   "border bg-card data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground"
 
+const isFree = (s: Slot, now: Date) => isFreeSlot(s, s.team.length > 0, now)
+
 /** „Twój” tylko gdy w slocie widać już zespół (plansza mogła się jeszcze nie odświeżyć po zapisie). */
-function tone(slot: Slot, now: Date, mine: boolean): Kind {
+function slotKind(slot: Slot, now: Date, mine: boolean): Kind {
   if (slot.team.length > 0) return mine ? "mine" : "taken"
-  return isFreeSlot(slot, slot.team.length > 0, now) ? "free" : "past"
+  return slot.startsAt > now ? "free" : "past"
 }
 
 /** `pulse`: plansza startuje na dniu „Twojego” slotu, bez filtra listy, a kafelek pulsuje. */
@@ -49,12 +51,12 @@ export function ScheduleBoard({
   const [chosenDay, setChosenDay] = useState(shown ? warsawDay(shown.startsAt) : null)
   const multi = schedule.rosters.length > 1
   const visible = schedule.slots.filter((s) => rosterId === null || s.rosterId === rosterId)
-  const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt)).values()]
+  const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt))]
   const firstFree = Math.max(
     0,
-    days.findIndex((d) => d.some((s) => isFreeSlot(s, s.team.length > 0, schedule.now))),
+    days.findIndex(([, slots]) => slots.some((s) => isFree(s, schedule.now))),
   )
-  const day = days.find((d) => warsawDay(d[0]!.startsAt) === chosenDay) ?? days[firstFree] ?? []
+  const [dayKey, day = []] = days.find(([d]) => d === chosenDay) ?? days[firstFree] ?? []
 
   return (
     <section aria-label="Harmonogram" className="grid gap-3">
@@ -76,19 +78,19 @@ export function ScheduleBoard({
       {days.length > 1 && (
         <ToggleGroup
           aria-label="Dni"
-          value={day[0] ? [warsawDay(day[0].startsAt)] : []}
+          value={dayKey ? [dayKey] : []}
           onValueChange={([next]) => next && setChosenDay(next)}
           className="-mx-4 w-auto overflow-x-auto px-4 pb-1"
         >
-          {days.map((d) => (
+          {days.map(([d, slots]) => (
             <ToggleGroupItem
-              key={warsawDay(d[0]!.startsAt)}
-              value={warsawDay(d[0]!.startsAt)}
+              key={d}
+              value={d}
               className={`grid h-auto rounded-xl px-4 py-2 text-left ${PRESSED}`}
             >
-              <span className="font-bold capitalize">{formatDayShort(d[0]!.startsAt)}</span>
+              <span className="font-bold capitalize">{formatDayShort(slots[0]!.startsAt)}</span>
               <span className="text-xs opacity-80 tabular-nums">
-                wolne: {d.filter((s) => isFreeSlot(s, s.team.length > 0, schedule.now)).length}
+                wolne: {slots.filter((s) => isFree(s, schedule.now)).length}
               </span>
             </ToggleGroupItem>
           ))}
@@ -162,7 +164,7 @@ function DayTimeline({
             <SlotBlock
               key={slot.id}
               slot={slot}
-              kind={tone(slot, now, slot.id === mySlotId)}
+              kind={slotKind(slot, now, slot.id === mySlotId)}
               pulse={pulse && slot.id === mySlotId}
               rosterName={rosterName?.get(slot.rosterId)}
               top={y(slot.startsAt.getTime()) + 1}

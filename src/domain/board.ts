@@ -38,8 +38,9 @@ export type BoardResult<S> =
 type Step<P> = { people: P[]; inverse: BoardCommand } | BoardErrorCode
 type Command<K extends BoardCommand["kind"]> = Extract<BoardCommand, { kind: K }>
 
-const teamSize = (s: BoardState, slotId: string) =>
-  s.people.filter((p) => p.slotId === slotId).length
+const teamOf = <P extends BoardPerson>(s: BoardState<P>, slotId: string) =>
+  s.people.filter((p) => p.slotId === slotId)
+const teamSize = (s: BoardState, slotId: string) => teamOf(s, slotId).length
 const hasSlot = (s: BoardState, id: string) => s.slots.some((slot) => slot.id === id)
 const findPerson = <P extends BoardPerson>(s: BoardState<P>, n: string) =>
   s.people.find((p) => p.studentNumber === n)
@@ -110,7 +111,7 @@ function unenrollTeam<P extends BoardPerson>(
   { slotId }: Command<"unenrollTeam">,
 ): Step<P> {
   if (!hasSlot(s, slotId)) return "SLOT_NOT_FOUND"
-  const team = s.people.filter((p) => p.slotId === slotId)
+  const team = teamOf(s, slotId)
   if (team.length === 0) return "NO_CHANGE"
   const answers = team[0]!.answers
   return {
@@ -150,7 +151,7 @@ function setAnswers<P extends BoardPerson>(
   { slotId, answers }: Command<"setAnswers">,
 ): Step<P> {
   if (!hasSlot(s, slotId)) return "SLOT_NOT_FOUND"
-  const team = s.people.filter((p) => p.slotId === slotId)
+  const team = teamOf(s, slotId)
   if (team.length === 0) return "NOT_ENROLLED"
   const previous = team[0]!.answers ?? {}
   if (sameAnswers(previous, answers)) return "NO_CHANGE"
@@ -263,13 +264,20 @@ export type DragRef =
   | { kind: "slot"; slotId: string }
   | { kind: "pool" }
 
+/** Slot, na który upuszczono zespół: sam slot albo slot osoby; `null` = poza slotem. */
+function targetSlotId(target: DragRef, people: BoardPerson[]): string | null {
+  if (target.kind === "slot") return target.slotId
+  if (target.kind === "person")
+    return people.find((p) => p.studentNumber === target.studentNumber)?.slotId ?? null
+  return null
+}
+
 /** Tłumaczy upuszczenie na polecenie tablicy; `null` = nic do zrobienia. */
 export function dropCommand(
   source: DragRef,
   target: DragRef,
   people: BoardPerson[],
 ): BoardCommand | null {
-  const slotOf = (n: string) => people.find((p) => p.studentNumber === n)?.slotId ?? null
   if (source.kind === "person") {
     if (target.kind === "pool")
       return { kind: "move", studentNumber: source.studentNumber, toSlotId: null }
@@ -283,16 +291,27 @@ export function dropCommand(
   }
   if (source.kind !== "team") return null
   if (target.kind === "pool") return { kind: "unenrollTeam", slotId: source.slotId }
-  const to =
-    target.kind === "slot"
-      ? target.slotId
-      : target.kind === "person"
-        ? slotOf(target.studentNumber)
-        : null
+  const to = targetSlotId(target, people)
   return to && to !== source.slotId ? { kind: "swapSlots", a: source.slotId, b: to } : null
 }
 
-/** Identyfikatory elementów tablicy w dnd-kit: `p:`/`pt:` osoba, `s:` slot, `t:` zespół, `pool`. */
+/**
+ * Identyfikatory elementów tablicy w dnd-kit: `p:` osoba przeciągana, `pt:` osoba jako cel
+ * upuszczenia (`role: "target"`), `s:` slot, `t:` zespół, `pool`.
+ */
+export function dragId(ref: DragRef, role?: "target"): string {
+  switch (ref.kind) {
+    case "person":
+      return `${role === "target" ? "pt" : "p"}:${ref.studentNumber}`
+    case "slot":
+      return `s:${ref.slotId}`
+    case "team":
+      return `t:${ref.slotId}`
+    case "pool":
+      return "pool"
+  }
+}
+
 export function parseDragId(id: string | number): DragRef | undefined {
   const [prefix, value] = String(id).split(/:(.*)/)
   if (prefix === "pool") return { kind: "pool" }

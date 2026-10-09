@@ -6,8 +6,8 @@ import { toast } from "sonner"
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
 import { CapacitySummary } from "@/components/slot-section"
-import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
+import { toastFailure, toastUnexpected } from "@/components/use-result-mutation"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   dropCommand,
@@ -19,7 +19,6 @@ import {
 } from "@/domain/board"
 import { examCounts } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
-import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
 import { applyBoardCommand } from "@/server/board"
 import { examChangeKeys, examQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -60,22 +59,19 @@ function useBoardCommand(exam: ExamDetail) {
   const mutation = useMutation({
     mutationKey,
     scope: { id: mutationKey.join(":") },
-    mutationFn: ({ command }: { command: BoardCommand; before: ExamDetail }) =>
+    mutationFn: ({ command }: { command: BoardCommand; message: string }) =>
       applyBoardCommand({ data: { examId: exam.id, command } }),
-    onSuccess: (result, { command, before }) => {
+    onSuccess: (result, { message }) => {
       if (!result.ok) {
-        if (result.code !== "NO_CHANGE") toast.error(errorMessage(result))
+        if (result.code !== "NO_CHANGE") toastFailure(result)
         return
       }
-      toast.success(doneMessage(command, before), {
+      toast.success(message, {
         action: { label: "Cofnij", onClick: () => run(result.inverse) },
         duration: 6000,
       })
     },
-    onError: (error) => {
-      console.error(error)
-      toast.error(UNEXPECTED_ERROR)
-    },
+    onError: toastUnexpected,
     onSettled: (result, _error, { command }) => {
       const settled = settle(queue.current!, command, result?.ok ? result.exam : undefined)
       queue.current = settled.queue
@@ -91,13 +87,13 @@ function useBoardCommand(exam: ExamDetail) {
     const added = enqueue(queue.current, before, command)
     if (!added.ok) {
       if (added.code === "NO_CHANGE") return true
-      toast.error(errorMessage(added))
+      toastFailure(added)
       return false
     }
     queue.current = added.queue
     void queryClient.cancelQueries({ queryKey: key })
     queryClient.setQueryData(key, added.shown)
-    mutation.mutate({ command, before })
+    mutation.mutate({ command, message: doneMessage(command, before) })
     return true
   }
   return run
@@ -167,20 +163,10 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                       dayLabel={firstOfDay ? formatDayShort(slot.startsAt) : null}
                       rosterName={multi ? rosterName.get(slot.rosterId) : undefined}
                       maxTeamSize={exam.maxTeamSize}
+                      fields={exam.fields}
                       rosterOf={(id) => rosterName.get(id)}
                       highlight={highlight}
                       onCommand={run}
-                      extra={
-                        exam.fields.length > 0 && team[0] ? (
-                          <SlotAnswers
-                            fields={exam.fields}
-                            answers={team[0].answers}
-                            onSave={(answers) =>
-                              run({ kind: "setAnswers", slotId: slot.id, answers })
-                            }
-                          />
-                        ) : null
-                      }
                     />
                   )
                 })}

@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import {
   applyCommand,
   changedPeople,
+  dragId,
   dropCommand,
   enqueue,
   parseDragId,
@@ -362,6 +363,19 @@ test("parseDragId", () => {
   expect(parseDragId("t:x")).toEqual(team("x"))
   expect(parseDragId("pool")).toEqual({ kind: "pool" })
   expect(parseDragId("?")).toBeUndefined()
+})
+
+test("dragId ↔ parseDragId dla każdego rodzaju", () => {
+  const refs = [person("123"), slot("a-b"), team("x:y"), { kind: "pool" } as const]
+  for (const ref of refs) {
+    expect(parseDragId(dragId(ref))).toEqual(ref)
+    expect(parseDragId(dragId(ref, "target"))).toEqual(ref)
+  }
+  expect(dragId(person("1"))).toBe("p:1")
+  expect(dragId(person("1"), "target")).toBe("pt:1")
+  expect(dragId(slot("a"))).toBe("s:a")
+  expect(dragId(team("a"))).toBe("t:a")
+  expect(dragId({ kind: "pool" })).toBe("pool")
 })
 
 describe("dropCommand", () => {

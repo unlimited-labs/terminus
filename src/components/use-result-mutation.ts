@@ -2,7 +2,14 @@ import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-quer
 import { useRef } from "react"
 import { toast } from "sonner"
 
-import { errorMessage, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
+import { errorMessage, UNEXPECTED_ERROR, type AppError, type Result } from "@/messages.pl"
+
+export const toastFailure = (failure: AppError) => toast.error(errorMessage(failure))
+
+export function toastUnexpected(error: unknown) {
+  console.error(error)
+  toast.error(UNEXPECTED_ERROR)
+}
 
 /**
  * Mutacja funkcji serwerowej zwracającej `Result`: błąd domeny → komunikat, potem odświeżenie zapytań `invalidate`.
@@ -20,12 +27,9 @@ export function useResultMutation<TInput, TOut extends object>(
     mutationFn: (data: TInput) => fn({ data }),
     onSuccess: (result) => {
       if (result.ok) onOk?.(result)
-      else toast.error(errorMessage(result))
+      else toastFailure(result)
     },
-    onError: (error) => {
-      console.error(error)
-      toast.error(UNEXPECTED_ERROR)
-    },
+    onError: toastUnexpected,
     onSettled: () =>
       Promise.all(invalidate.map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
   })

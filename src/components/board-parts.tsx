@@ -2,10 +2,12 @@ import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
 import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useRef, useState } from "react"
 
+import { SlotAnswers } from "@/components/slot-answers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { TableCell, TableRow } from "@/components/ui/table"
-import { parseDragId, type BoardCommand } from "@/domain/board"
+import { dragId, parseDragId, type BoardCommand } from "@/domain/board"
+import type { ExamField } from "@/domain/fields"
 import { formatDayShort, formatSlotTime, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 
@@ -14,6 +16,11 @@ type Slot = ExamDetail["slots"][number]
 
 const personLabel = (p: Person) =>
   p.firstName ? `${p.firstName} ${p.lastName} (${p.studentNumber})` : p.studentNumber
+
+/** Przycisk ikony na kafelku: nie zaczyna przeciągania kafelka. */
+const TileAction = (props: React.ComponentProps<typeof Button>) => (
+  <Button variant="ghost" size="icon-xs" onPointerDown={(e) => e.stopPropagation()} {...props} />
+)
 
 function PersonTile({
   person,
@@ -24,22 +31,24 @@ function PersonTile({
   person: Person
   highlighted: boolean
   foreignRoster?: string
-  onCommand: (command: BoardCommand) => void
+  onCommand: (command: BoardCommand) => boolean
 }) {
   const [editing, setEditing] = useState(false)
   const refocusPencil = useRef(false)
+  const unenrolled = person.slotId === null
+  const ref = { kind: "person", studentNumber: person.studentNumber } as const
   const drag = useDraggable({
-    id: `p:${person.studentNumber}`,
+    id: dragId(ref),
     type: "person",
     data: { label: personLabel(person) },
     disabled: editing,
   })
   const drop = useDroppable({
-    id: `pt:${person.studentNumber}`,
+    id: dragId(ref, "target"),
     accept: "person",
     data: { label: personLabel(person) },
     collisionPriority: 3,
-    disabled: person.slotId === null,
+    disabled: unenrolled,
   })
 
   if (editing) {
@@ -56,7 +65,6 @@ function PersonTile({
       />
     )
   }
-  const unenrolled = person.slotId === null
   return (
     <div
       ref={(el) => {
@@ -81,36 +89,30 @@ function PersonTile({
         </span>
       )}
       {!unenrolled && (
-        <Button
-          ref={(el: HTMLButtonElement | null) => {
-            if (el && refocusPencil.current) {
-              refocusPencil.current = false
-              el.focus()
+        <>
+          <TileAction
+            ref={(el: HTMLButtonElement | null) => {
+              if (el && refocusPencil.current) {
+                refocusPencil.current = false
+                el.focus()
+              }
+            }}
+            aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
+            onClick={() => setEditing(true)}
+            className="text-muted-foreground"
+          >
+            <PencilIcon className="size-3.5" />
+          </TileAction>
+          <TileAction
+            aria-label={`Usuń zapis: ${person.firstName} ${person.lastName}`}
+            onClick={() =>
+              onCommand({ kind: "move", studentNumber: person.studentNumber, toSlotId: null })
             }
-          }}
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() => setEditing(true)}
-          className="text-muted-foreground"
-        >
-          <PencilIcon className="size-3.5" />
-        </Button>
-      )}
-      {!unenrolled && (
-        <Button
-          variant="ghost"
-          size="icon-xs"
-          aria-label={`Usuń zapis: ${person.firstName} ${person.lastName}`}
-          onPointerDown={(e) => e.stopPropagation()}
-          onClick={() =>
-            onCommand({ kind: "move", studentNumber: person.studentNumber, toSlotId: null })
-          }
-          className="text-muted-foreground hover:text-destructive"
-        >
-          <Trash2Icon className="size-3.5" />
-        </Button>
+            className="text-muted-foreground hover:text-destructive"
+          >
+            <Trash2Icon className="size-3.5" />
+          </TileAction>
+        </>
       )}
     </div>
   )
@@ -162,36 +164,36 @@ function RenameForm({
 
 function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: string) {
   const drop = useDroppable({
-    id: `s:${slot.id}`,
+    id: dragId({ kind: "slot", slotId: slot.id }),
     accept: ["person", "team"],
     data: { label },
     collisionPriority: 1,
   })
   const { handleRef: attachHandle, ...drag } = useDraggable({
-    id: `t:${slot.id}`,
+    id: dragId({ kind: "team", slotId: slot.id }),
     type: "team",
     data: { label: `zespół, ${label}` },
     disabled: team.length === 0,
   })
   const { source } = useDragOperation()
-  const incoming = source ? parseDragId(source.id) : undefined
-  const rejects =
-    drop.isDropTarget &&
-    incoming?.kind === "person" &&
-    team.length >= maxTeamSize &&
-    !team.some((p) => p.studentNumber === incoming.studentNumber)
-  const tone = rejects
-    ? "bg-destructive/15 hover:bg-destructive/15"
-    : drop.isDropTarget
-      ? "bg-primary/10 hover:bg-primary/10"
-      : "hover:bg-transparent"
+  const dropTone = () => {
+    if (!drop.isDropTarget) return "hover:bg-transparent"
+    const incoming = source ? parseDragId(source.id) : undefined
+    const rejects =
+      incoming?.kind === "person" &&
+      team.length >= maxTeamSize &&
+      !team.some((p) => p.studentNumber === incoming.studentNumber)
+    return rejects
+      ? "bg-destructive/15 hover:bg-destructive/15"
+      : "bg-primary/10 hover:bg-primary/10"
+  }
   return {
     attach: (el: HTMLElement | null) => {
       drop.ref(el)
       drag.ref(el)
     },
     attachHandle,
-    tone: `${tone} ${drag.isDragging ? "opacity-50" : ""}`,
+    tone: `${dropTone()} ${drag.isDragging ? "opacity-50" : ""}`,
   }
 }
 
@@ -206,7 +208,7 @@ function TeamCell({
   team: Person[]
   rosterOf: (rosterId: string) => string | undefined
   highlight: (p: Person) => boolean
-  onCommand: (command: BoardCommand) => void
+  onCommand: (command: BoardCommand) => boolean
 }) {
   if (team.length === 0) return <span className="text-free">wolny</span>
   return (
@@ -230,20 +232,20 @@ export function BoardSlotRow({
   dayLabel,
   rosterName,
   maxTeamSize,
+  fields,
   rosterOf,
   highlight,
   onCommand,
-  extra,
 }: {
   slot: Slot
   team: Person[]
   dayLabel: string | null
   rosterName?: string
   maxTeamSize: number
+  fields: ExamField[]
   rosterOf: (rosterId: string) => string | undefined
   highlight: (p: Person) => boolean
-  onCommand: (command: BoardCommand) => void
-  extra?: React.ReactNode
+  onCommand: (command: BoardCommand) => boolean
 }) {
   const label = `slot ${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}`
   const { attach, attachHandle, tone } = useSlotDnd(slot, team, maxTeamSize, label)
@@ -266,17 +268,14 @@ export function BoardSlotRow({
             <GripVerticalIcon className="size-4" />
           </Button>
           <span className="font-semibold tabular-nums">{formatSlotTime(slot)}</span>
-          <Button
-            variant="ghost"
-            size="icon-xs"
+          <TileAction
             disabled={team.length === 0}
             aria-label={`Usuń zapis całego zespołu: ${label}`}
-            onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onCommand({ kind: "unenrollTeam", slotId: slot.id })}
             className="text-muted-foreground hover:text-destructive disabled:invisible"
           >
             <Trash2Icon className="size-4" />
-          </Button>
+          </TileAction>
         </span>
       </TableCell>
       {rosterName !== undefined && (
@@ -290,7 +289,13 @@ export function BoardSlotRow({
           highlight={highlight}
           onCommand={onCommand}
         />
-        {extra}
+        {fields.length > 0 && team[0] && (
+          <SlotAnswers
+            fields={fields}
+            answers={team[0].answers}
+            onSave={(answers) => onCommand({ kind: "setAnswers", slotId: slot.id, answers })}
+          />
+        )}
       </TableCell>
     </TableRow>
   )
@@ -303,11 +308,11 @@ export function UnenrolledPanel({
 }: {
   exam: ExamDetail
   highlight: (p: Person) => boolean
-  onCommand: (command: BoardCommand) => void
+  onCommand: (command: BoardCommand) => boolean
 }) {
   const [filter, setFilter] = useState("")
   const { ref: attachPool, isDropTarget } = useDroppable({
-    id: "pool",
+    id: dragId({ kind: "pool" }),
     accept: ["person", "team"],
     data: { label: "Niezapisani" },
     collisionPriority: 1,
