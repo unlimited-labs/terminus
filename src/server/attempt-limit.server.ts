@@ -1,3 +1,4 @@
+import { consola } from "consola"
 import { RateLimiterMemory } from "rate-limiter-flexible"
 
 import { OPS } from "../messages.pl.ts"
@@ -15,7 +16,7 @@ let warnedNoIp = false
 export function limitKey(realIp: string | undefined) {
   if (!realIp && !warnedNoIp && process.env.NODE_ENV === "production") {
     warnedNoIp = true
-    console.warn(OPS.noRealIp)
+    consola.warn(OPS.noRealIp)
   }
   return realIp ?? "unknown"
 }

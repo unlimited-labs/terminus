@@ -1,4 +1,4 @@
-/** Klauzula informacyjna RODO — tekst z docs/klauzula-informacyjna.md (do akceptacji IOD AGH). */
+/** Klauzula informacyjna RODO — tekst z docs/klauzula-informacyjna.md (zaakceptowany przez IOD AGH). */
 export function PrivacyNotice() {
   return (
     <details className="text-sm text-muted-foreground">
@@ -57,7 +57,13 @@ export function PrivacyNotice() {
           przydzielany losowo i może zostać zmieniony przez prowadzącego;
         </li>
         <li>Pani/Pana dane osobowe nie będą przekazywane państwom trzecim;</li>
-        <li>podanie danych osobowych jest warunkiem zapisu na zaliczenie przez tę aplikację.</li>
+        <li>podanie danych osobowych jest warunkiem zapisu na zaliczenie przez tę aplikację;</li>
+        <li>
+          przy każdej próbie zapisu adres IP, z którego wysłano formularz, oraz wpisane numery
+          albumu są zapisywane w dzienniku zdarzeń serwera w celu wyjaśniania zapisów dokonanych bez
+          wiedzy zapisanej osoby; dziennik ma ograniczony rozmiar, a najstarsze wpisy są usuwane
+          automatycznie w miarę dopisywania nowych.
+        </li>
       </ol>
     </details>
   )
