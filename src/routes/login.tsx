@@ -20,6 +20,7 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { redirect: target } = Route.useSearch()
   const navigate = useNavigate()
+  const { queryClient } = Route.useRouteContext()
   const [error, setError] = useState<string | null>(null)
   const form = useAppForm({
     defaultValues: { email: "", password: "" },
@@ -28,6 +29,8 @@ function Login() {
       const failure = await authFailure(authClient.signIn.email(loginSchema.parse(value)))
       setError(failure)
       if (failure) return
+      // Po wygaśnięciu sesji w tej karcie może się zalogować ktoś inny; klucze zapytań nie zawierają użytkownika.
+      queryClient.clear()
       await navigate({ href: target ?? "/" })
     },
   })
