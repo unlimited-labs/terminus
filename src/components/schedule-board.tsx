@@ -4,7 +4,7 @@ import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { isFreeSlot } from "@/domain/schedule"
+import { fullName, isFreeSlot } from "@/domain/schedule"
 import { formatDay, formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
 import type { Schedule } from "@/server/schedule"
 
@@ -194,7 +194,7 @@ function SlotBlock({
   height: number
 }) {
   const [open, setOpen] = useState(false)
-  const names = slot.team.map((p) => `${p.firstName} ${p.lastName}`).join(", ")
+  const names = slot.team.map(fullName).join(", ")
   const label = KINDS[kind].text(names)
   const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${KINDS[kind].tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"

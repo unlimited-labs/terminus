@@ -31,12 +31,19 @@ export const Route = createFileRoute("/z/$examId")({
   component: StudentPage,
 })
 
-function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boolean }) {
-  if (schedule.opensAt && !isEnrollmentOpen(schedule.opensAt, schedule.now)) {
+function EntryNotice({
+  opensAt,
+  open,
+  anyFree,
+}: {
+  opensAt: Date | null
+  open: boolean
+  anyFree: boolean
+}) {
+  if (opensAt && !open) {
     return (
       <Notice tone="notice" role="status">
-        {errorMessage({ code: "NOT_OPEN_YET", opensAt: schedule.opensAt })} Strona odświeży się
-        sama.
+        {errorMessage({ code: "NOT_OPEN_YET", opensAt })} Strona odświeży się sama.
       </Notice>
     )
   }
@@ -49,12 +56,12 @@ function EntryNotice({ schedule, anyFree }: { schedule: Schedule; anyFree: boole
 }
 
 /** Co oferuje panel: zapis z losowaniem, a przy braku wolnych slotów tylko sprawdzenie swojego. */
-function entryMode(schedule: Schedule, enrolled: boolean) {
+function entryMode(schedule: Schedule) {
   const anyFree = schedule.slots.some((s) => isFreeSlot(s, s.team.length > 0, schedule.now))
   return {
     anyFree,
     open: isEnrollmentOpen(schedule.opensAt, schedule.now),
-    action: enrolled ? "Twój slot" : anyFree ? "Zapisz się" : "Sprawdź swój slot",
+    action: anyFree ? "Zapisz się" : "Sprawdź swój slot",
     submitLabel: anyFree ? "Losuj slot" : "Sprawdź",
     maxTeamSize: anyFree ? schedule.maxTeamSize : 1,
     fields: anyFree ? schedule.fields : [],
@@ -75,7 +82,8 @@ function StudentPage() {
     )
   }
 
-  const mode = entryMode(schedule, mine !== null)
+  const mode = entryMode(schedule)
+  const title = mine ? "Twój slot" : mode.action
 
   return (
     <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
@@ -86,7 +94,7 @@ function StudentPage() {
         )}
         <p className="text-muted-foreground">Prowadzący: {schedule.teacherNames}</p>
       </header>
-      {!mine && <EntryNotice schedule={schedule} anyFree={mode.anyFree} />}
+      {!mine && <EntryNotice opensAt={schedule.opensAt} open={mode.open} anyFree={mode.anyFree} />}
       <ScheduleBoard
         key={showCount}
         schedule={schedule}
@@ -96,14 +104,14 @@ function StudentPage() {
       {mode.open && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
           <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-            {mode.action}
+            {title}
           </Button>
         </div>
       )}
       <EnrollSheet
         examId={examId}
         place={schedule.description}
-        title={mode.action}
+        title={title}
         submitLabel={mode.submitLabel}
         maxTeamSize={mode.maxTeamSize}
         fields={mode.fields}

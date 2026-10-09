@@ -18,7 +18,7 @@ import {
   type BoardCommand,
   type BoardQueue,
 } from "@/domain/board"
-import { examCounts } from "@/domain/schedule"
+import { examCounts, fullName } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { applyBoardCommand } from "@/server/board"
 import { examChangeKeys, examQuery } from "@/server/exams"
@@ -107,8 +107,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const rosterName = rosterNames(exam.rosters)
   const q = search.trim().toLowerCase()
   const highlight = (p: ExamDetail["people"][number]) =>
-    q !== "" &&
-    (p.studentNumber.includes(q) || `${p.firstName} ${p.lastName}`.toLowerCase().includes(q))
+    q !== "" && (p.studentNumber.includes(q) || fullName(p).toLowerCase().includes(q))
 
   const onDragEnd = ({ operation, canceled }: DragEndEvent) => {
     const source = operation.source ? parseDragId(operation.source.id) : undefined

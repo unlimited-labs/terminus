@@ -17,6 +17,7 @@ import {
   blockedAccountExamsQuery,
   createAccount,
   deleteAccountExam,
+  type listAccounts,
   setAccountAdmin,
   setAccountBanned,
   setAccountPassword,
@@ -32,7 +33,7 @@ export const Route = createFileRoute("/_authed/konta")({
   component: Accounts,
 })
 
-type Account = Awaited<ReturnType<typeof import("@/server/accounts").listAccounts>>[number]
+type Account = Awaited<ReturnType<typeof listAccounts>>[number]
 
 function Accounts() {
   const { data: accounts } = useSuspenseQuery(accountsQuery())
@@ -82,6 +83,7 @@ function CreateAccountForm() {
 
 function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) {
   const [mode, setMode] = useState<"view" | "edit" | "password">("view")
+  const toggle = (m: "edit" | "password") => setMode(mode === m ? "view" : m)
   const isAdmin = account.role === "admin"
   const ban = useResultMutation(setAccountBanned, [accountsQuery().queryKey])
   const admin = useResultMutation(setAccountAdmin, [accountsQuery().queryKey])
@@ -95,18 +97,10 @@ function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) 
             {isAdmin && <Badge>superadmin</Badge>}
             {account.banned && <Badge variant="destructive">zablokowane</Badge>}
             <span className="ml-auto flex flex-wrap gap-1">
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => setMode(mode === "edit" ? "view" : "edit")}
-              >
+              <Button variant="ghost" size="xs" onClick={() => toggle("edit")}>
                 Edytuj
               </Button>
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => setMode(mode === "password" ? "view" : "password")}
-              >
+              <Button variant="ghost" size="xs" onClick={() => toggle("password")}>
                 Ustaw hasło
               </Button>
               {!isSelf && (

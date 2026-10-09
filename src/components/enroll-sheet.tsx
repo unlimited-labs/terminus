@@ -6,15 +6,12 @@ import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { errorMessage, ownSlotMessage, UNEXPECTED_ERROR } from "@/messages.pl"
+import { failureNotice, UNEXPECTED_ERROR } from "@/messages.pl"
 import { enrollmentSchema } from "@/schemas/enrollment"
 import type { Answers, ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/enroll"
 import { scheduleQuery } from "@/server/schedule"
-
-type Outcome = Awaited<ReturnType<typeof enroll>>
-type Failure = Extract<Outcome, { ok: false }>
 
 export function EnrollSheet({
   examId,
@@ -108,11 +105,13 @@ function EnrollForm({
     ...schemaSubmit(enrollmentSchema, draw.mutateAsync),
     onSubmitInvalid: () => draw.reset(),
   })
-  const failure = draw.data && !draw.data.ok ? draw.data : null
-  const submitted = draw.variables?.studentNumbers.length ?? 0
-  const flagged = new Set(failure ? flaggedNumbers(failure, submitted) : [])
+  const notice =
+    draw.data && !draw.data.ok
+      ? failureNotice(draw.data, draw.variables?.studentNumbers ?? [])
+      : null
+  const flagged = new Set(notice?.flagged)
   // Po odpowiedzi serwera formularz rysuje się od nowa — fokus na pierwszy wskazany indeks.
-  const firstFlagged = draw.variables?.studentNumbers.findIndex((n) => flagged.has(n.trim())) ?? -1
+  const firstFlagged = draw.variables?.studentNumbers.findIndex((n) => flagged.has(n)) ?? -1
 
   if (draw.isPending) {
     return (
@@ -128,7 +127,7 @@ function EnrollForm({
   return (
     <form.AppForm>
       <form.Form className="grid gap-4">
-        {failure && <FailureMessage failure={failure} submitted={submitted} />}
+        {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
         {draw.isError && <Notice tone="error">{UNEXPECTED_ERROR}</Notice>}
         <form.Field name="studentNumbers" mode="array">
           {(list) => (
@@ -179,20 +178,4 @@ function EnrollForm({
       </form.Form>
     </form.AppForm>
   )
-}
-
-function flaggedNumbers(failure: Failure, submitted: number): string[] {
-  if ("studentNumbers" in failure) return failure.studentNumbers
-  if ("enrolled" in failure && submitted > 1) return failure.enrolled.map((e) => e.studentNumber)
-  return []
-}
-
-function FailureMessage({ failure, submitted }: { failure: Failure; submitted: number }) {
-  if (failure.code !== "ALREADY_ENROLLED")
-    return <Notice tone="error">{errorMessage(failure)}</Notice>
-  const [own] = failure.enrolled
-  if (submitted === 1 && own) {
-    return <Notice tone="info">{ownSlotMessage(own.startsAt)}</Notice>
-  }
-  return <Notice tone="error">{errorMessage(failure)} Nikogo nie zapisano.</Notice>
 }

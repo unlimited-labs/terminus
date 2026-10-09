@@ -31,3 +31,7 @@ export function examPhase(
   if (exam.lastSlotEnd < now) return "done"
   return isEnrollmentOpen(exam.opensAt, now) ? "open" : "scheduled"
 }
+
+/** „Imię Nazwisko” osoby z listy. */
+export const fullName = (p: { firstName: string; lastName: string }) =>
+  `${p.firstName} ${p.lastName}`

@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { examPhase, isEnrollmentOpen, isFreeSlot } from "./schedule"
+import { examPhase, fullName, isEnrollmentOpen, isFreeSlot } from "./schedule"
 
 const now = new Date("2026-10-05T08:00:00Z")
 const later = new Date("2026-10-05T09:00:00Z")
@@ -27,4 +27,8 @@ test("etap zaliczenia: przygotowanie, przed zapisami, w trakcie, zakończone", (
   expect(examPhase(ready, now)).toBe("open")
   expect(examPhase({ ...ready, opensAt: earlier }, now)).toBe("open")
   expect(examPhase({ ...ready, lastSlotEnd: earlier }, now)).toBe("done")
+})
+
+test("pełne imię: imię, potem nazwisko", () => {
+  expect(fullName({ firstName: "Anna", lastName: "Nowak" })).toBe("Anna Nowak")
 })

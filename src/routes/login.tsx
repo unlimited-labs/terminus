@@ -4,8 +4,7 @@ import { useState } from "react"
 import { useAppForm } from "@/components/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { authClient } from "@/lib/auth-client"
-import { authErrorMessage } from "@/messages.pl"
+import { authClient, authFailure } from "@/lib/auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
 import { getSessionUser } from "@/server/session"
 
@@ -26,13 +25,9 @@ function Login() {
     defaultValues: { email: "", password: "" },
     validators: { onSubmit: loginSchema },
     onSubmit: async ({ value }) => {
-      const { error: authError } = await authClient.signIn
-        .email(loginSchema.parse(value))
-        .catch(() => ({ error: { code: undefined } }))
-      if (authError) {
-        setError(authErrorMessage(authError.code))
-        return
-      }
+      const failure = await authFailure(authClient.signIn.email(loginSchema.parse(value)))
+      setError(failure)
+      if (failure) return
       await navigate({ href: target ?? "/" })
     },
   })

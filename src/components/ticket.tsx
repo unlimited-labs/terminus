@@ -1,4 +1,5 @@
 import { formatDay, warsawTime } from "@/domain/time"
+import { fullName } from "@/domain/schedule"
 import { SLOT_IS_FINAL } from "@/messages.pl"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 
@@ -26,9 +27,7 @@ export function Ticket({ ticket, place }: { ticket: TicketData; place: string })
       <ul className="ticket-cut mt-4 grid gap-1 border-t-2 border-dashed border-white/45 pt-3">
         {ticket.team.map((p) => (
           <li key={p.studentNumber} className="flex justify-between gap-4">
-            <span>
-              {p.firstName} {p.lastName}
-            </span>
+            <span>{fullName(p)}</span>
             <span className="tabular-nums opacity-80">{p.studentNumber}</span>
           </li>
         ))}

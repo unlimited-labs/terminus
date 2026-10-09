@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { dragId, parseDragId, type BoardCommand } from "@/domain/board"
 import type { ExamField } from "@/domain/fields"
+import { fullName } from "@/domain/schedule"
 import { formatDayShort, formatSlotTime, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 
@@ -16,7 +17,7 @@ type Person = ExamDetail["people"][number]
 type Slot = ExamDetail["slots"][number]
 
 const personLabel = (p: Person) =>
-  p.firstName ? `${p.firstName} ${p.lastName} (${p.studentNumber})` : p.studentNumber
+  p.firstName ? `${fullName(p)} (${p.studentNumber})` : p.studentNumber
 
 /** Przycisk ikony na kafelku: nie zaczyna przeciągania kafelka. */
 const TileAction = (props: React.ComponentProps<typeof Button>) => (
@@ -80,9 +81,7 @@ function PersonTile({
         <span className="font-semibold tabular-nums">{person.studentNumber}</span>
       ) : (
         <span className="grid leading-tight">
-          <span className="font-semibold whitespace-nowrap">
-            {person.firstName} {person.lastName}
-          </span>
+          <span className="font-semibold whitespace-nowrap">{fullName(person)}</span>
           <span className="text-xs text-muted-foreground tabular-nums">
             {person.studentNumber}
             {foreignRoster && ` · ${foreignRoster}`}
@@ -98,14 +97,14 @@ function PersonTile({
                 el.focus()
               }
             }}
-            aria-label={`Zmień imię i nazwisko: ${person.firstName} ${person.lastName}`}
+            aria-label={`Zmień imię i nazwisko: ${fullName(person)}`}
             onClick={() => setEditing(true)}
             className="text-muted-foreground"
           >
             <PencilIcon className="size-3.5" />
           </TileAction>
           <TileAction
-            aria-label={`Usuń zapis: ${person.firstName} ${person.lastName}`}
+            aria-label={`Usuń zapis: ${fullName(person)}`}
             onClick={() =>
               onCommand({ kind: "move", studentNumber: person.studentNumber, toSlotId: null })
             }

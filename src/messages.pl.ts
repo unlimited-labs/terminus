@@ -128,6 +128,25 @@ export const SLOT_IS_FINAL = "Slot jest przydzielony na stałe."
 export const ownSlotMessage = (startsAt: Date) =>
   `Masz już zapis: ${formatDayTime(startsAt)}. ${SLOT_IS_FINAL}`
 
+/** Komunikat odmowy zapisu i indeksy do podświetlenia w formularzu. */
+export function failureNotice(
+  failure: AppError,
+  studentNumbers: string[],
+): { tone: "info" | "error"; text: string; flagged: string[] } {
+  if (failure.code !== "ALREADY_ENROLLED") {
+    const flagged = "studentNumbers" in failure ? failure.studentNumbers : []
+    return { tone: "error", text: errorMessage(failure), flagged }
+  }
+  const [own] = failure.enrolled
+  if (studentNumbers.length === 1 && own)
+    return { tone: "info", text: ownSlotMessage(own.startsAt), flagged: [] }
+  return {
+    tone: "error",
+    text: `${errorMessage(failure)} Nikogo nie zapisano.`,
+    flagged: studentNumbers.length > 1 ? failure.enrolled.map((e) => e.studentNumber) : [],
+  }
+}
+
 /** Dlaczego wiersz pliku CSV nie zostanie zaimportowany (podgląd importu). */
 export const INVALID_ROW: Record<InvalidRowReason | "OTHER_ROSTER", string> = {
   NOT_DIGITS: "indeks nie z samych cyfr",

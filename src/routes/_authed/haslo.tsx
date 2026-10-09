@@ -3,8 +3,7 @@ import { toast } from "sonner"
 
 import { useAppForm } from "@/components/form"
 import { SectionCard } from "@/components/section-card"
-import { authClient } from "@/lib/auth-client"
-import { authErrorMessage } from "@/messages.pl"
+import { authClient, authFailure } from "@/lib/auth-client"
 import { changePasswordSchema } from "@/schemas/auth"
 
 export const Route = createFileRoute("/_authed/haslo")({
@@ -17,11 +16,11 @@ function ChangePassword() {
     defaultValues: { currentPassword: "", newPassword: "" },
     validators: { onSubmit: changePasswordSchema },
     onSubmit: async ({ value, formApi }) => {
-      const { error } = await authClient
-        .changePassword({ ...value, revokeOtherSessions: true })
-        .catch(() => ({ error: { code: undefined } }))
-      if (error) {
-        toast.error(authErrorMessage(error.code))
+      const failure = await authFailure(
+        authClient.changePassword({ ...value, revokeOtherSessions: true }),
+      )
+      if (failure) {
+        toast.error(failure)
         return
       }
       formApi.reset()

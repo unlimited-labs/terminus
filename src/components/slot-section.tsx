@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
+import { fullName } from "@/domain/schedule"
 import { errorMessage } from "@/messages.pl"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -198,9 +199,7 @@ function SlotListItem({ exam, slot, team }: { exam: ExamDetail; slot: Slot; team
       {team.length ? (
         <span className="grid min-w-0">
           {team.map((p) => (
-            <span key={p.studentNumber}>
-              {p.firstName} {p.lastName}
-            </span>
+            <span key={p.studentNumber}>{fullName(p)}</span>
           ))}
         </span>
       ) : (
