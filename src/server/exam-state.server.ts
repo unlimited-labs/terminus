@@ -5,15 +5,16 @@ import { examPhase } from "../domain/schedule.ts"
 import { answersSchema, examFieldSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
+import type { Tx } from "./exam-access.server.ts"
 
 export const parseFields = (json: unknown): ExamField[] =>
   z.array(examFieldSchema).catch([]).parse(json)
 
-export const parseAnswers = (json: unknown): Answers => answersSchema.catch({}).parse(json)
+const parseAnswers = (json: unknown): Answers => answersSchema.catch({}).parse(json)
 
-/** Pełny stan zaliczenia: ustawienia, listy, wpisy (z zapisem) i sloty. */
-export async function loadExam(examId: string) {
-  const exam = await db.exam.findUnique({
+/** Pełny stan zaliczenia: ustawienia, listy, wpisy (z zapisem) i sloty; `client` = transakcja pod blokadą. */
+export async function loadExam(examId: string, client: Tx | typeof db = db) {
+  const exam = await client.exam.findUnique({
     where: { id: examId },
     include: {
       teachers: {
@@ -26,12 +27,12 @@ export async function loadExam(examId: string) {
   })
   if (!exam) return null
   const [entries, slots] = await Promise.all([
-    db.rosterEntry.findMany({
+    client.rosterEntry.findMany({
       where: { examId },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
       select: { studentNumber: true, firstName: true, lastName: true, rosterId: true },
     }),
-    db.slot.findMany({
+    client.slot.findMany({
       where: { examId },
       orderBy: { startsAt: "asc" },
       select: { id: true, rosterId: true, startsAt: true, endsAt: true },

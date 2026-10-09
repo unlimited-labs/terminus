@@ -201,20 +201,21 @@ export function applyCommand<P extends BoardPerson, S extends BoardState<P>>(
   return { ok: true, state: { ...state, people }, inverse: result.inverse }
 }
 
+/** Pary `[przed, po]` osób zmienionych poleceniem; polecenia nie dodają ani nie usuwają osób. */
 export function changedPeople<P extends BoardPerson>(
   before: BoardState<P>,
   after: BoardState<P>,
-): P[] {
+): [P, P][] {
   const old = new Map(before.people.map((p) => [p.studentNumber, p]))
-  return after.people.filter((p) => {
+  return after.people.flatMap((p): [P, P][] => {
     const o = old.get(p.studentNumber)
-    return (
-      !o ||
-      o.slotId !== p.slotId ||
-      o.firstName !== p.firstName ||
-      o.lastName !== p.lastName ||
-      o.answers !== p.answers
-    )
+    const changed =
+      o &&
+      (o.slotId !== p.slotId ||
+        o.firstName !== p.firstName ||
+        o.lastName !== p.lastName ||
+        o.answers !== p.answers)
+    return changed ? [[o, p]] : []
   })
 }
 

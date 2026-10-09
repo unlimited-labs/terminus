@@ -15,6 +15,7 @@ export const applyBoardCommand = createServerFn({ method: "POST" })
     async ({ data, context }): Promise<Result<{ inverse: BoardCommand; exam: ExamDetail }>> => {
       const result = await runBoardCommand(data.examId, context.user.id, data.command)
       if (!result.ok) return result
-      return { ...result, exam: (await loadExam(data.examId))! }
+      const exam = await loadExam(data.examId)
+      return exam ? { ...result, exam } : { ok: false, code: "NOT_FOUND" }
     },
   )

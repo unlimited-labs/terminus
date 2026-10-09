@@ -337,10 +337,19 @@ describe("kolejka poleceń tablicy", () => {
   })
 })
 
-test("changedPeople zwraca osoby ze zmienionym slotem lub nazwiskiem", () => {
+test("changedPeople zwraca pary [przed, po] osób ze zmienionym slotem lub nazwiskiem", () => {
   const result = applyCommand(state, { kind: "swapPeople", a: "1", b: "3" })
   if (!result.ok) throw new Error(result.code)
-  expect(changedPeople(state, result.state).map((p) => p.studentNumber)).toEqual(["1", "3"])
+  const pairs = changedPeople(state, result.state).map(([prev, next]) => [
+    prev.studentNumber,
+    next.studentNumber,
+    prev.slotId,
+    next.slotId,
+  ])
+  expect(pairs).toEqual([
+    ["1", "1", slotOf(state, "1"), slotOf(state, "3")],
+    ["3", "3", slotOf(state, "3"), slotOf(state, "1")],
+  ])
 })
 
 const person = (studentNumber: string) => ({ kind: "person", studentNumber }) as const
