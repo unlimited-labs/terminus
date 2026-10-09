@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ConfirmButton } from "@/components/confirm-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -59,13 +60,14 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
               className="flex items-center gap-1 rounded-lg bg-muted px-2 py-1 text-sm"
             >
               {r.name}
-              <Button
-                variant="ghost"
-                size="xs"
-                onClick={() => removeRoster.mutate({ examId: exam.id, rosterId: r.id })}
+              <ConfirmButton
+                title={`Usunąć listę ${r.name}?`}
+                description="Znikną jej osoby i sloty. Jeśli ktoś z tej listy ma zapis, lista zostanie — najpierw przenieś albo usuń zapisy."
+                confirmLabel="Usuń listę"
+                onConfirm={() => removeRoster.mutateAsync({ examId: exam.id, rosterId: r.id })}
               >
                 Usuń listę
-              </Button>
+              </ConfirmButton>
             </li>
           ))}
         </ul>
