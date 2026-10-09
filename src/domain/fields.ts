@@ -6,6 +6,15 @@ export type AnswersCheck =
   | { ok: true; answers: Answers }
   | { ok: false; code: "MISSING_ANSWER"; labels: string[] }
 
+/** Poprawka prowadzącego: czyszczenie jak przy zapisie, bez sprawdzania wymaganych pól. */
+export function teacherAnswers(fields: ExamField[], raw: Answers): Answers {
+  const cleaned = checkAnswers(
+    fields.map((f) => ({ ...f, required: false })),
+    raw,
+  )
+  return cleaned.ok ? cleaned.answers : {}
+}
+
 /** Zostawia tylko odpowiedzi na pola zaliczenia (przycięte, niepuste); brak wymaganej = błąd. */
 export function checkAnswers(fields: ExamField[], raw: Answers): AnswersCheck {
   const answers: Answers = {}

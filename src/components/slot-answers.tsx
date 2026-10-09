@@ -3,7 +3,7 @@ import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import type { Answers, ExamField } from "@/domain/fields"
+import { teacherAnswers, type Answers, type ExamField } from "@/domain/fields"
 
 export function SlotAnswers({
   fields,
@@ -12,12 +12,12 @@ export function SlotAnswers({
 }: {
   fields: ExamField[]
   answers: Answers
-  onSave: (answers: Answers) => void
+  /** `false` = odrzucone od razu; szkic zostaje otwarty. */
+  onSave: (answers: Answers) => boolean
 }) {
   const [draft, setDraft] = useState<Answers | null>(null)
   const submit = (values: Answers) => {
-    setDraft(null)
-    onSave(values)
+    if (onSave(teacherAnswers(fields, values))) setDraft(null)
   }
 
   if (draft) {

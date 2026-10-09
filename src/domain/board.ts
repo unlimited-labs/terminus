@@ -232,14 +232,14 @@ const replay = <S extends BoardState>(state: S, commands: BoardCommand[]) =>
 
 export function enqueue<S extends BoardState>(
   queue: BoardQueue<S>,
-  shown: S,
+  current: S,
   command: BoardCommand,
 ): { ok: true; queue: NonNullable<BoardQueue<S>>; shown: S } | { ok: false; code: BoardErrorCode } {
-  const local = applyCommand(shown, command)
+  const local = applyCommand(current, command)
   if (!local.ok) return local
   return {
     ok: true,
-    queue: { server: queue?.server ?? shown, pending: [...(queue?.pending ?? []), command] },
+    queue: { server: queue?.server ?? current, pending: [...(queue?.pending ?? []), command] },
     shown: local.state,
   }
 }

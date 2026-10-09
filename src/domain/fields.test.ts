@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { checkAnswers, type ExamField } from "./fields"
+import { checkAnswers, teacherAnswers, type ExamField } from "./fields"
 
 const fields: ExamField[] = [
   { id: "title", label: "Tytuł projektu", required: true },
@@ -20,6 +20,10 @@ test("brak wymaganej odpowiedzi podaje nazwy pól", () => {
     code: "MISSING_ANSWER",
     labels: ["Tytuł projektu"],
   })
+})
+
+test("poprawka prowadzącego czyści jak zapis, ale nie wymaga pól", () => {
+  expect(teacherAnswers(fields, { title: " ", notes: " x ", other: "y" })).toEqual({ notes: "x" })
 })
 
 test("zaliczenie bez pól przyjmuje pusty zestaw", () => {

@@ -64,7 +64,7 @@ function useBoardCommand(exam: ExamDetail) {
       applyBoardCommand({ data: { examId: exam.id, command } }),
     onSuccess: (result, { command, before }) => {
       if (!result.ok) {
-        toast.error(errorMessage(result))
+        if (result.code !== "NO_CHANGE") toast.error(errorMessage(result))
         return
       }
       toast.success(doneMessage(command, before), {
@@ -90,13 +90,15 @@ function useBoardCommand(exam: ExamDetail) {
     const before = queryClient.getQueryData<ExamDetail>(key) ?? exam
     const added = enqueue(queue.current, before, command)
     if (!added.ok) {
-      if (added.code !== "NO_CHANGE") toast.error(errorMessage(added))
-      return
+      if (added.code === "NO_CHANGE") return true
+      toast.error(errorMessage(added))
+      return false
     }
     queue.current = added.queue
     void queryClient.cancelQueries({ queryKey: key })
     queryClient.setQueryData(key, added.shown)
     mutation.mutate({ command, before })
+    return true
   }
   return run
 }

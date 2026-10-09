@@ -1,5 +1,5 @@
 import { applyCommand, changedPeople, type BoardCommand } from "../domain/board.ts"
-import { checkAnswers, type Answers, type ExamField } from "../domain/fields.ts"
+import { teacherAnswers, type Answers, type ExamField } from "../domain/fields.ts"
 import type { Result } from "../messages.pl.ts"
 
 import { withExamLock, type Tx } from "./exam-access.server.ts"
@@ -65,11 +65,7 @@ async function savePerson(tx: Tx, examId: string, prev: Person, next: Person) {
 /** Prowadzący poprawia odpowiedzi bez sprawdzania wymaganych pól. */
 function withCleanAnswers(command: BoardCommand, fields: ExamField[]): BoardCommand {
   if (command.kind !== "setAnswers") return command
-  const cleaned = checkAnswers(
-    fields.map((f) => ({ ...f, required: false })),
-    command.answers,
-  )
-  return { ...command, answers: cleaned.ok ? cleaned.answers : {} }
+  return { ...command, answers: teacherAnswers(fields, command.answers) }
 }
 
 type CommandResult = Result<{ inverse: BoardCommand }>
