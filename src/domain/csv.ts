@@ -127,13 +127,14 @@ export function exportFileName(examName: string, now: Date): string {
   return `${examName.replace(/[\\/:*?"<>|]/g, "-")}_${warsawDay(now)}.csv`
 }
 
-type ExportSlot = { id: string; startsAt: Date; endsAt: Date; answers?: Record<string, string> }
+type ExportSlot = { id: string; startsAt: Date; endsAt: Date }
 type ExportPerson = {
   studentNumber: string
   firstName: string
   lastName: string
   rosterName: string
   slotId: string | null
+  answers?: Record<string, string>
 }
 
 /** Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu; potem kolumny dodatkowych pól. */
@@ -157,7 +158,7 @@ export function buildExportCsv(
         p.studentNumber,
         p.lastName,
         p.firstName,
-        ...fields.map((f) => slot?.answers?.[f.id] ?? ""),
+        ...fields.map((f) => p.answers?.[f.id] ?? ""),
       ]
     })
   return (

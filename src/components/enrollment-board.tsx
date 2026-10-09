@@ -1,5 +1,5 @@
 import { DragDropProvider, type DragEndEvent } from "@dnd-kit/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useIsMutating, useMutation, useQueryClient } from "@tanstack/react-query"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -9,11 +9,18 @@ import { CapacitySummary } from "@/components/slot-section"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { applyCommand, dropCommand, parseDragId, type BoardCommand } from "@/domain/board"
+import {
+  dropCommand,
+  enqueue,
+  parseDragId,
+  settle,
+  type BoardCommand,
+  type BoardQueue,
+} from "@/domain/board"
 import { examCounts } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
-import { applyBoardCommand, boardMutationKey } from "@/server/board"
+import { applyBoardCommand } from "@/server/board"
 import { examChangeKeys, examQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
 
@@ -24,6 +31,7 @@ const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
   rename: "Zmieniono imię i nazwisko.",
   unenrollTeam: "Usunięto zapis zespołu.",
   enrollTeam: "Przywrócono zespół.",
+  setAnswers: "Zapisano odpowiedzi zespołu.",
 }
 
 function doneMessage(command: BoardCommand, exam: ExamDetail) {
@@ -33,77 +41,62 @@ function doneMessage(command: BoardCommand, exam: ExamDetail) {
   return before?.slotId === null ? "Zapisano ręcznie." : DONE_MESSAGES.move
 }
 
-const replay = (state: ExamDetail, commands: BoardCommand[]) =>
-  commands.reduce((s, c) => {
-    const next = applyCommand(s, c)
-    return next.ok ? next.state : s
-  }, state)
+/** Klucz poleceń tablicy: kolejka (scope) i wstrzymanie odświeżania w trakcie. */
+const boardMutationKey = (examId: string) => ["board", examId]
+
+export const useBoardBusy = (examId: string) =>
+  useIsMutating({ mutationKey: boardMutationKey(examId) }) > 0
 
 /**
- * Polecenia idą do serwera po kolei (wspólny `scope`). Po każdym tablica = ostatni znany stan
- * z serwera + optymistycznie polecenia wciąż w kolejce; nieudane polecenie po prostu znika.
+ * Polecenia idą do serwera po kolei (wspólny `scope`); tablica pokazuje stan z kolejki
+ * (`enqueue`/`settle` w domain/board), a po opróżnieniu kolejki odświeża zaliczenie.
  */
 function useBoardCommand(exam: ExamDetail) {
   const queryClient = useQueryClient()
   const key = examQuery(exam.id).queryKey
   const mutationKey = boardMutationKey(exam.id)
-  const server = useRef<ExamDetail | undefined>(undefined)
-  const pending = useRef<BoardCommand[]>([])
-
-  const queued = (except: BoardCommand) => pending.current.filter((c) => c !== except)
-  const show = (latest: ExamDetail | undefined, settled: BoardCommand) => {
-    if (latest) server.current = latest
-    if (server.current) queryClient.setQueryData(key, replay(server.current, queued(settled)))
-  }
+  const queue = useRef<BoardQueue<ExamDetail>>(null)
 
   const mutation = useMutation({
     mutationKey,
     scope: { id: mutationKey.join(":") },
-    mutationFn: (command: BoardCommand) =>
+    mutationFn: ({ command }: { command: BoardCommand; before: ExamDetail }) =>
       applyBoardCommand({ data: { examId: exam.id, command } }),
-    onMutate: async (command) => {
-      await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<ExamDetail>(key)
-      if (pending.current.length === 0) server.current = previous
-      pending.current.push(command)
-      if (previous) queryClient.setQueryData(key, replay(previous, [command]))
-      return { previous }
-    },
-    onSuccess: (result, command, context) => {
+    onSuccess: (result, { command, before }) => {
       if (!result.ok) {
-        show(undefined, command)
         toast.error(errorMessage(result))
         return
       }
-      show(result.exam, command)
-      toast.success(
-        context.previous ? doneMessage(command, context.previous) : DONE_MESSAGES[command.kind],
-        {
-          action: { label: "Cofnij", onClick: () => mutation.mutate(result.inverse) },
-          duration: 6000,
-        },
-      )
+      toast.success(doneMessage(command, before), {
+        action: { label: "Cofnij", onClick: () => run(result.inverse) },
+        duration: 6000,
+      })
     },
-    onError: (error, command) => {
+    onError: (error) => {
       console.error(error)
-      show(undefined, command)
       toast.error(UNEXPECTED_ERROR)
     },
-    onSettled: (_result, _error, command) => {
-      pending.current = queued(command)
-      if (pending.current.length > 0) return
+    onSettled: (result, _error, { command }) => {
+      const settled = settle(queue.current!, command, result?.ok ? result.exam : undefined)
+      queue.current = settled.queue
+      queryClient.setQueryData(key, settled.shown)
+      if (settled.queue) return
       for (const queryKey of examChangeKeys(exam.id))
         void queryClient.invalidateQueries({ queryKey })
     },
   })
 
-  const run = (command: BoardCommand) => {
-    const local = applyCommand(exam, command)
-    if (!local.ok) {
-      if (local.code !== "NO_CHANGE") toast.error(errorMessage(local))
+  function run(command: BoardCommand) {
+    const before = queryClient.getQueryData<ExamDetail>(key) ?? exam
+    const added = enqueue(queue.current, before, command)
+    if (!added.ok) {
+      if (added.code !== "NO_CHANGE") toast.error(errorMessage(added))
       return
     }
-    mutation.mutate(command)
+    queue.current = added.queue
+    void queryClient.cancelQueries({ queryKey: key })
+    queryClient.setQueryData(key, added.shown)
+    mutation.mutate({ command, before })
   }
   return run
 }
@@ -127,7 +120,6 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   }
 
   const { enrolled, freeSlots } = examCounts(exam, exam.now)
-  const taken = new Set(exam.people.map((p) => p.slotId))
 
   return (
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>
@@ -164,11 +156,12 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                   const day = warsawDay(slot.startsAt)
                   const prev = exam.slots[i - 1]
                   const firstOfDay = !prev || warsawDay(prev.startsAt) !== day
+                  const team = exam.people.filter((p) => p.slotId === slot.id)
                   return (
                     <BoardSlotRow
                       key={slot.id}
                       slot={slot}
-                      team={exam.people.filter((p) => p.slotId === slot.id)}
+                      team={team}
                       dayLabel={firstOfDay ? formatDayShort(slot.startsAt) : null}
                       rosterName={multi ? rosterName.get(slot.rosterId) : undefined}
                       maxTeamSize={exam.maxTeamSize}
@@ -176,12 +169,13 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                       highlight={highlight}
                       onCommand={run}
                       extra={
-                        exam.fields.length > 0 && slot.answers && taken.has(slot.id) ? (
+                        exam.fields.length > 0 && team[0] ? (
                           <SlotAnswers
-                            examId={exam.id}
-                            slotId={slot.id}
                             fields={exam.fields}
-                            answers={slot.answers}
+                            answers={team[0].answers}
+                            onSave={(answers) =>
+                              run({ kind: "setAnswers", slotId: slot.id, answers })
+                            }
                           />
                         ) : null
                       }

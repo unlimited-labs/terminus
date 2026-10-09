@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { runBoardCommand, setSlotAnswers } from "@/server/board-ops.server"
+import { runBoardCommand } from "@/server/board-ops.server"
 import { db } from "@/server/db.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
@@ -57,11 +57,25 @@ test("na tablicy: dołączający dostaje w bazie odpowiedzi zespołu; poprawka o
   })
   expect(await answersOf("2")).toEqual({ title: "Robot" })
 
-  expect(
-    await setSlotAnswers(examId, teacherId, first.slotId, { title: "Dron", notes: "spóźni się" }),
-  ).toEqual({ ok: true })
+  const edited = await runBoardCommand(examId, teacherId, {
+    kind: "setAnswers",
+    slotId: first.slotId,
+    answers: { title: " Dron ", notes: "spóźni się", unknown: "x" },
+  })
+  expect(edited).toMatchObject({
+    ok: true,
+    inverse: { kind: "setAnswers", answers: { title: "Robot" } },
+  })
   expect(await answersOf("1")).toEqual({ title: "Dron", notes: "spóźni się" })
   expect(await answersOf("2")).toEqual({ title: "Dron", notes: "spóźni się" })
+
+  expect(
+    await runBoardCommand(examId, teacherId, {
+      kind: "setAnswers",
+      slotId: first.slotId,
+      answers: { title: "Dron ", notes: "spóźni się" },
+    }),
+  ).toEqual({ ok: false, code: "NO_CHANGE" })
 })
 
 test("Cofnij po wypisaniu całego zespołu (osoba po osobie) przywraca odpowiedzi", async () => {

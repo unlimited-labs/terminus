@@ -25,8 +25,7 @@ const boardCommandSchema = z.discriminatedUnion("kind", [
     studentNumbers: z.array(studentNumber).min(1),
     answers: answersSchema.optional(),
   }),
+  z.object({ kind: z.literal("setAnswers"), slotId: z.uuid(), answers: answersSchema }),
 ])
 
 export const boardInputSchema = examIdSchema.extend({ command: boardCommandSchema })
-
-export const slotAnswersSchema = examIdSchema.extend({ slotId: z.uuid(), answers: answersSchema })

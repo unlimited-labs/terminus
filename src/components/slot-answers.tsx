@@ -1,31 +1,24 @@
 import { PencilIcon } from "lucide-react"
 import { useState } from "react"
-import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useResultMutation } from "@/components/use-result-mutation"
 import type { Answers, ExamField } from "@/domain/fields"
-import { updateSlotAnswers } from "@/server/board"
-import { examChangeKeys } from "@/server/exams"
 
 export function SlotAnswers({
-  examId,
-  slotId,
   fields,
   answers,
+  onSave,
 }: {
-  examId: string
-  slotId: string
   fields: ExamField[]
   answers: Answers
+  onSave: (answers: Answers) => void
 }) {
   const [draft, setDraft] = useState<Answers | null>(null)
-  const save = useResultMutation(updateSlotAnswers, examChangeKeys(examId), () => {
+  const submit = (values: Answers) => {
     setDraft(null)
-    toast.success("Zapisano odpowiedzi zespołu.")
-  })
-  const submit = (values: Answers) => save.mutate({ examId, slotId, answers: values })
+    onSave(values)
+  }
 
   if (draft) {
     const onKeyDown = (e: React.KeyboardEvent) => {
@@ -45,7 +38,7 @@ export function SlotAnswers({
             className="h-7 w-48"
           />
         ))}
-        <Button size="xs" disabled={save.isPending} onClick={() => submit(draft)}>
+        <Button size="xs" onClick={() => submit(draft)}>
           Zapisz
         </Button>
       </div>

@@ -1,8 +1,7 @@
-import { useIsMutating, useSuspenseQuery } from "@tanstack/react-query"
+import { useSuspenseQuery } from "@tanstack/react-query"
 import { Link, createFileRoute } from "@tanstack/react-router"
 
-import { EnrollmentBoard } from "@/components/enrollment-board"
-import { boardMutationKey } from "@/server/board"
+import { EnrollmentBoard, useBoardBusy } from "@/components/enrollment-board"
 import { examQuery } from "@/server/exams"
 
 import { loadExam } from "./-load-exam"
@@ -17,7 +16,7 @@ export const Route = createFileRoute("/_authed/zaliczenia/$examId/tablica")({
 
 function BoardPage() {
   const { examId } = Route.useParams()
-  const mutating = useIsMutating({ mutationKey: boardMutationKey(examId) }) > 0
+  const mutating = useBoardBusy(examId)
   const { data: exam } = useSuspenseQuery({
     ...examQuery(examId),
     refetchInterval: mutating ? false : 30_000,

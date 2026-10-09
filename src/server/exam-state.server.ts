@@ -37,8 +37,7 @@ export async function loadExam(examId: string) {
       select: { id: true, rosterId: true, startsAt: true, endsAt: true },
     }),
   ])
-  const slotOf = new Map(exam.enrollments.map((e) => [e.studentNumber, e.slotId]))
-  const slotAnswers = new Map(exam.enrollments.map((e) => [e.slotId, parseAnswers(e.answers)]))
+  const enrollmentOf = new Map(exam.enrollments.map((e) => [e.studentNumber, e]))
   const now = new Date()
   const lastSlotEnd = slots.reduce<Date | null>((m, s) => (!m || s.endsAt > m ? s.endsAt : m), null)
   return {
@@ -51,8 +50,15 @@ export async function loadExam(examId: string) {
     enrollmentOpensAt: exam.enrollmentOpensAt,
     fields: parseFields(exam.fields),
     rosters: exam.rosters,
-    slots: slots.map((s) => ({ ...s, answers: slotAnswers.get(s.id) ?? {} })),
-    people: entries.map((e) => ({ ...e, slotId: slotOf.get(e.studentNumber) ?? null })),
+    slots,
+    people: entries.map((e) => {
+      const enrollment = enrollmentOf.get(e.studentNumber)
+      return {
+        ...e,
+        slotId: enrollment?.slotId ?? null,
+        answers: parseAnswers(enrollment?.answers),
+      }
+    }),
     phase: examPhase(
       { entries: entries.length, lastSlotEnd, opensAt: exam.enrollmentOpensAt },
       now,

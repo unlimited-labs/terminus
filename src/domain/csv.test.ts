@@ -129,7 +129,6 @@ test("buildExportCsv: formuły w odpowiedziach, nazwiskach i etykietach nie wyko
     id: "s1",
     startsAt: new Date("2026-10-05T07:00:00Z"),
     endsAt: new Date("2026-10-05T07:30:00Z"),
-    answers: { f1: '=HYPERLINK("http://evil.com","x")' },
   }
   const person = {
     studentNumber: "1",
@@ -137,6 +136,7 @@ test("buildExportCsv: formuły w odpowiedziach, nazwiskach i etykietach nie wyko
     lastName: "-b",
     rosterName: "g1",
     slotId: "s1",
+    answers: { f1: '=HYPERLINK("http://evil.com","x")' },
   }
   const csv = buildExportCsv([slot], [person], [{ id: "f1", label: "+pole" }])
   expect(csv).not.toMatch(/(^|;|\n)"[=+\-@]/)
@@ -185,11 +185,17 @@ test("buildExportCsv: dodatkowe pola zespołu jako kolumny po imieniu", () => {
       id: "s1",
       startsAt: new Date("2026-10-05T07:00:00Z"),
       endsAt: new Date("2026-10-05T07:30:00Z"),
-      answers: { title: "Robot" },
     },
   ]
   const people = [
-    { studentNumber: "1", firstName: "Jan", lastName: "Żak", rosterName: "g1", slotId: "s1" },
+    {
+      studentNumber: "1",
+      firstName: "Jan",
+      lastName: "Żak",
+      rosterName: "g1",
+      slotId: "s1",
+      answers: { title: "Robot" },
+    },
   ]
   const fields = [
     { id: "title", label: "Tytuł projektu" },

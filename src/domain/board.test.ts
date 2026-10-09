@@ -4,8 +4,11 @@ import {
   applyCommand,
   changedPeople,
   dropCommand,
+  enqueue,
   parseDragId,
+  settle,
   type BoardCommand,
+  type BoardQueue,
   type BoardState,
 } from "./board"
 import type { Answers } from "./fields"
@@ -101,6 +104,34 @@ describe("applyCommand", () => {
         { t: "Robot" },
         { t: "Dron" },
       ])
+    })
+
+    test("zmiana odpowiedzi zespołu dotyczy całego zespołu; Cofnij przywraca poprzednie", () => {
+      const result = applyCommand(answered, {
+        kind: "setAnswers",
+        slotId: "s1",
+        answers: { t: "Łazik" },
+      })
+      if (!result.ok) throw new Error(result.code)
+      expect([
+        answersOf(result.state, "1"),
+        answersOf(result.state, "2"),
+        answersOf(result.state, "3"),
+      ]).toEqual([{ t: "Łazik" }, { t: "Łazik" }, { t: "Dron" }])
+      expect(result.inverse).toEqual({ kind: "setAnswers", slotId: "s1", answers: { t: "Robot" } })
+    })
+
+    test("zmiana odpowiedzi: pusty slot, te same odpowiedzi, nieznany slot", () => {
+      const cases: [string, Answers, string][] = [
+        ["s3", { t: "x" }, "NOT_ENROLLED"],
+        ["s1", { t: "Robot" }, "NO_CHANGE"],
+        ["x", { t: "x" }, "SLOT_NOT_FOUND"],
+      ]
+      for (const [slotId, answers, code] of cases)
+        expect(applyCommand(answered, { kind: "setAnswers", slotId, answers })).toEqual({
+          ok: false,
+          code,
+        })
     })
 
     test("Cofnij wypisania osoby, gdy jej zespół istnieje: odpowiedzi zespołu wygrywają", () => {
@@ -226,6 +257,83 @@ describe("applyCommand", () => {
       lastName: "Nowa",
     })
     expect(next.people[0]).toMatchObject({ firstName: "Ania", lastName: "Nowa" })
+  })
+})
+
+function queued(...commands: BoardCommand[]) {
+  let queue: BoardQueue<BoardState> = null
+  let shown: BoardState = state
+  for (const command of commands) {
+    const added: ReturnType<typeof enqueue<BoardState>> = enqueue(queue, shown, command)
+    if (!added.ok) throw new Error(added.code)
+    queue = added.queue
+    shown = added.shown
+  }
+  return { queue: queue!, shown }
+}
+
+describe("kolejka poleceń tablicy", () => {
+  const toS3: BoardCommand = { kind: "move", studentNumber: "4", toSlotId: "s3" }
+  const alsoS3: BoardCommand = { kind: "move", studentNumber: "3", toSlotId: "s3" }
+
+  test("dodane polecenie widać od razu", () => {
+    expect(slotOf(queued(toS3).shown, "4")).toBe("s3")
+  })
+
+  test("polecenie odrzucone od razu nie trafia do kolejki", () => {
+    expect(enqueue(null, state, { kind: "move", studentNumber: "3", toSlotId: "s1" })).toEqual({
+      ok: false,
+      code: "SLOT_FULL",
+    })
+  })
+
+  test("nieudane pierwsze z dwóch: widać stan sprzed kolejki z drugim poleceniem", () => {
+    const { queue } = queued(toS3, alsoS3)
+    const after = settle(queue, toS3)
+    expect([slotOf(after.shown, "4"), slotOf(after.shown, "3")]).toEqual([null, "s3"])
+    expect(after.queue?.pending).toEqual([alsoS3])
+  })
+
+  test("stan z serwera w trakcie kolejki: reszta poleceń nałożona na niego", () => {
+    const { queue } = queued(toS3, alsoS3)
+    const server = applyOk(applyOk(state, toS3), {
+      kind: "rename",
+      studentNumber: "1",
+      firstName: "Ania",
+      lastName: "A",
+    })
+    const after = settle(queue, toS3, server)
+    expect(slotOf(after.shown, "3")).toBe("s3")
+    expect(after.shown.people[0]!.firstName).toBe("Ania")
+  })
+
+  test("ostatnie rozliczone polecenie opróżnia kolejkę", () => {
+    const { queue } = queued(toS3)
+    const server = applyOk(state, toS3)
+    expect(settle(queue, toS3, server)).toEqual({ queue: null, shown: server })
+  })
+
+  test("Cofnij po nieudanym poleceniu wraca do stanu sprzed udanego", () => {
+    const { queue } = queued(toS3, alsoS3)
+    const done = applyCommand(state, toS3)
+    if (!done.ok) throw new Error(done.code)
+    const afterOk = settle(queue, toS3, done.state)
+    const afterFail = settle(afterOk.queue!, alsoS3)
+    expect(afterFail.queue).toBeNull()
+    const undo = enqueue(afterFail.queue, afterFail.shown, done.inverse)
+    if (!undo.ok) throw new Error(undo.code)
+    expect(undo.shown).toEqual(state)
+  })
+
+  test("zmiana odpowiedzi w trakcie przesuwania obejmuje dołączającego", () => {
+    const join: BoardCommand = { kind: "move", studentNumber: "4", toSlotId: "s2" }
+    const edit: BoardCommand = { kind: "setAnswers", slotId: "s2", answers: { t: "Dron" } }
+    const { queue } = queued(join, edit)
+    const after = settle(queue, join, applyOk(state, join))
+    expect([answersOf(after.shown, "3"), answersOf(after.shown, "4")]).toEqual([
+      { t: "Dron" },
+      { t: "Dron" },
+    ])
   })
 })
 

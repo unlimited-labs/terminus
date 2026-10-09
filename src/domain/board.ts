@@ -22,6 +22,7 @@ export type BoardCommand =
   | { kind: "rename"; studentNumber: string; firstName: string; lastName: string }
   | { kind: "unenrollTeam"; slotId: string }
   | { kind: "enrollTeam"; slotId: string; studentNumbers: string[]; answers?: Answers }
+  | { kind: "setAnswers"; slotId: string; answers: Answers }
 
 export type BoardErrorCode =
   | "SLOT_FULL"
@@ -141,6 +142,24 @@ function enrollTeam<P extends BoardPerson>(s: BoardState<P>, c: Command<"enrollT
   }
 }
 
+const sameAnswers = (a: Answers = {}, b: Answers = {}) =>
+  Object.keys(a).length === Object.keys(b).length && Object.keys(a).every((k) => a[k] === b[k])
+
+function setAnswers<P extends BoardPerson>(
+  s: BoardState<P>,
+  { slotId, answers }: Command<"setAnswers">,
+): Step<P> {
+  if (!hasSlot(s, slotId)) return "SLOT_NOT_FOUND"
+  const team = s.people.filter((p) => p.slotId === slotId)
+  if (team.length === 0) return "NOT_ENROLLED"
+  const previous = team[0]!.answers ?? {}
+  if (sameAnswers(previous, answers)) return "NO_CHANGE"
+  return {
+    people: s.people.map((q) => (q.slotId === slotId ? { ...q, answers } : q)),
+    inverse: { kind: "setAnswers", slotId, answers: previous },
+  }
+}
+
 function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P> {
   switch (c.kind) {
     case "move":
@@ -155,6 +174,8 @@ function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P>
       return unenrollTeam(s, c)
     case "enrollTeam":
       return enrollTeam(s, c)
+    case "setAnswers":
+      return setAnswers(s, c)
   }
 }
 
@@ -187,8 +208,51 @@ export function changedPeople<P extends BoardPerson>(
   const old = new Map(before.people.map((p) => [p.studentNumber, p]))
   return after.people.filter((p) => {
     const o = old.get(p.studentNumber)
-    return !o || o.slotId !== p.slotId || o.firstName !== p.firstName || o.lastName !== p.lastName
+    return (
+      !o ||
+      o.slotId !== p.slotId ||
+      o.firstName !== p.firstName ||
+      o.lastName !== p.lastName ||
+      o.answers !== p.answers
+    )
   })
+}
+
+/**
+ * Polecenia wysłane, a jeszcze bez odpowiedzi serwera, nad ostatnim znanym stanem serwera;
+ * `null` = nic nie czeka. Polecenie jest rozpoznawane po tożsamości obiektu.
+ */
+export type BoardQueue<S> = { server: S; pending: BoardCommand[] } | null
+
+const replay = <S extends BoardState>(state: S, commands: BoardCommand[]) =>
+  commands.reduce((s, c) => {
+    const next = applyCommand(s, c)
+    return next.ok ? next.state : s
+  }, state)
+
+export function enqueue<S extends BoardState>(
+  queue: BoardQueue<S>,
+  shown: S,
+  command: BoardCommand,
+): { ok: true; queue: NonNullable<BoardQueue<S>>; shown: S } | { ok: false; code: BoardErrorCode } {
+  const local = applyCommand(shown, command)
+  if (!local.ok) return local
+  return {
+    ok: true,
+    queue: { server: queue?.server ?? shown, pending: [...(queue?.pending ?? []), command] },
+    shown: local.state,
+  }
+}
+
+/** Serwer odpowiedział na `command`: `latest` po sukcesie, bez niego przy porażce. */
+export function settle<S extends BoardState>(
+  queue: NonNullable<BoardQueue<S>>,
+  command: BoardCommand,
+  latest?: S,
+): { queue: BoardQueue<S>; shown: S } {
+  const server = latest ?? queue.server
+  const pending = queue.pending.filter((c) => c !== command)
+  return { queue: pending.length > 0 ? { server, pending } : null, shown: replay(server, pending) }
 }
 
 /** Co przeciągnięto i na co upuszczono na tablicy. */
