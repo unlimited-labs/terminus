@@ -11,7 +11,7 @@ const env = {
   ...process.env,
   DATABASE_URL: container.getConnectionUri(),
   BETTER_AUTH_SECRET: "e2e-secret-e2e-secret-e2e-secret-e2e",
-  BETTER_AUTH_URL: E2E.baseURL,
+  APP_PUBLIC_URL: E2E.baseURL,
   ADMIN_EMAIL: E2E.admin.email,
   ADMIN_PASSWORD: E2E.admin.password,
   ADMIN_NAME: E2E.admin.name,

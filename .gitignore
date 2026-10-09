@@ -1,21 +1,29 @@
+# zależności i build
 node_modules
-.DS_Store
 dist
-dist-ssr
-*.local
-.env*
+.output
 .nitro
 .tanstack
-.wrangler
-.output
-.vinxi
-__unconfig*
-todos.json
-
-# typescript
-*.tsbuildinfo
-!.env.example
 src/generated
+*.tsbuildinfo
+
+# środowisko
+.env*
+!.env.example
+*.local
+
+# testy
 test-results
 playwright-report
 e2e/.state.json
+
+# narzędzia
+.fallow
+.DS_Store
+
+# asystenci AI (lokalnie, poza repo)
+.claude/
+CLAUDE.md
+AGENTS.md
+.scratch/
+docs/agents/

@@ -1,8 +1,7 @@
 # Terminus — zapisy na zaliczenia: specyfikacja
 
-Status: gotowa do budowy (2026-09-30). Słownik pojęć: `CONTEXT.md`. Historia
-decyzji i ich uzasadnienia: `.scratch/zapisy/map.md` i zadania w
-`.scratch/zapisy/issues/`. Decyzja architektoniczna: `docs/adr/0001-prisma-7-zamiast-8.md`.
+Status: gotowa do budowy (2026-09-30). Słownik pojęć: `CONTEXT.md`. Decyzja
+architektoniczna: `docs/adr/0001-prisma-7-zamiast-8.md`.
 
 ## 1. Cel
 
@@ -421,8 +420,7 @@ src/
 
 ## 9. Wygląd
 
-Kierunek "Przyjazny" (prototyp `.scratch/zapisy/prototypes/kierunek-wizualny.html`,
-wariant C), jako zmienne motywu shadcn/ui:
+Kierunek "Przyjazny", jako zmienne motywu shadcn/ui:
 
 | Rola | Kolor |
 |---|---|
@@ -442,10 +440,6 @@ wariant C), jako zmienne motywu shadcn/ui:
   przerywana linia nad składem zespołu — jedyne "głośne" miejsce.
 - Wolny slot: biała karta z miętowym obramowaniem; zajęty: jasny fiolet.
 - Bez trybu ciemnego.
-- Układ ekranów studenta i tablicy: prototypy
-  `.scratch/zapisy/prototypes/strona-studenta.html` (wariant B)
-  i `tablica-prowadzacego.html` (wariant C, bez list "Przenieś do…") — wiążące
-  są opisy w tej specyfikacji, nie kod prototypów.
 
 ## 10. Stos i wersje
 
@@ -533,7 +527,7 @@ Node 24 (LTS) w obrazie i lokalnie; menedżer pakietów pnpm.
   `reset-password` oraz `HEALTHCHECK` na stronę logowania.
 - Env (walidowane przez t3-env; brak = aplikacja nie startuje), `.env` na VPS
   poza repo, `.env.example` w repo: `IMAGE`, `IMAGE_TAG`, `PROXY_NETWORK`, `DB_NETWORK`, `DATABASE_URL`,
-  `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
+  `BETTER_AUTH_SECRET`, `APP_PUBLIC_URL`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
   `ADMIN_NAME`, `PORT` (3000), `TZ` (`Europe/Warsaw`).
 
 ## 13. Kolejność budowy

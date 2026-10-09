@@ -8,7 +8,7 @@ import appCss from "../styles.css?url"
 
 // og:image musi mieć pełny adres; crawlery czytają tylko HTML z serwera.
 const origin = createIsomorphicFn()
-  .server(() => process.env.BETTER_AUTH_URL ?? "")
+  .server(() => process.env.APP_PUBLIC_URL ?? "")
   .client(() => window.location.origin)
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
