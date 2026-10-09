@@ -53,13 +53,13 @@ http://localhost:3000.
 
 ## Polecenia
 
-| Polecenie | Opis |
-| --- | --- |
-| `pnpm dev` | Serwer deweloperski |
-| `pnpm check` | Lint, formatowanie, kontrola typów, testy jednostkowe i bazodanowe, build |
-| `pnpm e2e` | Testy end-to-end (Playwright) |
-| `pnpm db:up` / `pnpm db:down` | Uruchomienie i zatrzymanie lokalnej bazy |
-| `pnpm reset-password <email>` | Nowe hasło dla konta prowadzącego |
+| Polecenie                     | Opis                                                                      |
+| ----------------------------- | ------------------------------------------------------------------------- |
+| `pnpm dev`                    | Serwer deweloperski                                                       |
+| `pnpm check`                  | Lint, formatowanie, kontrola typów, testy jednostkowe i bazodanowe, build |
+| `pnpm e2e`                    | Testy end-to-end (Playwright)                                             |
+| `pnpm db:up` / `pnpm db:down` | Uruchomienie i zatrzymanie lokalnej bazy                                  |
+| `pnpm reset-password <email>` | Nowe hasło dla konta prowadzącego                                         |
 
 ## Technologie
 
