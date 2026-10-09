@@ -22,6 +22,8 @@ const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
   swapPeople: "Zamieniono sloty dwóch osób.",
   swapSlots: "Przeniesiono zespół.",
   rename: "Zmieniono imię i nazwisko.",
+  unenrollTeam: "Usunięto zapis zespołu.",
+  enrollTeam: "Przywrócono zespół.",
 }
 
 function doneMessage(command: BoardCommand, exam: ExamDetail) {

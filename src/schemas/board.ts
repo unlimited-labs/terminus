@@ -18,6 +18,13 @@ const boardCommandSchema = z.discriminatedUnion("kind", [
     firstName: personName("imię"),
     lastName: personName("nazwisko"),
   }),
+  z.object({ kind: z.literal("unenrollTeam"), slotId: z.uuid() }),
+  z.object({
+    kind: z.literal("enrollTeam"),
+    slotId: z.uuid(),
+    studentNumbers: z.array(studentNumber).min(1),
+    answers: answersSchema.optional(),
+  }),
 ])
 
 export const boardInputSchema = examIdSchema.extend({ command: boardCommandSchema })

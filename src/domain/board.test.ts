@@ -143,6 +143,24 @@ describe("applyCommand", () => {
     })
   })
 
+  test("wypisanie całego zespołu; Cofnij wraca z odpowiedziami", () => {
+    const withAnswers: BoardState = {
+      ...state,
+      people: state.people.map((p) => (p.slotId === "s1" ? { ...p, answers: { t: "R" } } : p)),
+    }
+    const next = applyOk(withAnswers, { kind: "unenrollTeam", slotId: "s1" })
+    expect([slotOf(next, "1"), slotOf(next, "2"), slotOf(next, "3")]).toEqual([null, null, "s2"])
+    expect(applyCommand(state, { kind: "unenrollTeam", slotId: "s3" })).toEqual({
+      ok: false,
+      code: "NO_CHANGE",
+    })
+  })
+
+  test("przywrócenie zespołu tylko do pustego slotu", () => {
+    const back: BoardCommand = { kind: "enrollTeam", slotId: "s2", studentNumbers: ["4"] }
+    expect(applyCommand(state, back)).toEqual({ ok: false, code: "SLOT_FULL" })
+  })
+
   test("zmiana imienia i nazwiska", () => {
     const next = applyOk(state, {
       kind: "rename",
@@ -204,6 +222,9 @@ describe("dropCommand", () => {
       b: "s2",
     })
     expect(dropCommand(team("s1"), person("2"), state.people)).toBeNull()
-    expect(dropCommand(team("s1"), { kind: "pool" }, state.people)).toBeNull()
+    expect(dropCommand(team("s1"), { kind: "pool" }, state.people)).toEqual({
+      kind: "unenrollTeam",
+      slotId: "s1",
+    })
   })
 })

@@ -52,6 +52,13 @@ describe("runBoardCommand", () => {
     if (!removed.ok) throw new Error(removed.code)
     await run(removed.inverse)
     expect(await slotOf("1")).toBe(s3)
+
+    await run({ kind: "move", studentNumber: "2", toSlotId: s3 })
+    const team = await run({ kind: "unenrollTeam", slotId: s3 })
+    expect([await slotOf("1"), await slotOf("2")]).toEqual([null, null])
+    if (!team.ok) throw new Error(team.code)
+    await run(team.inverse)
+    expect([await slotOf("1"), await slotOf("2")]).toEqual([s3, s3])
   })
 
   test("pełny slot odrzucony; przeniesienie do slotu cudzej listy dozwolone", async () => {

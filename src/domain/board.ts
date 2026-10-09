@@ -20,6 +20,8 @@ export type BoardCommand =
   | { kind: "swapPeople"; a: string; b: string }
   | { kind: "swapSlots"; a: string; b: string }
   | { kind: "rename"; studentNumber: string; firstName: string; lastName: string }
+  | { kind: "unenrollTeam"; slotId: string }
+  | { kind: "enrollTeam"; slotId: string; studentNumbers: string[]; answers?: Answers }
 
 export type BoardErrorCode =
   | "SLOT_FULL"
@@ -102,6 +104,43 @@ function rename<P extends BoardPerson>(s: BoardState<P>, c: Command<"rename">): 
   }
 }
 
+function unenrollTeam<P extends BoardPerson>(
+  s: BoardState<P>,
+  { slotId }: Command<"unenrollTeam">,
+): Step<P> {
+  if (!hasSlot(s, slotId)) return "SLOT_NOT_FOUND"
+  const team = s.people.filter((p) => p.slotId === slotId)
+  if (team.length === 0) return "NO_CHANGE"
+  const answers = team[0]!.answers
+  return {
+    people: s.people.map((q) => (q.slotId === slotId ? { ...q, slotId: null } : q)),
+    inverse: {
+      kind: "enrollTeam",
+      slotId,
+      studentNumbers: team.map((p) => p.studentNumber),
+      ...(answers && { answers }),
+    },
+  }
+}
+
+/** Cofnięcie wypisania zespołu: wraca tylko do pustego slotu, więc odwrotność jest dokładna. */
+function enrollTeam<P extends BoardPerson>(s: BoardState<P>, c: Command<"enrollTeam">): Step<P> {
+  if (!hasSlot(s, c.slotId)) return "SLOT_NOT_FOUND"
+  const team = c.studentNumbers.map((n) => findPerson(s, n))
+  if (team.some((p) => !p)) return "PERSON_NOT_FOUND"
+  if (team.some((p) => p!.slotId !== null)) return "NO_CHANGE"
+  if (teamSize(s, c.slotId) > 0 || team.length > s.maxTeamSize) return "SLOT_FULL"
+  const joining = new Set(c.studentNumbers)
+  return {
+    people: s.people.map((q) =>
+      joining.has(q.studentNumber)
+        ? { ...q, slotId: c.slotId, ...(c.answers && { answers: c.answers }) }
+        : q,
+    ),
+    inverse: { kind: "unenrollTeam", slotId: c.slotId },
+  }
+}
+
 function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P> {
   switch (c.kind) {
     case "move":
@@ -112,6 +151,10 @@ function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P>
       return swapSlots(s, c)
     case "rename":
       return rename(s, c)
+    case "unenrollTeam":
+      return unenrollTeam(s, c)
+    case "enrollTeam":
+      return enrollTeam(s, c)
   }
 }
 
@@ -161,6 +204,7 @@ export function dropCommand(
     return null
   }
   if (source.kind !== "team") return null
+  if (target.kind === "pool") return { kind: "unenrollTeam", slotId: source.slotId }
   const to =
     target.kind === "slot"
       ? target.slotId

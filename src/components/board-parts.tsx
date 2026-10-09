@@ -1,5 +1,5 @@
 import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
-import { GripVerticalIcon, PencilIcon } from "lucide-react"
+import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -96,6 +96,20 @@ function PersonTile({
           className="text-muted-foreground"
         >
           <PencilIcon className="size-3.5" />
+        </Button>
+      )}
+      {!unenrolled && (
+        <Button
+          variant="ghost"
+          size="icon-xs"
+          aria-label={`Usuń zapis: ${person.firstName} ${person.lastName}`}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={() =>
+            onCommand({ kind: "move", studentNumber: person.studentNumber, toSlotId: null })
+          }
+          className="text-muted-foreground hover:text-destructive"
+        >
+          <Trash2Icon className="size-3.5" />
         </Button>
       )}
     </div>
@@ -254,6 +268,17 @@ export function BoardSlotRow({
           <span className="font-semibold tabular-nums">
             {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
           </span>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            disabled={team.length === 0}
+            aria-label={`Usuń zapis całego zespołu: ${label}`}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={() => onCommand({ kind: "unenrollTeam", slotId: slot.id })}
+            className="text-muted-foreground hover:text-destructive disabled:invisible"
+          >
+            <Trash2Icon className="size-4" />
+          </Button>
         </span>
       </TableCell>
       {rosterName !== undefined && (
@@ -285,7 +310,7 @@ export function UnenrolledPanel({
   const [filter, setFilter] = useState("")
   const { ref: attachPool, isDropTarget } = useDroppable({
     id: "pool",
-    accept: "person",
+    accept: ["person", "team"],
     data: { label: "Niezapisani" },
     collisionPriority: 1,
   })
@@ -305,7 +330,8 @@ export function UnenrolledPanel({
         Niezapisani <span className="tabular-nums text-muted-foreground">{unenrolled.length}</span>
       </h2>
       <p className="text-xs text-muted-foreground">
-        Upuść tu osobę, żeby usunąć jej zapis. Przeciągnij stąd na slot, żeby zapisać ręcznie.
+        Upuść tu osobę albo zespół (albo kliknij kosz), żeby usunąć zapis. Przeciągnij stąd na slot,
+        żeby zapisać ręcznie.
       </p>
       <Input
         aria-label="Szukaj indeksu"
