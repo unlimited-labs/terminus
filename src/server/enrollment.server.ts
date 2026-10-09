@@ -2,7 +2,6 @@ import { randomInt } from "node:crypto"
 
 import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
 import { checkAnswers, filledAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
-import { Prisma } from "../generated/prisma/client.ts"
 
 import { withExamLock } from "./exam-access.server.ts"
 import { parseFields } from "./exam-state.server.ts"
@@ -19,14 +18,6 @@ export type EnrollmentOutcome =
   | Exclude<EnrollmentPlan, { ok: true }>
   | Exclude<AnswersCheck, { ok: true }>
   | { ok: false; code: "NOT_FOUND" | "BUSY" }
-
-/** P2028: transakcja nie zdążyła wystartować (pełna pula) albo wygasła w kolejce do blokady. */
-function busyOnTimeout(e: unknown): EnrollmentOutcome {
-  if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2028") {
-    return { ok: false, code: "BUSY" }
-  }
-  throw e
-}
 
 /**
  * Zapis zespołu z losowaniem slotu; sprawdzenia, losowanie i wstawienie pod blokadą zaliczenia.
@@ -99,5 +90,5 @@ export async function enrollTeam(
       return { ok: true, slotId: plan.slotId, ticket: { ...slot, team, answers: shown } }
     },
     timeout,
-  ).catch(busyOnTimeout)
+  )
 }

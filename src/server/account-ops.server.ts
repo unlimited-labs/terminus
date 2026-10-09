@@ -1,3 +1,4 @@
+import { isAPIError } from "better-auth/api"
 import type { z } from "zod"
 
 import { Prisma } from "../generated/prisma/client.ts"
@@ -13,11 +14,16 @@ import type { deleteExamSchema } from "../schemas/exam.ts"
 
 import { auth, replacePassword, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
-import { blockedTeachersOnly } from "./exam-access.server.ts"
+import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
+
+/** `createUser` sam sprawdza e-mail (APIError); przy wyścigu dwóch zapytań zostaje P2002. */
+const isEmailTaken = (e: unknown) =>
+  isUniqueViolation(e) ||
+  (isAPIError(e) && e.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")
 
 /** Powtarza middleware `requireAdmin`, żeby odmowę dało się sprawdzić testem każdej operacji. */
 async function assertAdmin(headers: Headers) {
@@ -39,11 +45,13 @@ export async function addAccount(
   data: z.infer<typeof createAccountSchema>,
 ): Promise<Result> {
   await assertAdmin(headers)
-  if (await db.user.findUnique({ where: { email: data.email } })) {
-    return { ok: false, code: "EMAIL_TAKEN" }
+  try {
+    await auth.api.createUser({ body: { ...data, role: "user" } })
+    return { ok: true }
+  } catch (e) {
+    if (isEmailTaken(e)) return { ok: false, code: "EMAIL_TAKEN" }
+    throw e
   }
-  await auth.api.createUser({ body: { ...data, role: "user" } })
-  return { ok: true }
 }
 
 export async function editAccount(
@@ -96,7 +104,7 @@ export async function setAdmin(
 export async function listBlockedAccountExams(headers: Headers, userId: string) {
   await assertAdmin(headers)
   const exams = await db.exam.findMany({
-    where: { AND: [{ teachers: { some: { id: userId } } }, blockedTeachersOnly] },
+    where: { AND: [taughtBy(userId), blockedTeachersOnly] },
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, _count: { select: { enrollments: true } } },
   })

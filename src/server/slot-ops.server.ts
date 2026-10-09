@@ -5,7 +5,7 @@ import { warsawDay } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import type { updateSlotSchema, windowSchema } from "../schemas/slot.ts"
 
-import { withExamLock, type Tx } from "./exam-access.server.ts"
+import { rosterInExam, withExamLock, type Tx } from "./exam-access.server.ts"
 
 async function overlapError(tx: Tx, examId: string, added: Interval[], ignoreId?: string) {
   const existing = await tx.slot.findMany({ where: { examId } })
@@ -25,7 +25,7 @@ export async function addWindow(
     examId,
     { teacher: userId },
     async (tx): Promise<Result<{ count: number }>> => {
-      if (!(await tx.roster.findFirst({ where: { id: rosterId, examId } }))) {
+      if (!(await rosterInExam(tx, examId, rosterId))) {
         return { ok: false, code: "ROSTER_REQUIRED" }
       }
       const cut = cutWindow(window)
@@ -44,11 +44,11 @@ export async function editSlot(
   { slotId, rosterId, date, from, to }: Omit<z.infer<typeof updateSlotSchema>, "examId">,
 ): Promise<Result> {
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
-    const [slot, roster] = await Promise.all([
+    const [slot, rosterOk] = await Promise.all([
       tx.slot.findFirst({ where: { id: slotId, examId } }),
-      tx.roster.findFirst({ where: { id: rosterId, examId } }),
+      rosterInExam(tx, examId, rosterId),
     ])
-    if (!slot || !roster) return { ok: false, code: "NOT_FOUND" }
+    if (!slot || !rosterOk) return { ok: false, code: "NOT_FOUND" }
     const range = slotInterval(date, from, to)
     if (!range.ok) return range
     const overlap = await overlapError(tx, examId, [range.interval], slotId)
@@ -76,14 +76,18 @@ export async function removeFreeSlotsOfDay(
   userId: string,
   day: string,
 ): Promise<Result<{ deleted: number; skipped: number }>> {
-  return withExamLock(examId, { teacher: userId }, async (tx) => {
-    const slots = await tx.slot.findMany({
-      where: { examId },
-      select: { id: true, startsAt: true, _count: { select: { enrollments: true } } },
-    })
-    const ofDay = slots.filter((s) => warsawDay(s.startsAt) === day)
-    const free = ofDay.filter((s) => s._count.enrollments === 0).map((s) => s.id)
-    await tx.slot.deleteMany({ where: { id: { in: free } } })
-    return { ok: true as const, deleted: free.length, skipped: ofDay.length - free.length }
-  })
+  return withExamLock(
+    examId,
+    { teacher: userId },
+    async (tx): Promise<Result<{ deleted: number; skipped: number }>> => {
+      const slots = await tx.slot.findMany({
+        where: { examId },
+        select: { id: true, startsAt: true, _count: { select: { enrollments: true } } },
+      })
+      const ofDay = slots.filter((s) => warsawDay(s.startsAt) === day)
+      const free = ofDay.filter((s) => s._count.enrollments === 0).map((s) => s.id)
+      await tx.slot.deleteMany({ where: { id: { in: free } } })
+      return { ok: true, deleted: free.length, skipped: ofDay.length - free.length }
+    },
+  )
 }

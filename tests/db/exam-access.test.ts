@@ -25,6 +25,32 @@ test('withExamLock "blocked": tylko zaliczenie, którego wszyscy prowadzący są
   expect(await withExamLock(examId, "blocked", async () => "ok")).toBe("ok")
 })
 
+test("withExamLock: limit czasu w kolejce do zajętej blokady daje BUSY bez wywołania fn", async () => {
+  const { examId } = await createExam({ rosters: {} })
+  const locked = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  const holder = withExamLock(examId, "public", () => {
+    locked.resolve()
+    return released.promise
+  })
+  await locked.promise
+  let called = false
+  const pending = withExamLock(
+    examId,
+    "public",
+    async () => {
+      called = true
+    },
+    300,
+  )
+  await new Promise((resolve) => setTimeout(resolve, 500))
+  released.resolve()
+  await holder
+
+  expect(await pending).toEqual({ ok: false, code: "BUSY" })
+  expect(called).toBe(false)
+})
+
 test("getOwnedExam: własne zaliczenie zwraca, cudze i nieistniejące to null", async () => {
   const { examId, teacherId } = await createExam({ rosters: {} })
   const other = await createExam({ rosters: {} })

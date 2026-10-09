@@ -7,12 +7,12 @@ import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
-import { getOwnedExam, withExamLock, type ExamAccess } from "./exam-access.server.ts"
+import { getOwnedExam, taughtBy, withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { loadExam, parseFields } from "./exam-state.server.ts"
 
 /** Zaliczenia, których konto jest prowadzącym, od najnowszych, z etapem i terminami do listy. */
 export async function examsOf(userId: string, now = new Date()) {
-  const mine = { teachers: { some: { id: userId } } }
+  const mine = taughtBy(userId)
   const [exams, spans] = await Promise.all([
     db.exam.findMany({
       where: mine,
@@ -97,7 +97,20 @@ export function copyExam(
     async (tx): Promise<Result<{ examId: string }>> => {
       const source = await tx.exam.findUniqueOrThrow({
         where: { id: examId },
-        include: { rosters: { include: { entries: true } } },
+        select: {
+          name: true,
+          description: true,
+          defaultSlotMinutes: true,
+          maxTeamSize: true,
+          fields: true,
+          enrollmentOpensAt: true,
+          rosters: {
+            select: {
+              name: true,
+              entries: { select: { studentNumber: true, firstName: true, lastName: true } },
+            },
+          },
+        },
       })
       const copy = await tx.exam.create({
         data: {
@@ -117,15 +130,7 @@ export function copyExam(
             data: {
               examId: copy.id,
               name: roster.name,
-              entries: {
-                createMany: {
-                  data: roster.entries.map(({ studentNumber, firstName, lastName }) => ({
-                    studentNumber,
-                    firstName,
-                    lastName,
-                  })),
-                },
-              },
+              entries: { createMany: { data: roster.entries } },
             },
           }),
         ),

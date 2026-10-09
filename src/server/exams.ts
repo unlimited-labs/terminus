@@ -1,6 +1,5 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
-import type { Result } from "../messages.pl.ts"
 import {
   addTeacherSchema,
   deleteExamSchema,
@@ -51,9 +50,9 @@ export const createExam = createServerFn({ method: "POST" })
 export const updateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(examFormSchema.and(examIdSchema))
-  .handler(async ({ data: { examId, ...data }, context }): Promise<Result> => {
-    return updateExamSettings(examId, context.user.id, data)
-  })
+  .handler(({ data: { examId, ...data }, context }) =>
+    updateExamSettings(examId, context.user.id, data),
+  )
 
 export const deleteExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
@@ -65,9 +64,7 @@ export const deleteExam = createServerFn({ method: "POST" })
 export const duplicateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(duplicateExamSchema)
-  .handler(async ({ data, context }): Promise<Result<{ examId: string }>> => {
-    return copyExam(data.examId, context.user.id, data.copyRosters)
-  })
+  .handler(({ data, context }) => copyExam(data.examId, context.user.id, data.copyRosters))
 
 export const addExamTeacher = createServerFn({ method: "POST" })
   .middleware([requireUser])

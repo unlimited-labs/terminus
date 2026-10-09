@@ -5,7 +5,7 @@ import type { Result } from "../messages.pl.ts"
 import type { addEntrySchema } from "../schemas/roster.ts"
 
 import { db } from "./db.server.ts"
-import { getOwnedExam, withExamLock, type Tx } from "./exam-access.server.ts"
+import { getOwnedExam, rosterInExam, withExamLock, type Tx } from "./exam-access.server.ts"
 
 async function planImport(tx: Tx, examId: string, rosterName: string, csv: string) {
   const parsed = parseRosterCsv(csv)
@@ -24,10 +24,11 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     lastName,
     slotStartsAt: enrollment?.slot.startsAt ?? null,
   }))
-  const plan = planRosterImport(parsed, roster?.id ?? "", existing)
+  const rosterId = roster?.id ?? null
+  const plan = planRosterImport(parsed, rosterId ?? "", existing)
   return {
     ok: true as const,
-    rosterId: roster?.id ?? null,
+    rosterId,
     people: parsed.rows.length,
     withdrawn: parsed.withdrawn.length,
     invalid: parsed.invalid,
@@ -59,8 +60,8 @@ export async function applyImport(
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const plan = await planImport(tx, examId, rosterName, csv)
     if (!plan.ok) return plan
-    const now = plan.withdrawnEnrolled.map((e) => e.studentNumber).toSorted()
-    if (now.join() !== previewedWithdrawnEnrolled.toSorted().join()) {
+    const withdrawnEnrolledNow = plan.withdrawnEnrolled.map((e) => e.studentNumber).toSorted()
+    if (withdrawnEnrolledNow.join() !== previewedWithdrawnEnrolled.toSorted().join()) {
       return { ok: false, code: "IMPORT_PREVIEW_STALE" }
     }
     const rosterId =
@@ -108,7 +109,7 @@ export async function addEntry(
         return { ok: false, code: "ROSTER_NOT_CHOSEN" }
       }
       targetRosterId = (await tx.roster.create({ data: { examId, name: "lista" } })).id
-    } else if (!(await tx.roster.findFirst({ where: { id: targetRosterId, examId } }))) {
+    } else if (!(await rosterInExam(tx, examId, targetRosterId))) {
       return { ok: false, code: "NOT_FOUND" }
     }
     await tx.rosterEntry.create({

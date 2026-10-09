@@ -94,6 +94,21 @@ test("superadmin zakłada i poprawia konta; zajęty e-mail odrzucony", async () 
   expect(await row(other.id)).toMatchObject({ email: renamed })
 })
 
+test("równoczesne konta z tym samym e-mailem: jedno powstaje, reszta EMAIL_TAKEN", async () => {
+  const admin = await account("admin")
+  const email = `${randomUUID()}@example.com`
+  const names = ["A", "B", "C", "D"]
+  // Rozgrzane połączenia z puli, żeby zapytania naprawdę szły równolegle.
+  await Promise.all(names.map(() => sessionUser(admin.headers)))
+  const results = await Promise.all(
+    names.map((name) => addAccount(admin.headers, { email, name, password })),
+  )
+  const taken = { ok: false, code: "EMAIL_TAKEN" }
+  expect(results.filter((r) => r.ok)).toEqual([{ ok: true }])
+  expect(results.filter((r) => !r.ok)).toEqual([taken, taken, taken])
+  expect(await db.user.count({ where: { email } })).toBe(1)
+})
+
 test("superadmin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", async () => {
   const admin = await account("admin")
   const other = await account()
