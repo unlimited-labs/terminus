@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { parseDragId, type BoardCommand } from "@/domain/board"
-import { formatDayShort, warsawTime } from "@/domain/time"
+import { formatDayShort, formatSlotTime, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 type Person = ExamDetail["people"][number]
@@ -265,9 +265,7 @@ export function BoardSlotRow({
           >
             <GripVerticalIcon className="size-4" />
           </Button>
-          <span className="font-semibold tabular-nums">
-            {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
-          </span>
+          <span className="font-semibold tabular-nums">{formatSlotTime(slot)}</span>
           <Button
             variant="ghost"
             size="icon-xs"

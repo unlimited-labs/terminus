@@ -1,12 +1,13 @@
-import { formatDayTime, warsawTime } from "@/domain/time"
+import { formatDay, warsawTime } from "@/domain/time"
 import { SLOT_IS_FINAL } from "@/messages.pl"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 
 export function Ticket({ ticket, place }: { ticket: TicketData; place: string }) {
-  const [day] = formatDayTime(ticket.startsAt).split(",")
   return (
     <div className="relative overflow-hidden rounded-xl bg-linear-160 from-[#4b3fd6] to-[#6d5bff] p-5 text-white">
-      <p className="font-semibold opacity-90 first-letter:uppercase">{day}</p>
+      <p className="font-semibold opacity-90 first-letter:uppercase">
+        {formatDay(ticket.startsAt)}
+      </p>
       <p className="my-1 text-5xl leading-none font-extrabold tracking-tight tabular-nums">
         {warsawTime(ticket.startsAt)}
         <span className="text-2xl opacity-80">–{warsawTime(ticket.endsAt)}</span>

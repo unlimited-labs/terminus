@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
-import { formatDayShort, warsawDay, warsawTime } from "@/domain/time"
+import { formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
 import { errorMessage } from "@/messages.pl"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -188,9 +188,7 @@ function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
   return (
     <li className="grid grid-cols-[auto_1fr_auto] items-start gap-x-3 py-0.5 text-sm">
       <span className="grid">
-        <span className="font-semibold tabular-nums">
-          {warsawTime(slot.startsAt)}–{warsawTime(slot.endsAt)}
-        </span>
+        <span className="font-semibold tabular-nums">{formatSlotTime(slot)}</span>
         {exam.rosters.length > 1 && (
           <span className="text-xs text-muted-foreground">{roster?.name}</span>
         )}
@@ -212,7 +210,7 @@ function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
         </Button>
         <ConfirmButton
           title="Usunąć slot?"
-          description={`${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}`}
+          description={`${formatDayShort(slot.startsAt)} ${formatSlotTime(slot)}`}
           confirmLabel="Usuń slot"
           disabled={team.length > 0}
           onConfirm={() => remove.mutateAsync({ examId: exam.id, slotId: slot.id })}

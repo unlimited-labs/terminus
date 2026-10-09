@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 import { isFreeSlot } from "@/domain/schedule"
-import { formatDayShort, formatDayTime, warsawDay, warsawTime } from "@/domain/time"
+import { formatDay, formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
 import type { Schedule } from "@/server/schedule"
 
 type Slot = Schedule["slots"][number]
@@ -146,7 +146,7 @@ function DayTimeline({
   return (
     <div className="grid gap-2">
       <h2 className="text-lg font-extrabold first-letter:uppercase">
-        {formatDayTime(slots[0]!.startsAt).split(",")[0]}
+        {formatDay(slots[0]!.startsAt)}
       </h2>
       <div className="relative" style={{ height: y(end) }}>
         {hours.map((h) => (
@@ -210,7 +210,7 @@ function SlotBlock({
         <Button
           variant="ghost"
           aria-expanded={open}
-          aria-label={`${warsawTime(slot.startsAt)}–${warsawTime(slot.endsAt)}, ${KINDS[kind].a11y}: ${names}`}
+          aria-label={`${formatSlotTime(slot)}, ${KINDS[kind].a11y}: ${names}`}
           onClick={() => setOpen(!open)}
           className={`h-auto justify-start font-normal whitespace-normal ${className}`}
           style={style}

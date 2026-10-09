@@ -1,6 +1,7 @@
 import type { z } from "zod"
 
-import { cutWindow, findOverlap, warsawDateTime, type Interval } from "../domain/slots.ts"
+import { cutWindow, findOverlap, type Interval } from "../domain/slots.ts"
+import { warsawDateTime } from "../domain/time.ts"
 import { warsawDay } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import type { updateSlotSchema, windowSchema } from "../schemas/slot.ts"

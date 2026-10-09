@@ -2,8 +2,7 @@ import { readFileSync } from "node:fs"
 
 import type { Locator, Page } from "@playwright/test"
 
-import { warsawDateTime } from "../src/domain/slots.ts"
-import { formatDayShort } from "../src/domain/time.ts"
+import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
 
 import { dayOf, E2E, STATE_FILE, e2eStateSchema, type E2EState } from "./config.ts"
 

@@ -4,7 +4,7 @@ import type { EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import type { ExamPhase } from "./domain/schedule.ts"
-import { formatDayTime, warsawTime } from "./domain/time.ts"
+import { formatDay, formatDayTime, formatSlotTime } from "./domain/time.ts"
 
 type Failure<T> = T extends { ok: false } ? Omit<T, "ok"> : never
 
@@ -74,7 +74,7 @@ export function errorMessage(e: AppError): string {
     case "WINDOW_TOO_SHORT":
       return "Okno jest krótsze niż jeden slot."
     case "SLOT_OVERLAP":
-      return `Koliduje z istniejącym slotem ${formatDayTime(e.startsAt)}–${warsawTime(e.endsAt)}.`
+      return `Koliduje z istniejącym slotem ${formatDay(e.startsAt)}, ${formatSlotTime(e)}.`
     case "ROSTER_REQUIRED":
       return "Najpierw dodaj listę indeksów."
     case "IMPORT_PREVIEW_STALE":

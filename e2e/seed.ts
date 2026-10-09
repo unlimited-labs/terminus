@@ -1,4 +1,4 @@
-import { warsawDateTime } from "../src/domain/slots.ts"
+import { warsawDateTime } from "../src/domain/time.ts"
 import { warsawDay } from "../src/domain/time.ts"
 import { db } from "../src/server/db.server.ts"
 

@@ -2,7 +2,7 @@ import type { z } from "zod"
 
 import { buildExportCsv, exportFileName } from "../domain/csv.ts"
 import { examPhase } from "../domain/schedule.ts"
-import { warsawDateTime } from "../domain/slots.ts"
+import { warsawDateTime } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 

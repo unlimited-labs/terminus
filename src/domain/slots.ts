@@ -1,4 +1,4 @@
-import { TZDate } from "@date-fns/tz"
+import { warsawDateTime } from "./time.ts"
 
 export type Interval = { startsAt: Date; endsAt: Date }
 
@@ -9,13 +9,6 @@ export type WindowCut =
   | { ok: false; code: "WINDOW_END_BEFORE_START" | "WINDOW_TOO_SHORT" }
 
 const MINUTE = 60_000
-
-/** Czas polski ("RRRR-MM-DD", "GG:MM") → chwila w UTC. */
-export function warsawDateTime(date: string, time: string): Date {
-  const [y = 0, m = 1, d = 1] = date.split("-").map(Number)
-  const [h = 0, min = 0] = time.split(":").map(Number)
-  return new Date(new TZDate(y, m - 1, d, h, min, "Europe/Warsaw").getTime())
-}
 
 /** Tnie okno (jeden dzień, czas polski) na sloty równej długości; reszta z dzielenia przepada. */
 export function cutWindow({ date, from, to, minutes }: WindowInput): WindowCut {
