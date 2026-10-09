@@ -27,6 +27,10 @@ const EXAMS = [
   "rename",
   "blockedOwner",
   "withdrawn",
+  "teachers",
+  "rosterAdd",
+  "rosterDelete",
+  "slotsEdit",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */

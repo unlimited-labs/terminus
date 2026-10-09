@@ -53,3 +53,27 @@ test("podwójne kliknięcie Zapisz przy odpowiedziach wysyła jedno żądanie", 
   await expect(page.getByText("Temat: Dron")).toBeVisible()
   expect(posts).toBe(1)
 })
+
+test("edycja slotu: nowa godzina, kolizja zostawia formularz, Anuluj zamyka", async ({ page }) => {
+  await page.goto(`/zaliczenia/${exams().slotsEdit}`)
+  const edit = page.locator("li form")
+
+  await slot(page, "09:00–09:20").getByRole("button", { name: "Edytuj" }).click()
+  await edit.getByLabel("Od").fill("08:30")
+  await edit.getByLabel("Do").fill("08:50")
+  await edit.getByRole("button", { name: "Zapisz" }).click()
+  await expect(edit).toHaveCount(0)
+  await expect(slot(page, "08:30–08:50")).toBeVisible()
+  await expect(slot(page, "09:00–09:20")).toHaveCount(0)
+
+  await slot(page, "08:30–08:50").getByRole("button", { name: "Edytuj" }).click()
+  await edit.getByLabel("Od").fill("09:10")
+  await edit.getByLabel("Do").fill("09:30")
+  await edit.getByRole("button", { name: "Zapisz" }).click()
+  await expect(page.getByText(/^Koliduje z istniejącym slotem .*09:20–09:40\.$/)).toBeVisible()
+  await expect(edit).toBeVisible()
+
+  await edit.getByRole("button", { name: "Anuluj" }).click()
+  await expect(edit).toHaveCount(0)
+  await expect(slot(page, "08:30–08:50")).toBeVisible()
+})

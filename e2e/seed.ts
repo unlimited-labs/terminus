@@ -99,6 +99,31 @@ async function blockedOwnerExam() {
   return id
 }
 
+/** Dwie listy: g1 (980001 z zapisem, 980002 bez) i g2 (980003). */
+async function twoRostersExam() {
+  const id = await createExam(
+    "Dwie listy E2E",
+    1,
+    [
+      ["980001", "Rafał", "Rak"],
+      ["980002", "Sara", "Sowa"],
+    ],
+    [at(18, 9)],
+    [["980001", 0]],
+  )
+  const g2 = await db.roster.create({ data: { examId: id, name: "g2" } })
+  await db.rosterEntry.create({
+    data: {
+      examId: id,
+      rosterId: g2.id,
+      studentNumber: "980003",
+      firstName: "Tomasz",
+      lastName: "Tur",
+    },
+  })
+  return id
+}
+
 export async function seed(): Promise<E2EState> {
   const board = (
     enrolled: [string, number][] = [
@@ -181,7 +206,18 @@ export async function seed(): Promise<E2EState> {
       [at(17, 10)],
       [["400003", 0]],
     ),
+    teachers: await createExam("Wspólne E2E", 1, [], [], []),
+    rosterAdd: await twoRostersExam(),
+    rosterDelete: await twoRostersExam(),
+    slotsEdit: await createExam("Edycja slotów E2E", 1, [], [at(19, 9), at(19, 9, 20)], []),
   }
+  await db.user.create({
+    data: {
+      id: crypto.randomUUID(),
+      name: "Druga Osoba E2E",
+      email: "wspolprowadzacy@e2e.test",
+    },
+  })
   await db.$disconnect()
   return { baseDay, exams }
 }

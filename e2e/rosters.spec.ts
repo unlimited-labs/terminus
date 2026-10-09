@@ -49,3 +49,50 @@ test("ponowny import: skreślony z zapisem widoczny w podglądzie ze slotem, pot
   await expect(page.getByRole("cell", { name: "400003" })).toHaveCount(0)
   await expect(page.getByRole("cell", { name: "400001" })).toBeVisible()
 })
+
+test("dodanie osoby do wybranej listy czyści formularz", async ({ page }) => {
+  await login(page)
+  await page.goto(`/zaliczenia/${exams().rosterAdd}?tab=lista`)
+  const form = page.locator("form", { hasText: "Dodaj osobę" })
+  await form.getByLabel("Indeks").fill("980010")
+  await form.getByLabel("Imię").fill("Urszula")
+  await form.getByLabel("Nazwisko").fill("Ul")
+  await form.getByLabel("Lista").click()
+  await page.getByRole("option", { name: "g2" }).click()
+  await form.getByRole("button", { name: "Dodaj osobę" }).click()
+
+  await expect(page.getByText("Dodano osobę do listy.")).toBeVisible()
+  await expect(page.getByRole("row", { name: /980010 Ul Urszula g2/ })).toBeVisible()
+  await expect(form.getByLabel("Indeks")).toHaveValue("")
+  await expect(form.getByLabel("Imię")).toHaveValue("")
+  await expect(form.getByLabel("Nazwisko")).toHaveValue("")
+})
+
+test("usuwanie osób i list: osoba i lista z zapisem zostają", async ({ page }) => {
+  await login(page)
+  await page.goto(`/zaliczenia/${exams().rosterDelete}?tab=lista`)
+  const row = (studentNumber: string) => page.getByRole("row", { name: new RegExp(studentNumber) })
+
+  await expect(row("980001").getByRole("button", { name: "Usuń" })).toBeDisabled()
+  await row("980002").getByRole("button", { name: "Usuń" }).click()
+  await expect(row("980002")).toHaveCount(0)
+
+  const chip = (name: string) => page.locator("li", { hasText: name })
+  await chip("g2").getByRole("button", { name: "Usuń listę" }).click()
+  await expect(page.getByRole("dialog", { name: "Usunąć listę g2?" })).toBeVisible()
+  await page.getByRole("button", { name: "Anuluj" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(row("980003")).toBeVisible()
+
+  await chip("g1").getByRole("button", { name: "Usuń listę" }).click()
+  await page.getByRole("dialog").getByRole("button", { name: "Usuń listę" }).click()
+  await expect(
+    page.getByText("Na liście są indeksy z zapisem — najpierw przenieś albo usuń ich zapisy."),
+  ).toBeVisible()
+  await expect(row("980001")).toBeVisible()
+
+  await chip("g2").getByRole("button", { name: "Usuń listę" }).click()
+  await page.getByRole("dialog").getByRole("button", { name: "Usuń listę" }).click()
+  await expect(row("980003")).toHaveCount(0)
+  await expect(page.getByRole("button", { name: "Usuń listę" })).toHaveCount(0)
+})
