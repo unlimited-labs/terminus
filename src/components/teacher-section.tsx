@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -75,10 +75,7 @@ function AddTeacherForm({ examId }: { examId: string }) {
   )
   const form = useAppForm({
     defaultValues: { examId, email: "" },
-    validators: { onSubmit: addTeacherSchema },
-    onSubmit: async ({ value, formApi }) => {
-      if ((await add.mutateAsync(addTeacherSchema.parse(value))).ok) formApi.reset()
-    },
+    ...schemaSubmit(addTeacherSchema, add.mutateAsync, { resetOnOk: true }),
   })
   return (
     <form.AppForm>

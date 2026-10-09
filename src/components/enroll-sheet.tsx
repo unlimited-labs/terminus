@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
@@ -104,8 +104,7 @@ function EnrollForm({
       studentNumbers: [""],
       answers: Object.fromEntries(fields.map((f) => [f.id, ""])),
     },
-    validators: { onSubmit: enrollmentSchema },
-    onSubmit: ({ value }) => draw.mutateAsync(enrollmentSchema.parse(value)),
+    ...schemaSubmit(enrollmentSchema, draw.mutateAsync),
     onSubmitInvalid: () => draw.reset(),
   })
   const failure = draw.data && !draw.data.ok ? draw.data : null

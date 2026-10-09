@@ -4,7 +4,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { DeleteExamButton } from "@/components/delete-exam-button"
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -55,10 +55,7 @@ function CreateAccountForm() {
   )
   const form = useAppForm({
     defaultValues: { email: "", name: "", password: "" },
-    validators: { onSubmit: createAccountSchema },
-    onSubmit: async ({ value, formApi }) => {
-      if ((await create.mutateAsync(createAccountSchema.parse(value))).ok) formApi.reset()
-    },
+    ...schemaSubmit(createAccountSchema, create.mutateAsync, { resetOnOk: true }),
   })
   return (
     <Card>
@@ -151,8 +148,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
   const update = useResultMutation(updateAccount, [accountsQuery().queryKey], onDone)
   const form = useAppForm({
     defaultValues: { userId: account.id, email: account.email, name: account.name },
-    validators: { onSubmit: updateAccountSchema },
-    onSubmit: ({ value }) => update.mutateAsync(updateAccountSchema.parse(value)),
+    ...schemaSubmit(updateAccountSchema, update.mutateAsync),
   })
   return (
     <form.AppForm>
@@ -176,8 +172,7 @@ function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }
   })
   const form = useAppForm({
     defaultValues: { userId, password: "" },
-    validators: { onSubmit: setPasswordSchema },
-    onSubmit: ({ value }) => set.mutateAsync(setPasswordSchema.parse(value)),
+    ...schemaSubmit(setPasswordSchema, set.mutateAsync),
   })
   return (
     <form.AppForm>

@@ -2,7 +2,7 @@ import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -46,8 +46,7 @@ export function DuplicateButton({ examId }: { examId: string }) {
   })
   const form = useAppForm({
     defaultValues: { examId, copyRosters: true },
-    validators: { onSubmit: duplicateExamSchema },
-    onSubmit: ({ value }) => duplicate.mutateAsync(duplicateExamSchema.parse(value)),
+    ...schemaSubmit(duplicateExamSchema, duplicate.mutateAsync),
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>

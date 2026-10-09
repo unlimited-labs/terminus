@@ -1,5 +1,7 @@
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import { useId, useRef, type ReactNode } from "react"
+import { toast } from "sonner"
+import type { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -13,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { UNEXPECTED_ERROR } from "@/messages.pl"
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
 
@@ -222,3 +225,28 @@ export const { useAppForm } = createFormHook({
   fieldComponents: { TextField, NumberField, SelectField, RosterField, CheckboxField },
   formComponents: { Form, SubmitButton },
 })
+
+/**
+ * Walidacja i wysyłka formularza jednym schematem — do rozłożenia w `useAppForm({ defaultValues, ...schemaSubmit(...) })`.
+ * `prepare` poprawia wartości przed wysłaniem (np. lista usunięta w innej karcie); jeśli po nim schemat
+ * odrzuca dane, komunikat idzie do toastu zamiast wyjątku. `resetOnOk` czyści formularz po `{ ok: true }`.
+ */
+export function schemaSubmit<In, Out>(
+  schema: z.ZodType<Out, In>,
+  submit: (data: Out) => Promise<unknown>,
+  { prepare, resetOnOk }: { prepare?: (value: In) => In; resetOnOk?: boolean } = {},
+) {
+  return {
+    validators: { onSubmit: schema },
+    onSubmit: async ({ value, formApi }: { value: In; formApi: { reset: () => void } }) => {
+      const parsed = schema.safeParse(prepare ? prepare(value) : value)
+      if (!parsed.success) {
+        toast.error(parsed.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+        return
+      }
+      const result = await submit(parsed.data)
+      if (resetOnOk && typeof result === "object" && result !== null && "ok" in result && result.ok)
+        formApi.reset()
+    },
+  }
+}

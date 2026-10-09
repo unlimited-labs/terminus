@@ -2,7 +2,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { currentRosterId } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -87,11 +87,9 @@ function WindowForm({ exam }: { exam: ExamDetail }) {
       to: "12:00",
       minutes: exam.defaultSlotMinutes,
     },
-    validators: { onSubmit: windowSchema },
-    onSubmit: ({ value }) => {
-      const rosterId = currentRosterId(exam.rosters, value.rosterId)
-      return add.mutateAsync(windowSchema.parse({ ...value, rosterId }))
-    },
+    ...schemaSubmit(windowSchema, add.mutateAsync, {
+      prepare: (v) => ({ ...v, rosterId: currentRosterId(exam.rosters, v.rosterId) }),
+    }),
   })
   return (
     <form.AppForm>
@@ -241,8 +239,7 @@ function SlotEditForm({
       from: warsawTime(slot.startsAt),
       to: warsawTime(slot.endsAt),
     },
-    validators: { onSubmit: updateSlotSchema },
-    onSubmit: ({ value }) => update.mutateAsync(updateSlotSchema.parse(value)),
+    ...schemaSubmit(updateSlotSchema, update.mutateAsync),
   })
   return (
     <li>

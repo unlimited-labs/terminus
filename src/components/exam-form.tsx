@@ -1,6 +1,6 @@
 import type { z } from "zod"
 
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Button } from "@/components/ui/button"
 import { examFormSchema, type examSchema } from "@/schemas/exam"
 
@@ -17,8 +17,7 @@ export function ExamForm({
 }) {
   const form = useAppForm({
     defaultValues,
-    validators: { onSubmit: examFormSchema },
-    onSubmit: ({ value }) => onSubmit(examFormSchema.parse(value)),
+    ...schemaSubmit(examFormSchema, onSubmit),
   })
   return (
     <form.AppForm>

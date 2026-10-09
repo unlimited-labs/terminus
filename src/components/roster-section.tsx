@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -125,11 +125,10 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
       firstName: "",
       lastName: "",
     },
-    validators: { onSubmit: addEntrySchema },
-    onSubmit: async ({ value, formApi }) => {
-      const rosterId = currentRosterId(exam.rosters, value.rosterId)
-      if ((await add.mutateAsync(addEntrySchema.parse({ ...value, rosterId }))).ok) formApi.reset()
-    },
+    ...schemaSubmit(addEntrySchema, add.mutateAsync, {
+      prepare: (v) => ({ ...v, rosterId: currentRosterId(exam.rosters, v.rosterId) }),
+      resetOnOk: true,
+    }),
   })
   return (
     <form.AppForm>
