@@ -2,15 +2,17 @@ import { z } from "zod"
 
 import type { Answers, ExamField } from "../domain/fields.ts"
 import { examPhase } from "../domain/schedule.ts"
-import { answersSchema, examFieldSchema } from "../schemas/exam.ts"
 
 import { db } from "./db.server.ts"
 import type { Tx } from "./exam-access.server.ts"
 
-export const parseFields = (json: unknown): ExamField[] =>
-  z.array(examFieldSchema).catch([]).parse(json)
+// Sam kształt, bez limitów formularza: zaostrzenie limitu nie może zablokować odczytu starych danych.
+const storedFields = z.array(z.object({ id: z.string(), label: z.string(), required: z.boolean() }))
+const storedAnswers = z.record(z.string(), z.string())
 
-const parseAnswers = (json: unknown): Answers => answersSchema.catch({}).parse(json)
+export const parseFields = (json: unknown): ExamField[] => storedFields.parse(json)
+
+const parseAnswers = (json: unknown): Answers => storedAnswers.parse(json)
 
 /** Pełny stan zaliczenia: ustawienia, listy, wpisy (z zapisem) i sloty; `client` = transakcja pod blokadą. */
 export async function loadExam(examId: string, client: Tx | typeof db = db) {
@@ -58,7 +60,7 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
       return {
         ...e,
         slotId: enrollment?.slotId ?? null,
-        answers: parseAnswers(enrollment?.answers),
+        answers: enrollment ? parseAnswers(enrollment.answers) : {},
       }
     }),
     phase: examPhase(

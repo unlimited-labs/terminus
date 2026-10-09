@@ -8,7 +8,7 @@ export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzin�
 
 export const isoDate = z.iso.date("Podaj datę.")
 
-export const examFieldSchema = z.object({
+const examFieldSchema = z.object({
   id: z.string().min(1).max(40),
   label: z.string().trim().min(1, "Podaj nazwę pola.").max(60, tooLong(60)),
   required: z.boolean(),

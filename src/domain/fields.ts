@@ -30,5 +30,8 @@ export function filledAnswers(
   fields: ExamField[],
   answers: Answers,
 ): { label: string; value: string }[] {
-  return fields.flatMap((f) => (answers[f.id] ? [{ label: f.label, value: answers[f.id]! }] : []))
+  return fields.flatMap((f) => {
+    const value = answers[f.id]
+    return value ? [{ label: f.label, value }] : []
+  })
 }
