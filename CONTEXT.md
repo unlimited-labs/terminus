@@ -28,6 +28,10 @@ _Avoid_: Rezerwacja, rejestracja
 Indeksy zapisane w tym samym slocie, zaliczające razem; slot mieści dokładnie jeden zespół, a zespół jednoosobowy to zaliczenie indywidualne.
 _Avoid_: Grupa, drużyna
 
+**Odpowiedzi zespołu**:
+Wartości pól zaliczenia podane przy zapisie, jedne na zespół; kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi, a przeniesiony cały zespół zachowuje swoje.
+_Avoid_: Odpowiedzi studenta
+
 **Losowanie**:
 Automatyczny wybór slotu dla indeksu przy pierwszym wejściu studenta; wynik jest dla studenta niezmienny.
 _Avoid_: Przydział, wybór terminu
