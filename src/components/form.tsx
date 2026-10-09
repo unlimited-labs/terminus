@@ -1,4 +1,4 @@
-import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
+import { createFormHook, createFormHookContexts, revalidateLogic } from "@tanstack/react-form"
 import { useId, useRef, type ReactNode } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
@@ -195,7 +195,9 @@ function Form({ className, children }: { className?: string; children: React.Rea
       className={className}
       onSubmit={async (e) => {
         e.preventDefault()
-        await form.handleSubmit()
+        if (form.state.isSubmitting) return
+        // Odrzucenie (sieć, wyjątek serwera) pokazała już mutacja; bez catch zostaje nieobsłużony błąd.
+        await form.handleSubmit().catch(() => {})
         if (form.state.isValid) return
         requestAnimationFrame(() =>
           ref.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(),
@@ -227,6 +229,12 @@ export const { useAppForm } = createFormHook({
   formComponents: { Form, SubmitButton },
 })
 
+/** Walidacja przy pierwszym wysłaniu, potem przy każdej zmianie — poprawione pole od razu traci błąd. */
+export const submitThenChange = <T,>(schema: T) => ({
+  validationLogic: revalidateLogic(),
+  validators: { onDynamic: schema },
+})
+
 /**
  * Walidacja i wysyłka formularza jednym schematem — do rozłożenia w `useAppForm({ defaultValues, ...schemaSubmit(...) })`.
  * `prepare` poprawia wartości przed wysłaniem (np. lista usunięta w innej karcie); jeśli po nim schemat
@@ -238,7 +246,7 @@ export function schemaSubmit<In, Out>(
   { prepare, resetOnOk }: { prepare?: (value: In) => In; resetOnOk?: boolean } = {},
 ) {
   return {
-    validators: { onSubmit: schema },
+    ...submitThenChange(schema),
     onSubmit: async ({ value, formApi }: { value: In; formApi: { reset: () => void } }) => {
       const parsed = schema.safeParse(prepare ? prepare(value) : value)
       if (!parsed.success) {

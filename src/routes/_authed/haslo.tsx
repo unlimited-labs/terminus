@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { toast } from "sonner"
 
-import { useAppForm } from "@/components/form"
+import { submitThenChange, useAppForm } from "@/components/form"
 import { SectionCard } from "@/components/section-card"
 import { authClient, authFailure } from "@/lib/auth-client"
 import { changePasswordSchema } from "@/schemas/auth"
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/_authed/haslo")({
 function ChangePassword() {
   const form = useAppForm({
     defaultValues: { currentPassword: "", newPassword: "" },
-    validators: { onSubmit: changePasswordSchema },
+    ...submitThenChange(changePasswordSchema),
     onSubmit: async ({ value, formApi }) => {
       const failure = await authFailure(
         authClient.changePassword({ ...value, revokeOtherSessions: true }),

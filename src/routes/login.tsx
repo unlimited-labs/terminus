@@ -1,7 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
-import { useAppForm } from "@/components/form"
+import { submitThenChange, useAppForm } from "@/components/form"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { authClient, authFailure } from "@/lib/auth-client"
@@ -24,7 +24,7 @@ function Login() {
   const [error, setError] = useState<string | null>(null)
   const form = useAppForm({
     defaultValues: { email: "", password: "" },
-    validators: { onSubmit: loginSchema },
+    ...submitThenChange(loginSchema),
     onSubmit: async ({ value }) => {
       const failure = await authFailure(authClient.signIn.email(loginSchema.parse(value)))
       setError(failure)

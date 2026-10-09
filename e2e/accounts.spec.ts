@@ -45,6 +45,9 @@ test("nieudane wysłanie formularza: błąd ogłoszony, fokus na pierwszym błę
   await expect(form.getByLabel("Imię i nazwisko")).toHaveAccessibleDescription(
     "Podaj imię i nazwisko.",
   )
+  await form.getByLabel("Imię i nazwisko").fill("Jan Nowak")
+  await expect(form.getByLabel("Imię i nazwisko")).not.toHaveAttribute("aria-invalid")
+  await expect(form.getByText("Podaj imię i nazwisko.")).toHaveCount(0)
 })
 
 test("superadmin usuwa zaliczenie zablokowanego prowadzącego", async ({ page }) => {
