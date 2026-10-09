@@ -2,7 +2,7 @@ import { QueryClient } from "@tanstack/react-query"
 import { createRouter } from "@tanstack/react-router"
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
 
-import { ErrorPage } from "./components/error-page"
+import { ErrorPage, NotFoundPage } from "./components/error-page"
 import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
@@ -13,6 +13,7 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultErrorComponent: ErrorPage,
+    defaultNotFoundComponent: NotFoundPage,
   })
   setupRouterSsrQueryIntegration({ router, queryClient })
   return router

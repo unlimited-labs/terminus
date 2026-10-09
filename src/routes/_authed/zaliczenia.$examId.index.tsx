@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { ExamActions, ExamHeader, ExamSettingsForm } from "@/components/exam-settings"
@@ -28,7 +28,7 @@ function ExamPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const { data: exam } = useSuspenseQuery(examQuery(examId))
-  if (!exam) return null
+  if (!exam) throw notFound()
   const tab = search.tab ?? (exam.rosters.length ? "sloty" : "lista")
   return (
     <div className="grid gap-6">

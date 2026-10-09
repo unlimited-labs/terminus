@@ -37,6 +37,10 @@ test("usunięte w trakcie zaliczenie: komunikat zamiast pustej strony", async ({
   await admin.getByLabel("Nazwa zaliczenia").fill("Usuwane E2E")
   await admin.getByRole("button", { name: "Usuń na zawsze" }).click()
   await admin.waitForURL((url) => url.pathname === "/")
+  await expect(admin.getByRole("heading", { name: "Moje zaliczenia" })).toBeVisible()
+  await admin.goBack()
+  await expect(admin.getByRole("heading", { name: "Nie znaleziono strony" })).toBeVisible()
+  await expect(admin.getByRole("link", { name: "Moje zaliczenia" })).toBeVisible()
   await admin.close()
 
   await page.clock.runFor(31_000)

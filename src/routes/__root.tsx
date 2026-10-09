@@ -33,11 +33,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
-  notFoundComponent: () => (
-    <main className="mx-auto max-w-xl p-6 pt-16">
-      <h1 className="text-2xl font-extrabold">Nie znaleziono strony</h1>
-    </main>
-  ),
   shellComponent: RootDocument,
 })
 

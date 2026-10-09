@@ -1,7 +1,7 @@
-import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
+import { useLeaveExam } from "@/components/exam-settings"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -12,13 +12,8 @@ import type { ExamDetail } from "@/server/exam-state.server"
 import { addExamTeacher, examsQuery, removeExamTeacher } from "@/server/exams"
 
 export function TeacherSection({ exam, userId }: { exam: ExamDetail; userId: string }) {
-  const navigate = useNavigate()
   const remove = useExamMutation(removeExamTeacher, exam.id)
-  const leave = useResultMutation(
-    removeExamTeacher,
-    [examsQuery().queryKey],
-    () => void navigate({ to: "/" }),
-  )
+  const leave = useResultMutation(removeExamTeacher, [examsQuery().queryKey], useLeaveExam(exam.id))
   const last = exam.teachers.length === 1
 
   return (

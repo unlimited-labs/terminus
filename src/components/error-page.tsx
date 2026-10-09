@@ -4,6 +4,14 @@ import { useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
 
+export function NotFoundPage() {
+  return (
+    <main className="mx-auto max-w-xl p-6 pt-16">
+      <h1 className="text-2xl font-extrabold">Nie znaleziono strony</h1>
+    </main>
+  )
+}
+
 export function ErrorPage() {
   const router = useRouter()
   const queryErrorResetBoundary = useQueryErrorResetBoundary()

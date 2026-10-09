@@ -23,8 +23,8 @@ function AuthedLayout() {
       toast.error(failure)
       return
     }
-    queryClient.clear()
     await router.navigate({ to: "/login" })
+    queryClient.clear()
   }
   return (
     <div className="min-h-svh">

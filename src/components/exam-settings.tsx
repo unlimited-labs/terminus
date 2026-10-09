@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 
@@ -11,7 +12,7 @@ import { examCounts } from "@/domain/schedule"
 import { warsawDay, warsawTime } from "@/domain/time"
 import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { deleteExam, examsQuery, updateExam } from "@/server/exams"
+import { deleteExam, examQuery, examsQuery, updateExam } from "@/server/exams"
 
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
@@ -61,8 +62,18 @@ export function ExamHeader({ exam }: { exam: ExamDetail }) {
   )
 }
 
-export function ExamActions({ exam }: { exam: ExamDetail }) {
+/** Najpierw nawigacja, potem usunięcie z cache: odwrotnie zamontowana strona pobrałaby je od nowa i mignęło 404. */
+export function useLeaveExam(examId: string) {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  return () =>
+    void navigate({ to: "/" }).then(() =>
+      queryClient.removeQueries({ queryKey: examQuery(examId).queryKey }),
+    )
+}
+
+export function ExamActions({ exam }: { exam: ExamDetail }) {
+  const leaveExam = useLeaveExam(exam.id)
   return (
     <div className="flex flex-wrap gap-2">
       <ExportButton examId={exam.id} />
@@ -71,7 +82,7 @@ export function ExamActions({ exam }: { exam: ExamDetail }) {
         exam={exam}
         deleteFn={deleteExam}
         invalidate={[examsQuery().queryKey]}
-        onDeleted={() => void navigate({ to: "/" })}
+        onDeleted={leaveExam}
       />
     </div>
   )

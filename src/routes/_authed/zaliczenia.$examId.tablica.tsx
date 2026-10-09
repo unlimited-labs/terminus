@@ -1,5 +1,5 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { Link, createFileRoute, notFound } from "@tanstack/react-router"
 
 import { EnrollmentBoard, useBoardBusy } from "@/components/enrollment-board"
 import { examQuery } from "@/server/exams"
@@ -21,7 +21,7 @@ function BoardPage() {
     ...examQuery(examId),
     refetchInterval: mutating ? false : 30_000,
   })
-  if (!exam) return null
+  if (!exam) throw notFound()
   return (
     <div className="grid gap-3">
       <Link to="/zaliczenia/$examId" params={{ examId }} className="text-sm text-primary">
