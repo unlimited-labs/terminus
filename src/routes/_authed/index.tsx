@@ -1,3 +1,4 @@
+import { Meter } from "@base-ui/react/meter"
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
@@ -119,18 +120,11 @@ function ExamRow({ exam }: { exam: Exam }) {
               <strong>{exam.enrolled}</strong>{" "}
               <span className="text-muted-foreground">z {exam.entries} zapisanych</span>
             </p>
-            <div
-              role="meter"
-              aria-label="Zapisani"
-              aria-valuenow={exam.enrolled}
-              aria-valuemax={exam.entries}
-              className="h-1.5 overflow-hidden rounded-full bg-secondary"
-            >
-              <div
-                className="h-full rounded-full bg-free"
-                style={{ width: `${(exam.enrolled / exam.entries) * 100}%` }}
-              />
-            </div>
+            <Meter.Root aria-label="Zapisani" value={exam.enrolled} max={exam.entries}>
+              <Meter.Track className="h-1.5 overflow-hidden rounded-full bg-secondary">
+                <Meter.Indicator className="h-full rounded-full bg-free" />
+              </Meter.Track>
+            </Meter.Root>
           </div>
         )}
       </Link>
