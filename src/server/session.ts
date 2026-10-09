@@ -1,3 +1,4 @@
+import { queryOptions } from "@tanstack/react-query"
 import { createMiddleware, createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 
@@ -5,7 +6,11 @@ import { ACCESS_DENIED } from "../messages.pl.ts"
 
 import { sessionUser } from "./auth.server.ts"
 
-export const getSessionUser = createServerFn().handler(() => sessionUser(getRequestHeaders()))
+const getSessionUser = createServerFn().handler(() => sessionUser(getRequestHeaders()))
+
+/** Sesja dla `beforeLoad` bez wywołania serwera przy każdej nawigacji; dane i tak chroni `requireUser`. */
+export const sessionQuery = () =>
+  queryOptions({ queryKey: ["session"], queryFn: () => getSessionUser(), staleTime: 60_000 })
 
 export const requireUser = createMiddleware({ type: "function" }).server(async ({ next }) => {
   const user = await sessionUser(getRequestHeaders())

@@ -3,11 +3,11 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { authClient, authFailure } from "@/lib/auth-client"
-import { getSessionUser } from "@/server/session"
+import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/_authed")({
-  beforeLoad: async ({ location }) => {
-    const user = await getSessionUser()
+  beforeLoad: async ({ context, location }) => {
+    const user = await context.queryClient.query(sessionQuery())
     if (!user) throw redirect({ to: "/login", search: { redirect: location.href } })
     return { user }
   },
@@ -23,6 +23,7 @@ function AuthedLayout() {
       toast.error(failure)
       return
     }
+    queryClient.removeQueries({ queryKey: sessionQuery().queryKey })
     await router.navigate({ to: "/login" })
     queryClient.clear()
   }

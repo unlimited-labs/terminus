@@ -6,12 +6,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { authClient, authFailure } from "@/lib/auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
-import { getSessionUser } from "@/server/session"
+import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
-  beforeLoad: async () => {
-    if (await getSessionUser()) throw redirect({ to: "/" })
+  beforeLoad: async ({ context }) => {
+    if (await context.queryClient.query(sessionQuery())) throw redirect({ to: "/" })
   },
   head: () => ({ meta: [{ title: "Logowanie — Terminus" }] }),
   component: Login,

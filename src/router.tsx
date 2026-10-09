@@ -1,13 +1,24 @@
-import { QueryClient } from "@tanstack/react-query"
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query"
 import { createRouter } from "@tanstack/react-router"
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
 
 import { ErrorPage, NotFoundPage } from "./components/error-page"
+import { ACCESS_DENIED } from "./messages.pl"
 import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
   // staleTime > 0: dane z SSR nie są pobierane drugi raz zaraz po hydracji; świeżość dają unieważnienia po mutacjach.
-  const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 30_000 } } })
+  // Sesja wygasła lub odebrana, a `beforeLoad` wziął ją z cache: zamiast strony błędu logowanie.
+  const onError = (error: Error) => {
+    if (error.message !== ACCESS_DENIED || typeof window === "undefined") return
+    queryClient.clear()
+    void router.navigate({ to: "/login", search: { redirect: router.state.location.href } })
+  }
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { staleTime: 30_000 } },
+    queryCache: new QueryCache({ onError }),
+    mutationCache: new MutationCache({ onError }),
+  })
   const router = createRouter({
     routeTree,
     context: { queryClient },
