@@ -1,115 +1,73 @@
-# Terminus — zapisy na zaliczenia
+<p align="center">
+  <img src="docs/assets/logo.png" width="96" alt="Terminus">
+</p>
 
-Prowadzący tworzy zaliczenie, importuje listy indeksów i definiuje sloty; student
-wchodzi na link zaliczenia, podaje numer indeksu (swój albo zespołu) i dostaje
-wylosowany slot. Specyfikacja: `SPEC.md`, słownik pojęć: `CONTEXT.md`.
+<h1 align="center">Terminus</h1>
 
-## Praca lokalna
+<p align="center">System zapisów na zaliczenia z losowym przydziałem terminów.</p>
 
-Wymagane: Node 24, pnpm 12, Docker (baza i testy na Testcontainers).
+## Opis
+
+Terminus przydziela studentom terminy zaliczeń w sposób losowy. Prowadzący
+importuje listy studentów z systemu uczelni i definiuje przedziały czasu, które
+system dzieli na sloty o zadanej długości. Student otwiera link zaliczenia,
+podaje numer indeksu (własny lub numery całego zespołu) i otrzymuje
+wylosowany slot. Przydział jest ostateczny, a harmonogram jest jawny dla
+wszystkich posiadaczy linku.
+
+## Funkcje
+
+- Import list studentów z plików CSV, z podglądem zmian przed zapisaniem.
+- Generowanie slotów z okien czasowych.
+- Zapisy indywidualne i zespołowe, z opcjonalnymi polami wypełnianymi przy zapisie.
+- Tablica zapisów do ręcznego przenoszenia i usuwania przydziałów.
+- Wspólne zarządzanie zaliczeniem przez kilku prowadzących.
+- Eksport wyników do CSV.
+- Zarządzanie kontami prowadzących przez superadministratora.
+
+Studenci nie zakładają kont; identyfikuje ich wyłącznie numer indeksu.
+
+## Wymagania
+
+- Node.js 24
+- pnpm 12
+- Docker (lokalna baza PostgreSQL i testy)
+
+## Uruchomienie lokalne
 
 ```sh
-pnpm db:up                    # PostgreSQL z compose.dev.yaml na localhost:55432 (zapisy/zapisy)
-cp .env.example .env          # DATABASE_URL=postgresql://zapisy:zapisy@localhost:55432/zapisy, sekret, ADMIN_*
 pnpm install
-pnpm exec prisma migrate dev  # schemat bazy
-pnpm seed-admin               # pierwszy superadmin z ADMIN_*
-pnpm dev                      # http://localhost:3000
+pnpm db:up
+cp .env.example .env
+pnpm exec prisma migrate dev
+pnpm seed-admin
+pnpm dev
 ```
 
-| Polecenie                     | Co robi                                                                                                  |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `pnpm db:up` / `pnpm db:down` | lokalna baza deweloperska (`compose.dev.yaml`, dane w wolumenie `zapisy-dev-db`)                         |
-| `pnpm check`                  | oxlint, oxfmt, tsc, fallow, react-doctor, testy jednostkowe i bazodanowe, build                          |
-| `pnpm e2e`                    | Playwright na zbudowanej aplikacji i świeżej bazie w kontenerze                                          |
-| `pnpm release`                | `check` + `e2e`, potem obraz `linux/amd64` z tagiem z gita, wysłany do rejestru (`IMAGE=… pnpm release`) |
-| `pnpm reset-password <email>` | nowe losowe hasło dla konta, wylogowuje jego sesje                                                       |
+Przed migracją należy uzupełnić w `.env` co najmniej `DATABASE_URL`
+(dla bazy lokalnej: `postgresql://zapisy:zapisy@localhost:55432/zapisy`),
+`BETTER_AUTH_SECRET`, `APP_PUBLIC_URL` (lokalnie `http://localhost:3000`)
+oraz dane pierwszego konta w `ADMIN_EMAIL`,
+`ADMIN_PASSWORD` i `ADMIN_NAME`. Aplikacja jest dostępna pod adresem
+http://localhost:3000.
 
-Pliki `src/server/*.server.ts` to kod tylko serwerowy (Prisma, Better Auth);
-build przerywa się, gdy kod przeglądarki próbuje go zaimportować.
+## Polecenia
 
-## Baza danych na VPS (raz, ręcznie)
+| Polecenie | Opis |
+| --- | --- |
+| `pnpm dev` | Serwer deweloperski |
+| `pnpm check` | Lint, formatowanie, kontrola typów, testy jednostkowe i bazodanowe, build |
+| `pnpm e2e` | Testy end-to-end (Playwright) |
+| `pnpm db:up` / `pnpm db:down` | Uruchomienie i zatrzymanie lokalnej bazy |
+| `pnpm reset-password <email>` | Nowe hasło dla konta prowadzącego |
 
-We wspólnym kontenerze PostgreSQL (wersja 9.6–18 — wymóg Prisma 7) jako
-superużytkownik:
+## Technologie
 
-```sql
-CREATE USER zapisy WITH PASSWORD 'silne-haslo';
-CREATE DATABASE zapisy OWNER zapisy;
-REVOKE ALL ON DATABASE zapisy FROM PUBLIC;
-```
+TanStack Start, React 19, Prisma 7, PostgreSQL, Better Auth, Tailwind CSS 4,
+shadcn/ui.
 
-Tabele powstają w schemacie `public` tej bazy przy starcie kontenera aplikacji
-(`prisma migrate deploy`). Kopie zapasowe są po stronie właściciela wspólnej bazy.
+## Dokumentacja
 
-## Wdrożenie
-
-Na VPS są tylko `compose.yaml` i `.env` (wzór: `.env.example`). Aplikacja nie
-wystawia portów; NPMplus łączy się z nią po nazwie kontenera `terminus`, port
-3000, w zewnętrznej sieci `PROXY_NETWORK`. Baza jest osiągalna w sieci
-`DB_NETWORK`.
-
-1. Lokalnie: `IMAGE=registry.wimiip.eu/terminus pnpm release` — wypisze tag.
-2. Na VPS: `IMAGE_TAG=<tag>` w `.env`, potem `docker compose up -d`.
-3. Wycofanie: poprzedni tag w `.env` i `docker compose up -d`.
-
-Migracje idą tylko w przód, więc wycofanie jest bezpieczne tylko wtedy, gdy
-schemat bazy pasuje też do poprzedniej wersji:
-
-- migracje zgodne wstecz — najpierw dodaj (nową kolumnę, tabelę), a usuwaj
-  lub zmieniaj starą dopiero w kolejnym wydaniu, gdy poprzednia wersja już nie
-  będzie potrzebna;
-- przed każdym `docker compose up -d` z nowym tagiem zrób kopię bazy. Baza jest
-  osiągalna tylko w sieci `DB_NETWORK`, a obraz aplikacji nie ma `pg_dump`,
-  więc kopię robi jednorazowy kontener `postgres` (wersja co najmniej taka jak
-  serwera), w katalogu z `.env`:
-
-  ```sh
-  set -a; . ./.env; set +a
-  docker run --rm --network "$DB_NETWORK" -v "$PWD:/backup" postgres:18-alpine     pg_dump --format=custom --file=/backup/terminus-$(date +%F).dump "$DATABASE_URL"
-  ```
-
-- gdy wydanie z migracją trzeba wycofać, a schemat nie jest zgodny wstecz:
-  zatrzymaj aplikację, przywróć kopię, dopiero potem poprzedni tag w `.env` i
-  `docker compose up -d`. Zapisy zrobione po kopii przepadają.
-
-  ```sh
-  docker compose stop app
-  docker run --rm --network "$DB_NETWORK" -v "$PWD:/backup" postgres:18-alpine     pg_restore --clean --if-exists --no-owner --dbname="$DATABASE_URL" /backup/terminus-<data>.dump
-  ```
-
-Kontener ma `HEALTHCHECK` (strona logowania); `docker ps` pokazuje `healthy`
-po starcie.
-
-Przy starcie kontener wykonuje migracje, zakłada superadmina z `ADMIN_*`, jeśli
-tego e-maila nie ma w bazie (istniejącego konta nie zmienia), i uruchamia serwer.
-Po pierwszym wdrożeniu usuń `ADMIN_PASSWORD` z `.env` — bez niego kontener
-pomija zakładanie superadmina i startuje normalnie.
-
-Przed pierwszym uruchomieniem sprawdzić na VPS:
-
-- wersję PostgreSQL (`SELECT version();`, Prisma 7 obsługuje 9.6–18);
-- że NPMplus nadpisuje nagłówek `X-Real-IP` adresem klienta, a nie przepuszcza
-  nagłówka przysłanego przez klienta — w nginx `proxy_set_header X-Real-IP
-$remote_addr;` w bloku `location`, który przekazuje ruch do aplikacji (w
-  bloku `server` nie zadziała, jeśli `location` ustawia własne nagłówki). Limit
-  prób zapisu liczy się po tym adresie: 10 punktów na 10 minut, każde
-  odrzucone zgłoszenie z numerem spoza listy kosztuje tyle punktów, ile
-  numerów zawierało:
-  - bez nagłówka wszyscy studenci dzielą jeden licznik — kilka pomyłek blokuje
-    zapisy wszystkim; aplikacja ostrzega wtedy raz w logu („Brak nagłówka
-    X-Real-IP…”);
-  - nagłówek przepuszczony od klienta pozwala limit obejść;
-- akceptację klauzuli RODO (`docs/klauzula-informacyjna.md`) przez Inspektora
-  Ochrony Danych AGH.
-
-## Utracone hasło
-
-Superadmin ustawia nowe hasło innemu prowadzącemu w zakładce „Konta”. Gdy nie ma
-innego superadmina:
-
-```sh
-docker compose exec app pnpm reset-password <email>
-```
-
-Polecenie wypisuje nowe losowe hasło i wylogowuje wszystkie sesje tego konta.
+- `SPEC.md` — specyfikacja funkcjonalna
+- `CONTEXT.md` — słownik pojęć domenowych
+- `docs/adr/` — decyzje architektoniczne
