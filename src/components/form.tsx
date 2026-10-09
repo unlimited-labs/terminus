@@ -3,6 +3,7 @@ import { useId, useRef, type ReactNode } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
 
+import { hasManyRosters } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
@@ -161,7 +162,7 @@ function SelectField({
 }
 
 function RosterField({ rosters }: { rosters: { id: string; name: string }[] }) {
-  if (rosters.length < 2) return null
+  if (!hasManyRosters(rosters)) return null
   return (
     <SelectField label="Lista" options={rosters.map((r) => ({ value: r.id, label: r.name }))} />
   )

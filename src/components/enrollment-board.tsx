@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
+import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
 import { toastFailure, toastUnexpected } from "@/components/use-result-mutation"
@@ -102,8 +103,8 @@ function useBoardCommand(exam: ExamDetail) {
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
   const run = useBoardCommand(exam)
-  const multi = exam.rosters.length > 1
-  const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
+  const multi = hasManyRosters(exam.rosters)
+  const rosterName = rosterNames(exam.rosters)
   const q = search.trim().toLowerCase()
   const highlight = (p: ExamDetail["people"][number]) =>
     q !== "" &&

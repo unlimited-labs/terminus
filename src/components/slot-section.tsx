@@ -3,22 +3,22 @@ import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
-import { currentRosterId } from "@/components/roster-choice"
+import { currentRosterId, hasManyRosters } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useResultMutation } from "@/components/use-result-mutation"
+import { useExamMutation } from "@/components/use-result-mutation"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
 import { errorMessage } from "@/messages.pl"
 import { updateSlotSchema, windowSchema } from "@/schemas/slot"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { addSlotWindow, deleteFreeSlotsOfDay, deleteSlot, updateSlot } from "@/server/slots"
-import { examChangeKeys } from "@/server/exams"
 
 type Slot = ExamDetail["slots"][number]
+type Person = ExamDetail["people"][number]
 
 export function CapacitySummary({ exam }: { exam: ExamDetail }) {
-  const single = exam.rosters.length === 1
+  const many = hasManyRosters(exam.rosters)
   return (
     <ul className="grid gap-1 text-sm">
       {exam.rosters.map((roster) => {
@@ -26,7 +26,7 @@ export function CapacitySummary({ exam }: { exam: ExamDetail }) {
         const places = exam.slots.filter((s) => s.rosterId === roster.id).length * exam.maxTeamSize
         return (
           <li key={roster.id} className={places < people ? "text-destructive" : undefined}>
-            {single ? "" : `${roster.name}: `}
+            {many ? `${roster.name}: ` : ""}
             <span className="tabular-nums">
               indeksy: {people}, miejsca w slotach: {places}
             </span>
@@ -40,6 +40,7 @@ export function CapacitySummary({ exam }: { exam: ExamDetail }) {
 
 export function SlotSection({ exam }: { exam: ExamDetail }) {
   const days = Map.groupBy(exam.slots, (s) => warsawDay(s.startsAt))
+  const teams = Map.groupBy(exam.people, (p) => p.slotId)
   return (
     <div className="grid gap-6">
       <Card>
@@ -64,7 +65,7 @@ export function SlotSection({ exam }: { exam: ExamDetail }) {
           {[...days].map(([day, slots]) => (
             <Card key={day}>
               <CardContent>
-                <DaySlots exam={exam} day={day} slots={slots} />
+                <DaySlots exam={exam} day={day} slots={slots} teams={teams} />
               </CardContent>
             </Card>
           ))}
@@ -75,7 +76,7 @@ export function SlotSection({ exam }: { exam: ExamDetail }) {
 }
 
 function WindowForm({ exam }: { exam: ExamDetail }) {
-  const add = useResultMutation(addSlotWindow, examChangeKeys(exam.id), ({ count }) =>
+  const add = useExamMutation(addSlotWindow, exam.id, ({ count }) =>
     toast.success(`Dodano sloty: ${count}.`),
   )
   const form = useAppForm({
@@ -143,23 +144,31 @@ function WindowPreview({
   )
 }
 
-function DaySlots({ exam, day, slots }: { exam: ExamDetail; day: string; slots: Slot[] }) {
-  const removeFree = useResultMutation(
-    deleteFreeSlotsOfDay,
-    examChangeKeys(exam.id),
-    ({ deleted, skipped }) =>
-      toast.success(
-        `Usunięto wolne sloty: ${deleted}.${skipped > 0 ? ` Pominięto sloty z zapisami: ${skipped}.` : ""}`,
-      ),
+function DaySlots({
+  exam,
+  day,
+  slots,
+  teams,
+}: {
+  exam: ExamDetail
+  day: string
+  slots: Slot[]
+  teams: Map<string | null, Person[]>
+}) {
+  const label = formatDayShort(slots[0]!.startsAt)
+  const removeFree = useExamMutation(deleteFreeSlotsOfDay, exam.id, ({ deleted, skipped }) =>
+    toast.success(
+      `Usunięto wolne sloty: ${deleted}.${skipped > 0 ? ` Pominięto sloty z zapisami: ${skipped}.` : ""}`,
+    ),
   )
   return (
     <section className="grid gap-2">
       <div className="flex items-center gap-3 border-b pb-1">
-        <h3 className="font-bold capitalize">{formatDayShort(slots[0]!.startsAt)}</h3>
+        <h3 className="font-bold capitalize">{label}</h3>
         <span className="ml-auto">
           <ConfirmButton
             title="Usunąć wolne sloty tego dnia?"
-            description={`${formatDayShort(slots[0]!.startsAt)}: znikną wszystkie sloty bez zapisów. Sloty z zapisami zostaną.`}
+            description={`${label}: znikną wszystkie sloty bez zapisów. Sloty z zapisami zostaną.`}
             confirmLabel="Usuń wolne sloty"
             onConfirm={() => removeFree.mutateAsync({ examId: exam.id, day })}
           >
@@ -169,17 +178,16 @@ function DaySlots({ exam, day, slots }: { exam: ExamDetail; day: string; slots: 
       </div>
       <ul className="grid gap-1">
         {slots.map((slot) => (
-          <SlotListItem key={slot.id} exam={exam} slot={slot} />
+          <SlotListItem key={slot.id} exam={exam} slot={slot} team={teams.get(slot.id) ?? []} />
         ))}
       </ul>
     </section>
   )
 }
 
-function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
+function SlotListItem({ exam, slot, team }: { exam: ExamDetail; slot: Slot; team: Person[] }) {
   const [editing, setEditing] = useState(false)
-  const team = exam.people.filter((p) => p.slotId === slot.id)
-  const remove = useResultMutation(deleteSlot, examChangeKeys(exam.id))
+  const remove = useExamMutation(deleteSlot, exam.id)
   const roster = exam.rosters.find((r) => r.id === slot.rosterId)
 
   if (editing) return <SlotEditForm exam={exam} slot={slot} onDone={() => setEditing(false)} />
@@ -187,7 +195,7 @@ function SlotListItem({ exam, slot }: { exam: ExamDetail; slot: Slot }) {
     <li className="grid grid-cols-[auto_1fr_auto] items-start gap-x-3 py-0.5 text-sm">
       <span className="grid">
         <span className="font-semibold tabular-nums">{formatSlotTime(slot)}</span>
-        {exam.rosters.length > 1 && (
+        {hasManyRosters(exam.rosters) && (
           <span className="text-xs text-muted-foreground">{roster?.name}</span>
         )}
       </span>
@@ -229,7 +237,7 @@ function SlotEditForm({
   slot: Slot
   onDone: () => void
 }) {
-  const update = useResultMutation(updateSlot, examChangeKeys(exam.id), onDone)
+  const update = useExamMutation(updateSlot, exam.id, onDone)
   const form = useAppForm({
     defaultValues: {
       examId: exam.id,

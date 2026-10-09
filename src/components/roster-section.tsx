@@ -16,8 +16,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { currentRosterId } from "@/components/roster-choice"
-import { useResultMutation } from "@/components/use-result-mutation"
+import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roster-choice"
+import { useExamMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { formatDayTime } from "@/domain/time"
 import { errorMessage, INVALID_ROW } from "@/messages.pl"
@@ -30,13 +30,12 @@ import {
   deleteRosterEntry,
   previewRosterImport,
 } from "@/server/rosters"
-import { examChangeKeys } from "@/server/exams"
 
 export function RosterSection({ exam }: { exam: ExamDetail }) {
-  const multi = exam.rosters.length > 1
-  const rosterName = new Map(exam.rosters.map((r) => [r.id, r.name]))
-  const removeEntry = useResultMutation(deleteRosterEntry, examChangeKeys(exam.id))
-  const removeRoster = useResultMutation(deleteRoster, examChangeKeys(exam.id))
+  const multi = hasManyRosters(exam.rosters)
+  const rosterName = rosterNames(exam.rosters)
+  const removeEntry = useExamMutation(deleteRosterEntry, exam.id)
+  const removeRoster = useExamMutation(deleteRoster, exam.id)
 
   return (
     <Card>
@@ -114,7 +113,7 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
 }
 
 function AddEntryForm({ exam }: { exam: ExamDetail }) {
-  const add = useResultMutation(addRosterEntry, examChangeKeys(exam.id), () =>
+  const add = useExamMutation(addRosterEntry, exam.id, () =>
     toast.success("Dodano osobę do listy."),
   )
   const form = useAppForm({
@@ -152,7 +151,7 @@ type ImportInput = { examId: string; rosterName: string; csv: string }
 function RosterImport({ exam }: { exam: ExamDetail }) {
   const [input, setInput] = useState<ImportInput | null>(null)
   const preview = useMutation({ mutationFn: (data: ImportInput) => previewRosterImport({ data }) })
-  const apply = useResultMutation(applyRosterImport, examChangeKeys(exam.id), () => {
+  const apply = useExamMutation(applyRosterImport, exam.id, () => {
     setInput(null)
     preview.reset()
     toast.success("Zaimportowano listę.")

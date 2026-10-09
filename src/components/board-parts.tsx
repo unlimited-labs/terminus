@@ -2,6 +2,7 @@ import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
 import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useRef, useState } from "react"
 
+import { hasManyRosters } from "@/components/roster-choice"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -319,7 +320,7 @@ export function UnenrolledPanel({
   })
   const unenrolled = exam.people.filter((p) => p.slotId === null)
   const shown = unenrolled.filter((p) => p.studentNumber.includes(filter.trim()))
-  const groups = exam.rosters.length > 1 ? exam.rosters : [{ id: null, name: "" }]
+  const groups = hasManyRosters(exam.rosters) ? exam.rosters : [{ id: null, name: "" }]
 
   return (
     <aside

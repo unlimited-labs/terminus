@@ -6,14 +6,14 @@ import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useResultMutation } from "@/components/use-result-mutation"
+import { useExamMutation, useResultMutation } from "@/components/use-result-mutation"
 import { addTeacherSchema } from "@/schemas/exam"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { addExamTeacher, examChangeKeys, examsQuery, removeExamTeacher } from "@/server/exams"
+import { addExamTeacher, examsQuery, removeExamTeacher } from "@/server/exams"
 
 export function TeacherSection({ exam, userId }: { exam: ExamDetail; userId: string }) {
   const navigate = useNavigate()
-  const remove = useResultMutation(removeExamTeacher, examChangeKeys(exam.id))
+  const remove = useExamMutation(removeExamTeacher, exam.id)
   const leave = useResultMutation(
     removeExamTeacher,
     [examsQuery().queryKey],
@@ -70,9 +70,7 @@ export function TeacherSection({ exam, userId }: { exam: ExamDetail; userId: str
 }
 
 function AddTeacherForm({ examId }: { examId: string }) {
-  const add = useResultMutation(addExamTeacher, examChangeKeys(examId), () =>
-    toast.success("Dodano prowadzącego."),
-  )
+  const add = useExamMutation(addExamTeacher, examId, () => toast.success("Dodano prowadzącego."))
   const form = useAppForm({
     defaultValues: { examId, email: "" },
     ...schemaSubmit(addTeacherSchema, add.mutateAsync, { resetOnOk: true }),

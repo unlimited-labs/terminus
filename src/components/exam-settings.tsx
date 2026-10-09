@@ -6,12 +6,12 @@ import { ExamForm } from "@/components/exam-form"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
-import { useResultMutation } from "@/components/use-result-mutation"
+import { useExamMutation } from "@/components/use-result-mutation"
 import { examCounts } from "@/domain/schedule"
 import { warsawDay, warsawTime } from "@/domain/time"
 import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { deleteExam, examChangeKeys, examsQuery, updateExam } from "@/server/exams"
+import { deleteExam, examsQuery, updateExam } from "@/server/exams"
 
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
@@ -78,9 +78,7 @@ export function ExamActions({ exam }: { exam: ExamDetail }) {
 }
 
 export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
-  const update = useResultMutation(updateExam, examChangeKeys(exam.id), () =>
-    toast.success("Zapisano zmiany."),
-  )
+  const update = useExamMutation(updateExam, exam.id, () => toast.success("Zapisano zmiany."))
   return (
     <Card>
       <CardHeader>

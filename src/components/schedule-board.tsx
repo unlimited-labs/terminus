@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
@@ -49,7 +50,7 @@ export function ScheduleBoard({
   const shown = pulse ? schedule.slots.find((s) => s.id === mySlotId) : undefined
   const [rosterId, setRosterId] = useState<string | null>(null)
   const [chosenDay, setChosenDay] = useState(shown ? warsawDay(shown.startsAt) : null)
-  const multi = schedule.rosters.length > 1
+  const multi = hasManyRosters(schedule.rosters)
   const visible = schedule.slots.filter((s) => rosterId === null || s.rosterId === rosterId)
   const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt))]
   const firstFree = Math.max(
@@ -102,7 +103,7 @@ export function ScheduleBoard({
           now={schedule.now}
           mySlotId={mySlotId}
           pulse={pulse}
-          rosterName={multi ? new Map(schedule.rosters.map((r) => [r.id, r.name])) : null}
+          rosterName={multi ? rosterNames(schedule.rosters) : null}
         />
       )}
     </section>

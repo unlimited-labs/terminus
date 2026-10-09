@@ -3,6 +3,7 @@ import { useRef } from "react"
 import { toast } from "sonner"
 
 import { errorMessage, UNEXPECTED_ERROR, type AppError, type Result } from "@/messages.pl"
+import { examChangeKeys } from "@/server/exams"
 
 export const toastFailure = (failure: AppError) => toast.error(errorMessage(failure))
 
@@ -44,3 +45,10 @@ export function useResultMutation<TInput, TOut extends object>(
   }
   return { ...mutation, mutate }
 }
+
+/** Mutacja zmieniająca zaliczenie: odświeża je i listę zaliczeń. */
+export const useExamMutation = <TInput, TOut extends object>(
+  fn: (opts: { data: TInput }) => Promise<Result<TOut>>,
+  examId: string,
+  onOk?: (result: { ok: true } & TOut) => void,
+) => useResultMutation(fn, examChangeKeys(examId), onOk)
