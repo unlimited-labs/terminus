@@ -176,6 +176,7 @@ export const OPS = {
   noRealIp:
     "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
   unknownTimeZone: "Nieznana strefa czasowa.",
+  smtpCredentials: "SMTP_USER i SMTP_PASSWORD ustawia się razem albo wcale.",
 }
 
 /** Limit długości pola tekstowego. */

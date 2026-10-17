@@ -51,6 +51,15 @@ oraz dane pierwszego konta w `ADMIN_EMAIL`,
 `ADMIN_PASSWORD` i `ADMIN_NAME`. Aplikacja jest dostępna pod adresem
 http://localhost:3000.
 
+## Logowanie mailem (opcjonalne)
+
+Opcja zaliczenia „Wymagaj logowania mailem” wysyła studentowi jednorazowy link na adres z listy,
+więc wymaga serwera SMTP: `SMTP_HOST`, `SMTP_PORT` i `SMTP_FROM` (opcjonalnie `SMTP_USER` razem
+z `SMTP_PASSWORD`). Port 465 oznacza TLS od razu, inny port STARTTLS. Bez tych zmiennych opcji nie
+da się włączyć, a włączona wcześniej pokazuje studentom komunikat o chwilowej niedostępności.
+Adresy studentów trafiają do serwera poczty, dlatego zalecany jest SMTP uczelniany albo
+w Europejskim Obszarze Gospodarczym (klauzula informacyjna, pkt 10).
+
 ## Polecenia
 
 | Polecenie                     | Opis                                                                      |
