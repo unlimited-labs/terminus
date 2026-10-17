@@ -43,7 +43,8 @@ i w sprawie swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/W
 8. przysługuje Panu/Pani prawo wniesienia skargi do organu nadzorczego – Prezesa
    Urzędu Ochrony Danych Osobowych w trybie art. 77 RODO;
 9. Pani/Pana dane osobowe nie będą podlegały profilowaniu; termin zaliczenia
-   jest przydzielany losowo i może zostać zmieniony przez prowadzącego;
+   jest przydzielany losowo albo wybierany przez osobę zapisującą się,
+   zależnie od ustawienia zaliczenia, i może zostać zmieniony przez prowadzącego;
 10. Pani/Pana dane osobowe nie będą przekazywane państwom trzecim;
 11. podanie danych osobowych jest warunkiem zapisu na zaliczenie przez tę
     aplikację;

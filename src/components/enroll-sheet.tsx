@@ -6,18 +6,24 @@ import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { failureNotice, UNEXPECTED_ERROR } from "@/messages.pl"
-import { enrollmentSchema } from "@/schemas/enrollment"
+import { failureNotice, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
+import { enrollmentFormSchema } from "@/schemas/enrollment"
+import type { AssignmentMode } from "@/domain/draw"
 import type { Answers, ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/enroll"
 import { scheduleQuery } from "@/server/schedule"
+
+export type PickedSlot = { id: string; label: string }
 
 export function EnrollSheet({
   examId,
   place,
   title,
   submitLabel,
+  assignmentMode,
+  choosing,
+  picked,
   maxTeamSize,
   fields,
   open,
@@ -30,6 +36,9 @@ export function EnrollSheet({
   place: string
   title: string
   submitLabel: string
+  assignmentMode: AssignmentMode
+  choosing: boolean
+  picked: PickedSlot | null
   maxTeamSize: number
   fields: ExamField[]
   open: boolean
@@ -53,6 +62,9 @@ export function EnrollSheet({
           ) : (
             <EnrollForm
               examId={examId}
+              assignmentMode={assignmentMode}
+              choosing={choosing}
+              picked={picked}
               maxTeamSize={maxTeamSize}
               fields={fields}
               submitLabel={submitLabel}
@@ -68,26 +80,44 @@ export function EnrollSheet({
 const MIN_DRAW_MS = 700
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-function EnrollForm({
-  examId,
-  maxTeamSize,
-  fields,
-  submitLabel,
-  onEnrolled,
-}: {
-  examId: string
-  maxTeamSize: number
-  fields: ExamField[]
-  submitLabel: string
-  onEnrolled: (slotId: string, ticket: TicketData) => void
-}) {
-  const team = maxTeamSize > 1
+function enrollRequest(
+  examId: string,
+  input: { studentNumbers: string[]; answers: Answers },
+  assignmentMode: AssignmentMode,
+  picked: PickedSlot | null,
+) {
+  return assignmentMode === "MANUAL"
+    ? { examId, ...input, assignmentMode, slotId: picked?.id }
+    : { examId, ...input, assignmentMode }
+}
+
+function PickedNotice({ picked }: { picked: PickedSlot | null }) {
+  return (
+    <p className="rounded-xl border-2 border-primary/30 bg-card px-4 py-3">
+      {picked ? (
+        <>
+          Wybrany slot: <b className="tabular-nums">{picked.label}</b>
+        </>
+      ) : (
+        "Nie wybrano slotu. Zamknij panel i kliknij wolny slot na planszy."
+      )}
+    </p>
+  )
+}
+
+function useDraw(
+  examId: string,
+  assignmentMode: AssignmentMode,
+  picked: PickedSlot | null,
+  onEnrolled: (slotId: string, ticket: TicketData) => void,
+) {
   const queryClient = useQueryClient()
-  const draw = useMutation({
+  return useMutation({
     mutationFn: async (input: { studentNumbers: string[]; answers: Answers }) => {
+      const request = enrollRequest(examId, input, assignmentMode, picked)
       const [outcome] = await Promise.all([
-        enroll({ data: { examId, ...input } }),
-        wait(MIN_DRAW_MS),
+        enroll({ data: request }),
+        assignmentMode === "RANDOM" ? wait(MIN_DRAW_MS) : undefined,
       ])
       return outcome
     },
@@ -96,38 +126,67 @@ function EnrollForm({
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
   })
+}
+
+const PENDING_TEXT = { RANDOM: "Losowanie slotu…", MANUAL: "Zapisywanie…" }
+
+function outcomeNotice(outcome: Result | undefined, studentNumbers: string[] = []) {
+  return outcome && !outcome.ok ? failureNotice(outcome, studentNumbers) : null
+}
+
+function PendingStatus({ text }: { text: string }) {
+  return (
+    <p
+      role="status"
+      className="grid min-h-44 place-items-center rounded-xl border-2 border-dashed text-muted-foreground"
+    >
+      {text}
+    </p>
+  )
+}
+
+function EnrollForm({
+  examId,
+  assignmentMode,
+  choosing,
+  picked,
+  maxTeamSize,
+  fields,
+  submitLabel,
+  onEnrolled,
+}: {
+  examId: string
+  assignmentMode: AssignmentMode
+  choosing: boolean
+  picked: PickedSlot | null
+  maxTeamSize: number
+  fields: ExamField[]
+  submitLabel: string
+  onEnrolled: (slotId: string, ticket: TicketData) => void
+}) {
+  const team = maxTeamSize > 1
+  const draw = useDraw(examId, assignmentMode, picked, onEnrolled)
   const form = useAppForm({
     defaultValues: {
       examId,
       studentNumbers: [""],
       answers: Object.fromEntries(fields.map((f) => [f.id, ""])),
     },
-    ...schemaSubmit(enrollmentSchema, draw.mutateAsync),
+    ...schemaSubmit(enrollmentFormSchema, draw.mutateAsync),
     onSubmitInvalid: () => draw.reset(),
   })
-  const notice =
-    draw.data && !draw.data.ok
-      ? failureNotice(draw.data, draw.variables?.studentNumbers ?? [])
-      : null
+  const notice = outcomeNotice(draw.data, draw.variables?.studentNumbers)
   const flagged = new Set(notice?.flagged)
   // Po odpowiedzi serwera formularz rysuje się od nowa — fokus na pierwszy wskazany indeks.
   const firstFlagged = draw.variables?.studentNumbers.findIndex((n) => flagged.has(n)) ?? -1
 
-  if (draw.isPending) {
-    return (
-      <p
-        role="status"
-        className="grid min-h-44 place-items-center rounded-xl border-2 border-dashed text-muted-foreground"
-      >
-        Losowanie slotu…
-      </p>
-    )
-  }
+  if (draw.isPending) return <PendingStatus text={PENDING_TEXT[assignmentMode]} />
 
   return (
     <form.AppForm>
       <form.Form className="grid gap-4">
         {notice && <Notice tone={notice.tone}>{notice.text}</Notice>}
+        {choosing && <PickedNotice picked={picked} />}
         {draw.isError && <Notice tone="error">{UNEXPECTED_ERROR}</Notice>}
         <form.Field name="studentNumbers" mode="array">
           {(list) => (
@@ -173,7 +232,7 @@ function EnrollForm({
             )}
           </form.AppField>
         ))}
-        <form.SubmitButton>{submitLabel}</form.SubmitButton>
+        <form.SubmitButton disabled={choosing && !picked}>{submitLabel}</form.SubmitButton>
         <PrivacyNotice />
       </form.Form>
     </form.AppForm>

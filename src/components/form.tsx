@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { UNEXPECTED_ERROR } from "@/messages.pl"
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
@@ -161,6 +162,38 @@ function SelectField({
   )
 }
 
+function ToggleField({
+  label,
+  hint,
+  options,
+}: {
+  label: string
+  hint?: string
+  options: { value: string; label: string }[]
+}) {
+  const field = useFieldContext<string>()
+  const id = useId()
+  return (
+    <div className="grid gap-1.5">
+      <Label id={id}>{label}</Label>
+      <ToggleGroup
+        aria-labelledby={id}
+        variant="outline"
+        value={[field.state.value]}
+        // Kliknięcie wybranej opcji zwraca pustą tablicę; zostaje poprzednia wartość.
+        onValueChange={(v) => v[0] && field.handleChange(v[0])}
+      >
+        {options.map((o) => (
+          <ToggleGroupItem key={o.value} value={o.value}>
+            {o.label}
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+      {hint && <p className="text-sm text-muted-foreground">{hint}</p>}
+    </div>
+  )
+}
+
 function RosterField({ rosters }: { rosters: { id: string; name: string }[] }) {
   if (!hasManyRosters(rosters)) return null
   return (
@@ -209,12 +242,12 @@ function Form({ className, children }: { className?: string; children: React.Rea
   )
 }
 
-function SubmitButton({ children }: { children: React.ReactNode }) {
+function SubmitButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
   const form = useFormContext()
   return (
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting}>
+        <Button type="submit" disabled={isSubmitting || disabled}>
           {children}
         </Button>
       )}
@@ -225,7 +258,14 @@ function SubmitButton({ children }: { children: React.ReactNode }) {
 export const { useAppForm } = createFormHook({
   fieldContext,
   formContext,
-  fieldComponents: { TextField, NumberField, SelectField, RosterField, CheckboxField },
+  fieldComponents: {
+    TextField,
+    NumberField,
+    SelectField,
+    ToggleField,
+    RosterField,
+    CheckboxField,
+  },
   formComponents: { Form, SubmitButton },
 })
 

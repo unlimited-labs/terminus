@@ -129,3 +129,102 @@ test("przekroczenie czasu pod blokadą daje BUSY zamiast wyjątku", async () => 
   expect(await pending).toEqual({ ok: false, code: "BUSY" })
   expect(await db.enrollment.count({ where: { examId } })).toBe(0)
 })
+
+const slotsOf = async (examId: string) =>
+  (await db.slot.findMany({ where: { examId }, orderBy: { startsAt: "asc" } })).map((x) => x.id)
+
+describe("enrollTeam: ręczny wybór slotu", () => {
+  test("zapis ląduje w wybranym slocie, nie w losowym", async () => {
+    const { examId } = await createExam({
+      assignmentMode: "MANUAL",
+      rosters: { g1: { students: ["51"], slots: [inDays(1), inDays(2), inDays(3)] } },
+    })
+    const [, second] = await slotsOf(examId)
+    const result = await enroll(examId, ["51"], {}, { shownMode: "MANUAL", slotId: second })
+    expect(result).toMatchObject({ ok: true, slotId: second, ticket: { startsAt: inDays(2) } })
+  })
+
+  test("dwa zespoły na ten sam slot: jeden przyjęty, drugi dostaje SLOT_UNAVAILABLE i nic nie zapisuje", async () => {
+    const { examId } = await createExam({
+      assignmentMode: "MANUAL",
+      rosters: { g1: { students: ["61", "62"], slots: [inDays(1), inDays(2)] } },
+    })
+    const [slotId] = await slotsOf(examId)
+    const options = { shownMode: "MANUAL", slotId } as const
+
+    const results = await Promise.all([
+      enroll(examId, ["61"], {}, options),
+      enroll(examId, ["62"], {}, options),
+    ])
+
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.find((r) => !r.ok)).toEqual({ ok: false, code: "SLOT_UNAVAILABLE" })
+    expect(await db.enrollment.count({ where: { examId } })).toBe(1)
+  })
+
+  test("slot innej listy, cudzy slot i brak wyboru nic nie zapisują", async () => {
+    const other = await createExam({
+      assignmentMode: "MANUAL",
+      rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
+    })
+    const { examId, rosterIds } = await createExam({
+      assignmentMode: "MANUAL",
+      rosters: {
+        g1: { students: ["71"], slots: [inDays(1)] },
+        g2: { students: ["72"], slots: [inDays(2)] },
+      },
+    })
+    const g2Slot = (await db.slot.findFirstOrThrow({ where: { rosterId: rosterIds.g2 } })).id
+    const foreignSlot = (await db.slot.findFirstOrThrow({ where: { examId: other.examId } })).id
+
+    expect(await enroll(examId, ["71"], {}, { shownMode: "MANUAL", slotId: g2Slot })).toMatchObject(
+      { ok: false, code: "SLOT_OTHER_ROSTER", teamRosterId: rosterIds.g1 },
+    )
+    expect(await enroll(examId, ["71"], {}, { shownMode: "MANUAL", slotId: foreignSlot })).toEqual({
+      ok: false,
+      code: "SLOT_UNAVAILABLE",
+    })
+    expect(await enroll(examId, ["71"], {}, { shownMode: "MANUAL" })).toMatchObject({
+      ok: false,
+      code: "NO_FREE_SLOTS",
+    })
+    expect(await db.enrollment.count({ where: { examId } })).toBe(0)
+  })
+
+  test("strona ze starym sposobem dostaje MODE_CHANGED w obie strony, bez zapisu", async () => {
+    const manual = await createExam({
+      assignmentMode: "MANUAL",
+      rosters: { g1: { students: ["81"], slots: [inDays(1)] } },
+    })
+    expect(await enroll(manual.examId, ["81"])).toEqual({
+      ok: false,
+      code: "MODE_CHANGED",
+      assignmentMode: "MANUAL",
+    })
+    const random = await createExam({ rosters: { g1: { students: ["82"], slots: [inDays(1)] } } })
+    const [slotId] = await slotsOf(random.examId)
+    expect(await enroll(random.examId, ["82"], {}, { shownMode: "MANUAL", slotId })).toEqual({
+      ok: false,
+      code: "MODE_CHANGED",
+      assignmentMode: "RANDOM",
+    })
+    expect(
+      await db.enrollment.count({ where: { examId: { in: [manual.examId, random.examId] } } }),
+    ).toBe(0)
+  })
+
+  test("zmiana sposobu nie rusza istniejących zapisów", async () => {
+    const { examId } = await createExam({
+      rosters: { g1: { students: ["91", "92"], slots: [inDays(1), inDays(2)] } },
+    })
+    const first = await enroll(examId, ["91"])
+    await db.exam.update({ where: { id: examId }, data: { assignmentMode: "MANUAL" } })
+    const before = await db.enrollment.findMany({ where: { examId } })
+    const free = (await slotsOf(examId)).find((id) => id !== (first.ok ? first.slotId : ""))!
+    expect(await enroll(examId, ["92"], {}, { shownMode: "MANUAL", slotId: free })).toMatchObject({
+      ok: true,
+      slotId: free,
+    })
+    expect(await db.enrollment.findMany({ where: { examId, studentNumber: "91" } })).toEqual(before)
+  })
+})

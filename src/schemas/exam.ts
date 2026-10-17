@@ -22,6 +22,8 @@ export const slotMinutes = z
   .min(1, "Slot musi mieć co najmniej 1 minutę.")
   .max(480, "Slot może mieć najwyżej 480 minut.")
 
+const assignmentMode = z.enum(["RANDOM", "MANUAL"])
+
 export const examSchema = z.object({
   name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200, tooLong(200)),
   description: z.string().trim().max(2000, tooLong(2000)),
@@ -31,6 +33,7 @@ export const examSchema = z.object({
     .int("Podaj liczbę całkowitą.")
     .min(1, "Zespół ma co najmniej 1 osobę.")
     .max(20, "Zespół może mieć najwyżej 20 osób."),
+  assignmentMode,
   fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
   opensDate: z.union([z.literal(""), isoDate]),
   opensTime: z.union([z.literal(""), hhmm]),

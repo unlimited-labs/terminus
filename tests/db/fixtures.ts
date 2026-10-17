@@ -5,12 +5,18 @@ import { enrollTeam } from "@/server/enrollment.server"
 
 type ExamFixture = {
   maxTeamSize?: number
+  assignmentMode?: "RANDOM" | "MANUAL"
   fields?: { id: string; label: string; required: boolean }[]
   rosters: Record<string, { students: string[]; slots: Date[] }>
 }
 
 /** Zaliczenie z listami, wpisami i slotami (każdy slot 30 min); zwraca identyfikatory. */
-export async function createExam({ maxTeamSize = 1, fields = [], rosters }: ExamFixture) {
+export async function createExam({
+  maxTeamSize = 1,
+  assignmentMode = "RANDOM",
+  fields = [],
+  rosters,
+}: ExamFixture) {
   const teacher = await db.user.create({
     data: { id: randomUUID(), name: "Prowadzący", email: `${randomUUID()}@example.com` },
   })
@@ -21,6 +27,7 @@ export async function createExam({ maxTeamSize = 1, fields = [], rosters }: Exam
       description: "Sala 1",
       defaultSlotMinutes: 30,
       maxTeamSize,
+      assignmentMode,
       fields,
     },
   })

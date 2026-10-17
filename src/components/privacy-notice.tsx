@@ -54,7 +54,8 @@ export function PrivacyNotice() {
         </li>
         <li>
           Pani/Pana dane osobowe nie będą podlegały profilowaniu; termin zaliczenia jest
-          przydzielany losowo i może zostać zmieniony przez prowadzącego;
+          przydzielany losowo albo wybierany przez osobę zapisującą się, zależnie od ustawienia
+          zaliczenia, i może zostać zmieniony przez prowadzącego;
         </li>
         <li>Pani/Pana dane osobowe nie będą przekazywane państwom trzecim;</li>
         <li>podanie danych osobowych jest warunkiem zapisu na zaliczenie przez tę aplikację;</li>

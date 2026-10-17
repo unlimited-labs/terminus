@@ -1,6 +1,6 @@
 import type { BoardErrorCode } from "./domain/board.ts"
 import type { InvalidRowReason } from "./domain/csv.ts"
-import type { EnrollmentPlan } from "./domain/draw.ts"
+import type { AssignmentMode, EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import type { ExamPhase } from "./domain/schedule.ts"
@@ -14,6 +14,7 @@ export type AppError =
   | Failure<AnswersCheck>
   | { code: BoardErrorCode }
   | { code: "SLOT_OVERLAP"; startsAt: Date; endsAt: Date }
+  | { code: "MODE_CHANGED"; assignmentMode: AssignmentMode }
   | { code: "MISSING_COLUMNS"; columns: string[] }
   | { code: "TEAM_SIZE_BELOW_EXISTING"; slots: Date[] }
   | { code: "ENTRY_EXISTS"; rosterName: string }
@@ -57,6 +58,14 @@ export function errorMessage(e: AppError): string {
         .join(" ")
     case "DIFFERENT_ROSTER":
       return `Indeks z innej listy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
+    case "SLOT_UNAVAILABLE":
+      return "Ten slot jest już niedostępny: ktoś zapisał się chwilę przed Tobą albo slot już się zaczął. Wybierz inny."
+    case "SLOT_OTHER_ROSTER":
+      return "Ten slot jest dla innej listy niż Twój zespół. Wybierz slot swojej listy."
+    case "MODE_CHANGED":
+      return e.assignmentMode === "MANUAL"
+        ? "Prowadzący zmienił sposób zapisu na ręczny. Twoje dane zostały; wybierz teraz slot z planszy."
+        : "Prowadzący zmienił sposób zapisu na losowanie. Twoje dane zostały; kliknij „Losuj slot”."
     case "NOT_OPEN_YET":
       return `Zapisy ruszają ${formatDayTime(e.opensAt)}.`
     case "MISSING_ANSWER":
@@ -133,6 +142,9 @@ export function failureNotice(
   failure: AppError,
   studentNumbers: string[],
 ): { tone: "info" | "error"; text: string; flagged: string[] } {
+  if (failure.code === "MODE_CHANGED") {
+    return { tone: "info", text: errorMessage(failure), flagged: [] }
+  }
   if (failure.code !== "ALREADY_ENROLLED") {
     const flagged = "studentNumbers" in failure ? failure.studentNumbers : []
     return { tone: "error", text: errorMessage(failure), flagged }

@@ -3,11 +3,12 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { useState } from "react"
 import { z } from "zod"
 
-import { EnrollSheet } from "@/components/enroll-sheet"
+import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
+import { formatDayTime } from "@/domain/time"
 import { errorMessage } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
@@ -55,17 +56,39 @@ function EntryNotice({
   )
 }
 
-/** Co oferuje panel: zapis z losowaniem, a przy braku wolnych slotów tylko sprawdzenie swojego. */
-function entryMode(schedule: Schedule) {
-  const anyFree = schedule.slots.some((s) => isFreeSlot(s, s.team.length > 0, schedule.now))
+const isFree = (schedule: Schedule, s: Schedule["slots"][number]) =>
+  isFreeSlot(s, s.team.length > 0, schedule.now)
+
+function entryMode(schedule: Schedule, picked: PickedSlot | null) {
+  const anyFree = schedule.slots.some((s) => isFree(schedule, s))
+  const manual = schedule.assignmentMode === "MANUAL"
   return {
     anyFree,
     open: isEnrollmentOpen(schedule.opensAt, schedule.now),
+    choosing: manual && anyFree,
     action: anyFree ? "Zapisz się" : "Sprawdź swój slot",
-    submitLabel: anyFree ? "Losuj slot" : "Sprawdź",
+    submitLabel: !anyFree
+      ? "Sprawdź"
+      : manual
+        ? picked
+          ? `Zapisz się na ${picked.label}`
+          : "Wybierz slot"
+        : "Losuj slot",
     maxTeamSize: anyFree ? schedule.maxTeamSize : 1,
     fields: anyFree ? schedule.fields : [],
   }
+}
+
+function usePickedSlot(schedule: Schedule | null | undefined) {
+  const [pickedId, setPickedId] = useState<string | null>(null)
+  const [seenMode, setSeenMode] = useState(schedule?.assignmentMode)
+  if (schedule && schedule.assignmentMode !== seenMode) {
+    setSeenMode(schedule.assignmentMode)
+    setPickedId(null)
+  }
+  const slot = schedule?.slots.find((s) => s.id === pickedId && isFree(schedule, s))
+  const picked = slot ? { id: slot.id, label: formatDayTime(slot.startsAt) } : null
+  return [picked, setPickedId] as const
 }
 
 function StudentPage() {
@@ -73,6 +96,7 @@ function StudentPage() {
   const { data: schedule } = useSuspenseQuery(scheduleQuery(examId))
   const [open, setOpen] = useState(false)
   const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
+  const [picked, setPickedId] = usePickedSlot(schedule)
   const [showCount, setShowCount] = useState(0)
   if (!schedule) {
     return (
@@ -82,7 +106,7 @@ function StudentPage() {
     )
   }
 
-  const mode = entryMode(schedule)
+  const mode = entryMode(schedule, picked)
   const title = mine ? "Twój slot" : mode.action
 
   return (
@@ -100,6 +124,15 @@ function StudentPage() {
         schedule={schedule}
         mySlotId={mine?.slotId ?? null}
         pulse={showCount > 0}
+        pickedSlotId={picked?.id ?? null}
+        onPick={
+          schedule.assignmentMode === "MANUAL" && mode.open && !mine
+            ? (slot) => {
+                setPickedId(slot.id)
+                setOpen(true)
+              }
+            : undefined
+        }
       />
       {mode.open && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
@@ -113,6 +146,9 @@ function StudentPage() {
         place={schedule.description}
         title={title}
         submitLabel={mode.submitLabel}
+        assignmentMode={schedule.assignmentMode}
+        choosing={mode.choosing}
+        picked={picked}
         maxTeamSize={mode.maxTeamSize}
         fields={mode.fields}
         open={open}

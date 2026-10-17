@@ -102,6 +102,7 @@ export function copyExam(
           description: true,
           defaultSlotMinutes: true,
           maxTeamSize: true,
+          assignmentMode: true,
           fields: true,
           enrollmentOpensAt: true,
           rosters: {
@@ -119,6 +120,7 @@ export function copyExam(
           description: source.description,
           defaultSlotMinutes: source.defaultSlotMinutes,
           maxTeamSize: source.maxTeamSize,
+          assignmentMode: source.assignmentMode,
           fields: parseFields(source.fields),
           enrollmentOpensAt: source.enrollmentOpensAt,
         },

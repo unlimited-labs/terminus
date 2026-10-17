@@ -31,6 +31,8 @@ const EXAMS = [
   "rosterAdd",
   "rosterDelete",
   "slotsEdit",
+  "manual",
+  "modeSwitch",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */

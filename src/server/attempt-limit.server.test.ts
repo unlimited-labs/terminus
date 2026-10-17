@@ -28,3 +28,14 @@ test("inne wyniki niż „nie ma na liście” nie zużywają limitu", async () 
   }
   expect(await isBlocked("4.4.4.4")).toBe(false)
 })
+
+test("slot niedostępny kosztuje tyle co „nie ma na liście”; zmiana sposobu i slot innej listy nic", async () => {
+  await recordOutcome("5.5.5.5", ["1", "2"], { ok: false, code: "MODE_CHANGED" })
+  await recordOutcome("5.5.5.5", ["1", "2"], { ok: false, code: "SLOT_OTHER_ROSTER" })
+  for (let i = 0; i < 4; i++) {
+    await recordOutcome("5.5.5.5", ["1", "2"], { ok: false, code: "SLOT_UNAVAILABLE" })
+  }
+  expect(await isBlocked("5.5.5.5")).toBe(false)
+  await recordOutcome("5.5.5.5", ["1", "2"], { ok: false, code: "SLOT_UNAVAILABLE" })
+  expect(await isBlocked("5.5.5.5")).toBe(true)
+})

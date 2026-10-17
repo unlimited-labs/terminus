@@ -1,6 +1,12 @@
 import { randomInt } from "node:crypto"
 
-import { planEnrollment, type EnrollmentPlan } from "../domain/draw.ts"
+import {
+  planChoice,
+  planEnrollment,
+  planLookup,
+  type AssignmentMode,
+  type EnrollmentPlan,
+} from "../domain/draw.ts"
 import { checkAnswers, filledAnswers, type Answers, type AnswersCheck } from "../domain/fields.ts"
 
 import { withExamLock } from "./exam-access.server.ts"
@@ -18,6 +24,7 @@ export type EnrollmentOutcome =
   | Exclude<EnrollmentPlan, { ok: true }>
   | Exclude<AnswersCheck, { ok: true }>
   | { ok: false; code: "NOT_FOUND" | "BUSY" }
+  | { ok: false; code: "MODE_CHANGED"; assignmentMode: AssignmentMode }
 
 /**
  * Zapis zespołu z losowaniem slotu; sprawdzenia, losowanie i wstawienie pod blokadą zaliczenia.
@@ -28,7 +35,12 @@ export async function enrollTeam(
   examId: string,
   studentNumbers: string[],
   rawAnswers: Answers = {},
-  { now = () => new Date(), timeout }: { now?: () => Date; timeout?: number } = {},
+  {
+    shownMode = "RANDOM",
+    slotId,
+    now = () => new Date(),
+    timeout,
+  }: { shownMode?: AssignmentMode; slotId?: string; now?: () => Date; timeout?: number } = {},
 ): Promise<EnrollmentOutcome> {
   return withExamLock(
     examId,
@@ -37,6 +49,7 @@ export async function enrollTeam(
       const exam = await tx.exam.findUniqueOrThrow({
         where: { id: examId },
         select: {
+          assignmentMode: true,
           maxTeamSize: true,
           fields: true,
           enrollmentOpensAt: true,
@@ -49,18 +62,22 @@ export async function enrollTeam(
           },
         },
       })
-      const plan = planEnrollment(
-        {
-          maxTeamSize: exam.maxTeamSize,
-          opensAt: exam.enrollmentOpensAt,
-          entries: exam.rosters.flatMap((r) => r.entries),
-          slots: exam.rosters.flatMap((r) => r.slots),
-          enrollments: exam.enrollments,
-        },
-        studentNumbers,
-        now(),
-        randomInt,
-      )
+      if (exam.assignmentMode !== shownMode) {
+        return { ok: false, code: "MODE_CHANGED", assignmentMode: exam.assignmentMode }
+      }
+      const data = {
+        maxTeamSize: exam.maxTeamSize,
+        opensAt: exam.enrollmentOpensAt,
+        entries: exam.rosters.flatMap((r) => r.entries),
+        slots: exam.rosters.flatMap((r) => r.slots),
+        enrollments: exam.enrollments,
+      }
+      const plan =
+        shownMode === "RANDOM"
+          ? planEnrollment(data, studentNumbers, now(), randomInt)
+          : slotId
+            ? planChoice(data, studentNumbers, slotId, now())
+            : planLookup(data, studentNumbers, now())
       if (!plan.ok) return plan
       const fields = parseFields(exam.fields)
       const checked = checkAnswers(fields, rawAnswers)

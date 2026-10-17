@@ -49,6 +49,7 @@ function ExamList() {
               description: "",
               defaultSlotMinutes: 15,
               maxTeamSize: 1,
+              assignmentMode: "RANDOM",
               fields: [],
               opensDate: "",
               opensTime: "",

@@ -32,9 +32,21 @@ _Avoid_: Grupa, drużyna
 Wartości pól zaliczenia podane przy zapisie, jedne na zespół; kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi, a przeniesiony cały zespół zachowuje swoje.
 _Avoid_: Odpowiedzi studenta
 
+**Przydział**:
+Sposób, w jaki zespół dostaje slot przy zapisie; wynik jest dla studenta zawsze niezmienny (zmienia go tylko prowadzący na tablicy).
+_Avoid_: Rezerwacja
+
+**Sposób przydziału**:
+Ustawienie zaliczenia, wspólne dla wszystkich jego list indeksów: **Losowanie** albo **Wybór**.
+_Avoid_: Tryb zapisów
+
 **Losowanie**:
-Automatyczny wybór slotu dla indeksu przy pierwszym wejściu studenta; wynik jest dla studenta niezmienny.
-_Avoid_: Przydział, wybór terminu
+Sposób przydziału, w którym system sam wybiera slot z wolnych slotów listy zespołu przy zapisie.
+_Avoid_: Wybór terminu
+
+**Wybór**:
+Sposób przydziału, w którym student sam wskazuje wolny slot; wszystkie indeksy zespołu muszą należeć do listy tego slotu, a zajęty slot jest niedostępny (nie ma dołączania do cudzego zespołu).
+_Avoid_: Rezerwacja
 
 **Harmonogram**:
 Widok wszystkich slotów zaliczenia z imionami i nazwiskami zapisanych, dostępny dla każdego, kto ma link zaliczenia.

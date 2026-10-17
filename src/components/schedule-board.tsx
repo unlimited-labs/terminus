@@ -26,6 +26,8 @@ const KINDS = {
 }
 type Kind = keyof typeof KINDS
 
+const PICKED_TONE = "border-2 border-primary bg-primary text-primary-foreground"
+
 const PRESSED =
   "border bg-card data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground"
 
@@ -42,10 +44,14 @@ export function ScheduleBoard({
   schedule,
   mySlotId,
   pulse,
+  pickedSlotId = null,
+  onPick,
 }: {
   schedule: Schedule
   mySlotId: string | null
   pulse: boolean
+  pickedSlotId?: string | null
+  onPick?: (slot: Slot) => void
 }) {
   const shown = pulse ? schedule.slots.find((s) => s.id === mySlotId) : undefined
   const [rosterId, setRosterId] = useState<string | null>(null)
@@ -103,6 +109,8 @@ export function ScheduleBoard({
           now={schedule.now}
           mySlotId={mySlotId}
           pulse={pulse}
+          pickedSlotId={pickedSlotId}
+          onPick={onPick}
           rosterName={multi ? rosterNames(schedule.rosters) : null}
         />
       )}
@@ -131,12 +139,16 @@ function DayTimeline({
   now,
   mySlotId,
   pulse,
+  pickedSlotId,
+  onPick,
   rosterName,
 }: {
   slots: Slot[]
   now: Date
   mySlotId: string | null
   pulse: boolean
+  pickedSlotId: string | null
+  onPick?: (slot: Slot) => void
   rosterName: Map<string, string> | null
 }) {
   const start = Math.floor(slots[0]!.startsAt.getTime() / HOUR) * HOUR
@@ -167,6 +179,8 @@ function DayTimeline({
               slot={slot}
               kind={slotKind(slot, now, slot.id === mySlotId)}
               pulse={pulse && slot.id === mySlotId}
+              picked={slot.id === pickedSlotId}
+              onPick={onPick}
               rosterName={rosterName?.get(slot.rosterId)}
               top={y(slot.startsAt.getTime()) + 1}
               height={y(slot.endsAt.getTime()) - y(slot.startsAt.getTime()) - 2}
@@ -182,6 +196,8 @@ function SlotBlock({
   slot,
   kind,
   pulse,
+  picked,
+  onPick,
   rosterName,
   top,
   height,
@@ -189,6 +205,8 @@ function SlotBlock({
   slot: Slot
   kind: Kind
   pulse: boolean
+  picked: boolean
+  onPick?: (slot: Slot) => void
   rosterName?: string
   top: number
   height: number
@@ -196,7 +214,8 @@ function SlotBlock({
   const [open, setOpen] = useState(false)
   const names = slot.team.map(fullName).join(", ")
   const label = KINDS[kind].text(names)
-  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${KINDS[kind].tone} ${
+  const tone = picked ? PICKED_TONE : KINDS[kind].tone
+  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
   const body = (
@@ -207,6 +226,22 @@ function SlotBlock({
     </>
   )
   const style = open ? { top, minHeight: height } : { top, height }
+  if (kind === "free" && onPick) {
+    return (
+      <li>
+        <Button
+          variant="ghost"
+          aria-pressed={picked}
+          aria-label={`${formatSlotTime(slot)}, wolny`}
+          onClick={() => onPick(slot)}
+          className={`h-auto justify-start font-normal whitespace-normal ${className}`}
+          style={style}
+        >
+          {body}
+        </Button>
+      </li>
+    )
+  }
   return (
     <li>
       {slot.team.length > 0 ? (

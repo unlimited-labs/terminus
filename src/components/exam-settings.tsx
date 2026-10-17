@@ -102,6 +102,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
           description: exam.description,
           defaultSlotMinutes: exam.defaultSlotMinutes,
           maxTeamSize: exam.maxTeamSize,
+          assignmentMode: exam.assignmentMode,
           fields: exam.fields,
           opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
           opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest"
 
-import { planEnrollment, type EnrollmentData } from "./draw"
+import { planChoice, planEnrollment, planLookup, type EnrollmentData } from "./draw"
 
 const now = new Date("2026-10-01T08:00:00Z")
 
@@ -139,5 +139,76 @@ describe("planEnrollment", () => {
       return 0
     })
     expect(calls).toEqual([1, 2])
+  })
+})
+
+describe("planChoice", () => {
+  test("wolny slot listy zespołu zostaje wybrany bez losowania", () => {
+    expect(planChoice(data(), ["100", "101"], "d1b", now)).toEqual({ ok: true, slotId: "d1b" })
+  })
+
+  test("wspólne sprawdzenia jak przy losowaniu", () => {
+    const opensAt = new Date("2026-10-01T10:00:00Z")
+    expect(planChoice(data({ opensAt }), ["100"], "d1a", now)).toMatchObject({
+      code: "NOT_OPEN_YET",
+    })
+    expect(planChoice(data(), [], "d1a", now)).toEqual({ ok: false, code: "NO_INPUT" })
+    expect(planChoice(data({ maxTeamSize: 1 }), ["100", "101"], "d1a", now)).toMatchObject({
+      code: "TEAM_TOO_LARGE",
+    })
+    expect(planChoice(data(), ["999"], "d1a", now)).toEqual({
+      ok: false,
+      code: "NOT_ON_ROSTER",
+      studentNumbers: ["999"],
+    })
+    expect(planChoice(data(), ["100", "200"], "d1a", now)).toMatchObject({
+      code: "DIFFERENT_ROSTER",
+    })
+    const enrollments = [{ studentNumber: "100", slotId: "d1c" }]
+    expect(planChoice(data({ enrollments }), ["100"], "d1a", now)).toMatchObject({
+      code: "ALREADY_ENROLLED",
+    })
+  })
+
+  test("zajęty slot jest niedostępny, bez dołączania do cudzego zespołu", () => {
+    const enrollments = [{ studentNumber: "102", slotId: "d1a" }]
+    expect(planChoice(data({ enrollments }), ["100"], "d1a", now)).toEqual({
+      ok: false,
+      code: "SLOT_UNAVAILABLE",
+    })
+  })
+
+  test("rozpoczęty slot jest niedostępny", () => {
+    expect(planChoice(data(), ["100"], "past", now)).toEqual({
+      ok: false,
+      code: "SLOT_UNAVAILABLE",
+    })
+  })
+
+  test("slot spoza zaliczenia jest niedostępny, bez zdradzania czegokolwiek", () => {
+    expect(planChoice(data(), ["100"], "nie-moj", now)).toEqual({
+      ok: false,
+      code: "SLOT_UNAVAILABLE",
+    })
+  })
+
+  test("slot innej listy niż zespół", () => {
+    expect(planChoice(data(), ["100"], "g2a", now)).toEqual({
+      ok: false,
+      code: "SLOT_OTHER_ROSTER",
+      slotRosterId: "g2",
+      teamRosterId: "g1",
+    })
+  })
+})
+
+describe("planLookup", () => {
+  test("po sprawdzeniu zespołu nigdy nie przydziela slotu", () => {
+    expect(planLookup(data(), ["100"], now)).toEqual({ ok: false, code: "NO_FREE_SLOTS" })
+    expect(planLookup(data(), ["999"], now)).toMatchObject({ code: "NOT_ON_ROSTER" })
+    const enrollments = [{ studentNumber: "100", slotId: "d1a" }]
+    expect(planLookup(data({ enrollments }), ["100"], now)).toMatchObject({
+      code: "ALREADY_ENROLLED",
+    })
   })
 })

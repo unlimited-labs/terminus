@@ -21,20 +21,17 @@ export type EnrollmentPlan =
       studentNumbers: string[]
     }
   | { ok: false; code: "ALREADY_ENROLLED"; enrolled: { studentNumber: string; startsAt: Date }[] }
+  | { ok: false; code: "SLOT_UNAVAILABLE" }
+  | { ok: false; code: "SLOT_OTHER_ROSTER"; slotRosterId: string; teamRosterId: string }
+
+export type AssignmentMode = "RANDOM" | "MANUAL"
 
 /** `randomInt(max)` zwraca liczbę całkowitą z [0, max). */
 export type RandomInt = (max: number) => number
 
-/**
- * Sprawdza zapis zespołu i losuje slot: najpierw dzień (z równą szansą), potem slot w tym dniu.
- * Pula to wolne sloty listy zespołu, które zaczynają się po `now`.
- */
-export function planEnrollment(
-  data: EnrollmentData,
-  studentNumbers: string[],
-  now: Date,
-  randomInt: RandomInt,
-): EnrollmentPlan {
+type TeamCheck = { ok: true; rosterId: string } | Exclude<EnrollmentPlan, { ok: true }>
+
+function checkTeam(data: EnrollmentData, studentNumbers: string[], now: Date): TeamCheck {
   if (data.opensAt && !isEnrollmentOpen(data.opensAt, now))
     return { ok: false, code: "NOT_OPEN_YET", opensAt: data.opensAt }
   if (studentNumbers.length === 0) return { ok: false, code: "NO_INPUT" }
@@ -61,11 +58,22 @@ export function planEnrollment(
   const rosterId = rosterOf.get(studentNumbers[0]!)!
   const foreign = studentNumbers.filter((n) => rosterOf.get(n) !== rosterId)
   if (foreign.length > 0) return { ok: false, code: "DIFFERENT_ROSTER", studentNumbers: foreign }
+  return { ok: true, rosterId }
+}
+
+export function planEnrollment(
+  data: EnrollmentData,
+  studentNumbers: string[],
+  now: Date,
+  randomInt: RandomInt,
+): EnrollmentPlan {
+  const team = checkTeam(data, studentNumbers, now)
+  if (!team.ok) return team
 
   const taken = new Set(data.enrollments.map((e) => e.slotId))
   const byDay = Map.groupBy(
     data.slots
-      .filter((s) => s.rosterId === rosterId && isFreeSlot(s, taken.has(s.id), now))
+      .filter((s) => s.rosterId === team.rosterId && isFreeSlot(s, taken.has(s.id), now))
       .toSorted((a, b) => a.startsAt.getTime() - b.startsAt.getTime()),
     (s) => warsawDay(s.startsAt),
   )
@@ -73,4 +81,39 @@ export function planEnrollment(
   if (days.length === 0) return { ok: false, code: "NO_FREE_SLOTS" }
   const day = days[randomInt(days.length)]!
   return { ok: true, slotId: day[randomInt(day.length)]!.id }
+}
+
+const SLOT_UNAVAILABLE = { ok: false, code: "SLOT_UNAVAILABLE" } as const
+
+export function planChoice(
+  data: EnrollmentData,
+  studentNumbers: string[],
+  slotId: string,
+  now: Date,
+): EnrollmentPlan {
+  const team = checkTeam(data, studentNumbers, now)
+  if (!team.ok) return team
+
+  const slot = data.slots.find((s) => s.id === slotId)
+  if (!slot) return SLOT_UNAVAILABLE
+  if (slot.rosterId !== team.rosterId) {
+    return {
+      ok: false,
+      code: "SLOT_OTHER_ROSTER",
+      slotRosterId: slot.rosterId,
+      teamRosterId: team.rosterId,
+    }
+  }
+  const taken = data.enrollments.some((e) => e.slotId === slotId)
+  if (!isFreeSlot(slot, taken, now)) return SLOT_UNAVAILABLE
+  return { ok: true, slotId }
+}
+
+export function planLookup(
+  data: EnrollmentData,
+  studentNumbers: string[],
+  now: Date,
+): EnrollmentPlan {
+  const team = checkTeam(data, studentNumbers, now)
+  return team.ok ? { ok: false, code: "NO_FREE_SLOTS" } : team
 }

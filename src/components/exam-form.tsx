@@ -44,6 +44,18 @@ export function ExamForm({
             )}
           </form.AppField>
         </div>
+        <form.AppField name="assignmentMode">
+          {(field) => (
+            <field.ToggleField
+              label="Sposób przydziału"
+              hint="Losowy: system sam wybiera slot. Ręczny: student wybiera wolny slot na planszy. Dotyczy kolejnych zapisów."
+              options={[
+                { value: "RANDOM", label: "Losowy" },
+                { value: "MANUAL", label: "Ręczny" },
+              ]}
+            />
+          )}
+        </form.AppField>
         <fieldset className="grid gap-2">
           <legend className="mb-1 text-sm font-semibold">
             Start zapisów (puste = od razu po utworzeniu)

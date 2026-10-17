@@ -124,6 +124,12 @@ async function twoRostersExam() {
   return id
 }
 
+async function manualExam(name: string, mode: "RANDOM" | "MANUAL", students: Student[]) {
+  const id = await createExam(name, 1, students, [at(20, 9), at(20, 9, 20)], [])
+  await db.exam.update({ where: { id }, data: { assignmentMode: mode } })
+  return id
+}
+
 export async function seed(): Promise<E2EState> {
   const board = (
     enrolled: [string, number][] = [
@@ -210,6 +216,8 @@ export async function seed(): Promise<E2EState> {
     rosterAdd: await twoRostersExam(),
     rosterDelete: await twoRostersExam(),
     slotsEdit: await createExam("Edycja slotów E2E", 1, [], [at(19, 9), at(19, 9, 20)], []),
+    manual: await manualExam("Ręczny E2E", "MANUAL", [["990001", "Alicja", "Arbuz"]]),
+    modeSwitch: await manualExam("Zmiana sposobu E2E", "RANDOM", [["990002", "Bogdan", "Burak"]]),
   }
   await db.user.create({
     data: {

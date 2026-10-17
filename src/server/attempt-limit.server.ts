@@ -10,6 +10,8 @@ const MAX_POINTS = 10
 // ponytail: liczniki w pamięci jednego procesu, zerowane po restarcie (SPEC §4).
 const failures = new RateLimiterMemory({ points: MAX_POINTS, duration: 10 * 60 })
 
+const PENALIZED = new Set(["NOT_ON_ROSTER", "SLOT_UNAVAILABLE"])
+
 let warnedNoIp = false
 
 /** Klucz limitu: IP z `X-Real-IP` od reverse proxy; bez nagłówka wszyscy dzielą jeden licznik. */
@@ -36,7 +38,7 @@ export async function recordOutcome(
   studentNumbers: string[],
   outcome: { ok: boolean; code?: Extract<EnrollmentOutcome, { ok: false }>["code"] },
 ) {
-  if (!outcome.ok && outcome.code === "NOT_ON_ROSTER") {
+  if (!outcome.ok && outcome.code && PENALIZED.has(outcome.code)) {
     await failures.penalty(ip, studentNumbers.length)
   }
 }

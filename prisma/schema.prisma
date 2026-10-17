@@ -8,19 +8,25 @@ datasource db {
   provider = "postgresql"
 }
 
+enum AssignmentMode {
+  RANDOM
+  MANUAL
+}
+
 model Exam {
-  id                 String       @id @default(uuid())
+  id                 String         @id @default(uuid())
   /// Prowadzący zaliczenia: każdy może wszystko, zawsze co najmniej jeden.
-  teachers           User[]       @relation("ExamTeachers")
+  teachers           User[]         @relation("ExamTeachers")
   name               String
   description        String
   defaultSlotMinutes Int
   maxTeamSize        Int
   /// Dodatkowe pola wypełniane przez studenta przy zapisie: [{ id, label, required }].
-  fields             Json         @default("[]")
+  fields             Json           @default("[]")
   /// Start zapisów; null = od razu po utworzeniu.
-  enrollmentOpensAt  DateTime?    @db.Timestamptz
-  createdAt          DateTime     @default(now()) @db.Timestamptz
+  enrollmentOpensAt  DateTime?      @db.Timestamptz
+  assignmentMode     AssignmentMode @default(RANDOM)
+  createdAt          DateTime       @default(now()) @db.Timestamptz
   rosters            Roster[]
   enrollments        Enrollment[]
 
