@@ -234,6 +234,8 @@ test("podgląd importu nie czeka na blokadę zaliczenia (nie wstrzymuje zapisów
   expect(preview).toMatchObject({ ok: true })
 })
 
+const withEmail = (...rows: string[]) => ["indeks;imie;nazwisko;email", ...rows].join("\n")
+
 const emailOf = async (examId: string, studentNumber: string) =>
   (
     await db.rosterEntry.findUniqueOrThrow({
@@ -243,7 +245,6 @@ const emailOf = async (examId: string, studentNumber: string) =>
 
 test("import: adres z pliku małymi literami, domyślny bez kolumny, reimport nie nadpisuje pustym ani złym", async () => {
   const { examId, teacherId } = await createExam({ rosters: {} })
-  const withEmail = (...rows: string[]) => ["indeks;imie;nazwisko;email", ...rows].join("\n")
   await applyImport(
     examId,
     teacherId,

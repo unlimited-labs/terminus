@@ -69,6 +69,15 @@ describe("parseRosterCsv", () => {
   })
 })
 
+const at = (studentNumber: string, email: string): ExistingEntry => ({
+  studentNumber,
+  rosterId: "g1",
+  firstName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
+  lastName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
+  email,
+  slotStartsAt: null,
+})
+
 describe("adresy e-mail w pliku", () => {
   const csv = [
     "indeks;imie;nazwisko;email",
@@ -97,14 +106,6 @@ describe("adresy e-mail w pliku", () => {
   test("reimport nadpisuje innym poprawnym adresem, pustego i zepsutego nie", () => {
     const parsed = parseRosterCsv(csv)
     if (!parsed.ok) throw new Error("parse")
-    const at = (studentNumber: string, email: string): ExistingEntry => ({
-      studentNumber,
-      rosterId: "g1",
-      firstName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
-      lastName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
-      email,
-      slotStartsAt: null,
-    })
     const plan = planRosterImport(parsed, "g1", [
       at("1", "stary@agh.edu.pl"),
       at("2", "reczny@agh.edu.pl"),
