@@ -16,6 +16,7 @@ src/generated
 test-results
 playwright-report
 e2e/.state.json
+e2e/.mail.json
 
 # narzędzia
 .fallow

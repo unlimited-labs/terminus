@@ -8,6 +8,9 @@ export const E2E = {
 
 export const STATE_FILE = "e2e/.state.json"
 
+/** Maile odebrane przez fałszywy SMTP (`serve.ts`): [{ to, subject, text }]. */
+export const MAIL_FILE = "e2e/.mail.json"
+
 const EXAMS = [
   "boardMouse",
   "boardKeyboard",
@@ -33,6 +36,8 @@ const EXAMS = [
   "slotsEdit",
   "manual",
   "modeSwitch",
+  "emailLogin",
+  "emailLoginSetup",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */

@@ -4,12 +4,26 @@ import type { Locator, Page } from "@playwright/test"
 
 import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
 
-import { dayOf, E2E, STATE_FILE, e2eStateSchema, type E2EState } from "./config.ts"
+import { dayOf, E2E, MAIL_FILE, STATE_FILE, e2eStateSchema, type E2EState } from "./config.ts"
 
 export const state = (): E2EState =>
   e2eStateSchema.parse(JSON.parse(readFileSync(STATE_FILE, "utf8")))
 
 export const exams = () => state().exams
+
+type Mail = { to: string; subject: string; text: string }
+const mailsTo = (address: string): Mail[] =>
+  (JSON.parse(readFileSync(MAIL_FILE, "utf8")) as Mail[]).filter((m) => m.to === address)
+
+/** Liczba maili, które fałszywy SMTP odebrał dla adresu. */
+export const mailCount = (address: string) => mailsTo(address).length
+
+/** Link z ostatniego maila do adresu (ścieżka i token) albo `undefined`, gdy maila nie ma. */
+export function lastMailLink(address: string): string | undefined {
+  const text = mailsTo(address).at(-1)?.text
+  const link = text && /https?:\/\/\S+/.exec(text)?.[0]
+  return link ? link : undefined
+}
 
 /** Dzień danych testowych (YYYY-MM-DD) i jego etykieta jak w aplikacji, np. „śr 9.10”. */
 export const day = (offset: number) => dayOf(state().baseDay, offset)

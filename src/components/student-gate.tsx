@@ -89,7 +89,7 @@ function LoginForm({ examId }: { examId: string }) {
             {error}
           </p>
         )}
-        <Button size="lg" disabled={send.isPending || index.trim() === ""}>
+        <Button type="submit" size="lg" disabled={send.isPending || index.trim() === ""}>
           {T.send}
         </Button>
       </form>

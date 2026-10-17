@@ -133,6 +133,33 @@ async function manualExam(name: string, mode: "RANDOM" | "MANUAL", students: Stu
   return id
 }
 
+/** Zaliczenie z adresami na liście; `requireEmailLogin` włączone, gdy `emailLogin`. */
+async function emailLoginExam(name: string, emailLogin: boolean) {
+  const id = await createExam(
+    name,
+    2,
+    [
+      ["710001", "Ola", "Ach"],
+      ["710002", "Piotr", "Bok"],
+      ["710003", "Zofia", "Cis"],
+    ],
+    [at(21, 9), at(21, 9, 20), at(21, 9, 40)],
+    [],
+  )
+  await db.exam.update({ where: { id }, data: { requireEmailLogin: emailLogin } })
+  for (const [studentNumber, email] of [
+    ["710001", "ola@e2e.test"],
+    ["710002", "piotr@e2e.test"],
+    ["710003", "zofia@e2e.test"],
+  ] as const) {
+    await db.rosterEntry.update({
+      where: { examId_studentNumber: { examId: id, studentNumber } },
+      data: { email },
+    })
+  }
+  return id
+}
+
 export async function seed(): Promise<E2EState> {
   const board = (
     enrolled: [string, number][] = [
@@ -221,6 +248,8 @@ export async function seed(): Promise<E2EState> {
     slotsEdit: await createExam("Edycja slotów E2E", 1, [], [at(19, 9), at(19, 9, 20)], []),
     manual: await manualExam("Ręczny E2E", "MANUAL", [["990001", "Alicja", "Arbuz"]]),
     modeSwitch: await manualExam("Zmiana sposobu E2E", "RANDOM", [["990002", "Bogdan", "Burak"]]),
+    emailLogin: await emailLoginExam("Logowanie mailem E2E", true),
+    emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
   }
   await db.user.create({
     data: {
