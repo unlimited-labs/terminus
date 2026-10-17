@@ -62,6 +62,7 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
     description: "Sala 9",
     defaultSlotMinutes: 45,
     assignmentMode: "MANUAL" as const,
+    requireEmailLogin: false,
     fields: [],
   }
   const opens = { opensDate: "2030-01-07", opensTime: "08:30" }

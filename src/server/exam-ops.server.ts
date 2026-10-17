@@ -9,6 +9,7 @@ import type { examSchema } from "../schemas/exam.ts"
 import { db } from "./db.server.ts"
 import { getOwnedExam, taughtBy, withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { loadExam, parseFields } from "./exam-state.server.ts"
+import { emailLoginAvailable } from "./env.server.ts"
 import { STUDENT_ROLE } from "./roles.ts"
 
 /** Zaliczenia, których konto jest prowadzącym, od najnowszych, z etapem i terminami do listy. */
@@ -63,6 +64,9 @@ export async function insertExam(
   userId: string,
   data: z.infer<typeof examSchema>,
 ): Promise<Result<{ examId: string }>> {
+  if (data.requireEmailLogin && !emailLoginAvailable) {
+    return { ok: false, code: "EMAIL_LOGIN_UNAVAILABLE" }
+  }
   const exam = await db.exam.create({
     data: { ...examRecord(data), teachers: { connect: { id: userId } } },
   })
@@ -106,6 +110,7 @@ export function copyExam(
           assignmentMode: true,
           fields: true,
           enrollmentOpensAt: true,
+          requireEmailLogin: true,
           rosters: {
             select: {
               name: true,
@@ -126,6 +131,7 @@ export function copyExam(
           assignmentMode: source.assignmentMode,
           fields: parseFields(source.fields),
           enrollmentOpensAt: source.enrollmentOpensAt,
+          requireEmailLogin: source.requireEmailLogin && emailLoginAvailable,
         },
       })
       if (!copyRosters) return { ok: true, examId: copy.id }
@@ -152,6 +158,14 @@ export async function updateExamSettings(
   data: z.infer<typeof examSchema>,
 ): Promise<Result> {
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
+    // Włączenie bez poczty zablokowałoby studentów; już włączoną opcję (poczta zniknęła) wolno zostawić.
+    if (data.requireEmailLogin && !emailLoginAvailable) {
+      const current = await tx.exam.findUniqueOrThrow({
+        where: { id: examId },
+        select: { requireEmailLogin: true },
+      })
+      if (!current.requireEmailLogin) return { ok: false, code: "EMAIL_LOGIN_UNAVAILABLE" }
+    }
     const teams = await tx.enrollment.groupBy({ by: ["slotId"], where: { examId }, _count: true })
     const tooBig = teams.filter((t) => t._count > data.maxTeamSize).map((t) => t.slotId)
     if (tooBig.length > 0) {

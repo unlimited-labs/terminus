@@ -50,6 +50,7 @@ function ExamList() {
               defaultSlotMinutes: 15,
               maxTeamSize: 1,
               assignmentMode: "RANDOM",
+              requireEmailLogin: false,
               fields: [],
               opensDate: "",
               opensTime: "",

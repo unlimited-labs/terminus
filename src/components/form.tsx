@@ -201,19 +201,37 @@ function RosterField({ rosters }: { rosters: { id: string; name: string }[] }) {
   )
 }
 
-function CheckboxField({ label }: { label: string }) {
+function CheckboxField({
+  label,
+  hint,
+  disabled,
+}: {
+  label: string
+  hint?: string
+  disabled?: boolean
+}) {
   const field = useFieldContext<boolean>()
   const id = useId()
   return (
-    <div className="flex items-center gap-2">
+    <div className={`flex gap-2 ${hint ? "items-start" : "items-center"}`}>
       <Checkbox
         id={id}
         checked={field.state.value}
+        disabled={disabled}
+        aria-describedby={hint ? `${id}-hint` : undefined}
+        className={hint ? "mt-1" : undefined}
         onCheckedChange={(checked) => field.handleChange(checked)}
       />
-      <Label htmlFor={id} className="font-normal">
-        {label}
-      </Label>
+      <div className="grid gap-1">
+        <Label htmlFor={id} className={hint ? "font-semibold" : "font-normal"}>
+          {label}
+        </Label>
+        {hint && (
+          <p id={`${id}-hint`} className="text-sm text-muted-foreground">
+            {hint}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

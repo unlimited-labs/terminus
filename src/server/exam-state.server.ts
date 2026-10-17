@@ -4,6 +4,7 @@ import type { Answers, ExamField } from "../domain/fields.ts"
 import { examPhase } from "../domain/schedule.ts"
 
 import { db } from "./db.server.ts"
+import { emailLoginAvailable } from "./env.server.ts"
 import type { Tx } from "./exam-access.server.ts"
 
 // Sam kształt, bez limitów formularza: zaostrzenie limitu nie może zablokować odczytu starych danych.
@@ -52,6 +53,8 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
     defaultSlotMinutes: exam.defaultSlotMinutes,
     maxTeamSize: exam.maxTeamSize,
     assignmentMode: exam.assignmentMode,
+    requireEmailLogin: exam.requireEmailLogin,
+    emailLoginAvailable,
     enrollmentOpensAt: exam.enrollmentOpensAt,
     fields: parseFields(exam.fields),
     rosters: exam.rosters,

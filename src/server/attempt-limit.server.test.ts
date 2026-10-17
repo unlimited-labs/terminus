@@ -40,8 +40,9 @@ test("slot niedostępny kosztuje tyle co „nie ma na liście”; zmiana sposobu
   expect(await isBlocked("5.5.5.5")).toBe(true)
 })
 
+const take = (ip: string, studentNumber: string) => takeLinkAllowance(ip, "exam-1", studentNumber)
+
 test("prośby o link: 4. w godzinę na ten sam indeks i 11. z jednego IP są odrzucone", async () => {
-  const take = (ip: string, studentNumber: string) => takeLinkAllowance(ip, "exam-1", studentNumber)
   expect([
     await take("6.6.6.6", "1"),
     await take("6.6.6.6", "1"),

@@ -45,13 +45,14 @@ test("nieznany indeks, opcja wyłączona i zaliczenie spoza bazy: bez maila", as
 
 test("adres konta prowadzącego: bez maila, a konto zostaje nietknięte", async () => {
   const examId = await examWithLogin()
+  const teacherEmail = `${randomUUID()}@example.com`
   await db.rosterEntry.update({
     where: { examId_studentNumber: { examId, studentNumber: "1" } },
-    data: { email: "Prowadzacy@example.com".toLowerCase() },
+    data: { email: teacherEmail },
   })
   await auth.api.createUser({
     body: {
-      email: "prowadzacy@example.com",
+      email: teacherEmail,
       password: "haslo-123456",
       name: "Prowadzący",
       role: "user",
@@ -61,7 +62,7 @@ test("adres konta prowadzącego: bez maila, a konto zostaje nietknięte", async 
   await requestLoginLink({ examId, studentNumber: "1" }, ip())
   await settle()
   expect(sent).not.toHaveBeenCalled()
-  expect(await db.account.count({ where: { user: { email: "prowadzacy@example.com" } } })).toBe(1)
+  expect(await db.account.count({ where: { user: { email: teacherEmail } } })).toBe(1)
 })
 
 test("czwarta prośba o ten sam indeks w godzinę nie wysyła czwartego maila", async () => {

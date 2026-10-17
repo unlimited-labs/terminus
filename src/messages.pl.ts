@@ -37,9 +37,12 @@ export type AppError =
         | "ALREADY_TEACHER"
         | "LAST_TEACHER"
         | "NOT_YOUR_INDEX"
+        | "EMAIL_LOGIN_UNAVAILABLE"
     }
 
 export type Result<T = object> = ({ ok: true } & T) | ({ ok: false } & AppError)
+
+export const EMAIL_LOGIN_UNCONFIGURED = "Brak konfiguracji poczty (SMTP) na serwerze."
 
 const list = (items: string[]) => items.join(", ")
 
@@ -51,6 +54,8 @@ export function errorMessage(e: AppError): string {
       return `Zespół może mieć najwyżej ${e.maxTeamSize} os.`
     case "DUPLICATE_NUMBER":
       return `Ten sam indeks wpisano dwa razy: ${list(e.studentNumbers)}.`
+    case "EMAIL_LOGIN_UNAVAILABLE":
+      return EMAIL_LOGIN_UNCONFIGURED
     case "NOT_YOUR_INDEX":
       return "Zapisu dokonuje się z własnego indeksu: w zespole musi być numer, którego adres jest przypisany do Twojego logowania."
     case "NOT_ON_ROSTER":

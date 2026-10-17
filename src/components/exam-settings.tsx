@@ -103,11 +103,13 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
           defaultSlotMinutes: exam.defaultSlotMinutes,
           maxTeamSize: exam.maxTeamSize,
           assignmentMode: exam.assignmentMode,
+          requireEmailLogin: exam.requireEmailLogin,
           fields: exam.fields,
           opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
           opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
         }}
         submitLabel="Zapisz"
+        emailLoginAvailable={exam.emailLoginAvailable}
         onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
       />
     </SectionCard>

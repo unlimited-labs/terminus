@@ -34,6 +34,7 @@ export const examSchema = z.object({
     .min(1, "Zespół ma co najmniej 1 osobę.")
     .max(20, "Zespół może mieć najwyżej 20 osób."),
   assignmentMode,
+  requireEmailLogin: z.boolean(),
   fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
   opensDate: z.union([z.literal(""), isoDate]),
   opensTime: z.union([z.literal(""), hhmm]),

@@ -1,7 +1,9 @@
 import type { z } from "zod"
 
 import { schemaSubmit, useAppForm } from "@/components/form"
+import { Notice } from "@/components/notice"
 import { Button } from "@/components/ui/button"
+import { EMAIL_LOGIN_UNCONFIGURED } from "@/messages.pl"
 import { examFormSchema, type examSchema } from "@/schemas/exam"
 
 type ExamValues = z.infer<typeof examSchema>
@@ -9,10 +11,13 @@ type ExamValues = z.infer<typeof examSchema>
 export function ExamForm({
   defaultValues,
   submitLabel,
+  emailLoginAvailable,
   onSubmit,
 }: {
   defaultValues: ExamValues
   submitLabel: string
+  /** Podane = pokazuje opcję logowania mailem; `false` = serwer nie ma poczty. */
+  emailLoginAvailable?: boolean
   onSubmit: (values: ExamValues) => Promise<unknown>
 }) {
   const form = useAppForm({
@@ -56,6 +61,33 @@ export function ExamForm({
             />
           )}
         </form.AppField>
+        {emailLoginAvailable !== undefined && (
+          <form.Subscribe selector={(s) => s.values.requireEmailLogin}>
+            {(checked) => (
+              <div className="grid gap-2">
+                <form.AppField name="requireEmailLogin">
+                  {(field) => (
+                    <field.CheckboxField
+                      label="Wymagaj logowania mailem"
+                      hint="Student loguje się mailem przed wejściem na stronę zapisów."
+                      disabled={!emailLoginAvailable && !checked}
+                    />
+                  )}
+                </form.AppField>
+                {!emailLoginAvailable && !checked && (
+                  <Notice tone="info" role="status">
+                    {EMAIL_LOGIN_UNCONFIGURED}
+                  </Notice>
+                )}
+                {!emailLoginAvailable && checked && (
+                  <Notice tone="error">
+                    Poczta niedostępna: studenci nie wejdą. Wyłącz opcję, żeby otworzyć zapisy.
+                  </Notice>
+                )}
+              </div>
+            )}
+          </form.Subscribe>
+        )}
         <fieldset className="grid gap-2">
           <legend className="mb-1 text-sm font-semibold">
             Start zapisów (puste = od razu po utworzeniu)
