@@ -10,6 +10,11 @@ const MAX_POINTS = 10
 // ponytail: liczniki w pamięci jednego procesu, zerowane po restarcie (SPEC §4).
 const failures = new RateLimiterMemory({ points: MAX_POINTS, duration: 10 * 60 })
 
+const HOUR = 60 * 60
+// Prośby o link liczą się przy każdym żądaniu (także udanym): wysyłka maila to koszt i zalew skrzynki.
+const linksPerIndex = new RateLimiterMemory({ points: 3, duration: HOUR })
+const linksPerIp = new RateLimiterMemory({ points: 10, duration: HOUR })
+
 const PENALIZED = new Set(["NOT_ON_ROSTER", "SLOT_UNAVAILABLE"])
 
 let warnedNoIp = false
@@ -41,4 +46,13 @@ export async function recordOutcome(
   if (!outcome.ok && outcome.code && PENALIZED.has(outcome.code)) {
     await failures.penalty(ip, studentNumbers.length)
   }
+}
+
+/** Prośba o link: 3 na godzinę dla zaliczenia + indeksu i 10 na godzinę z jednego IP; `false` = limit. */
+export async function takeLinkAllowance(ip: string, examId: string, studentNumber: string) {
+  const results = await Promise.allSettled([
+    linksPerIndex.consume(`${examId}:${studentNumber}`),
+    linksPerIp.consume(ip),
+  ])
+  return results.every((r) => r.status === "fulfilled")
 }
