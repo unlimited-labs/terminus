@@ -5,7 +5,7 @@ import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
-import { gradedCount, useUnenrollGuard } from "@/components/grading"
+import { GradedCount, useUnenrollGuard } from "@/components/grading"
 import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
@@ -135,7 +135,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
           <h1 className="text-2xl font-extrabold">{exam.name} — tablica zapisów</h1>
           <p className="tabular-nums text-muted-foreground">
             zapisani {enrolled} / {exam.people.length} · wolne sloty {freeSlots} · miejsca{" "}
-            {exam.slots.length * exam.maxTeamSize} · {gradedCount(exam.people)}
+            {exam.slots.length * exam.maxTeamSize} · <GradedCount people={exam.people} />
           </p>
           <CapacitySummary exam={exam} />
           <Input

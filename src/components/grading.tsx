@@ -125,9 +125,9 @@ export function GradeChip({
 }
 
 /** Licznik nad tablicą: sam komentarz nie jest oceną. */
-export function gradedCount(people: Person[]) {
+export function GradedCount({ people }: { people: Person[] }) {
   const enrolled = people.filter((p) => p.slotId !== null)
-  return GRADING.counter(enrolled.filter((p) => p.grade !== null).length, enrolled.length)
+  return <>{GRADING.counter(enrolled.filter((p) => p.grade !== null).length, enrolled.length)}</>
 }
 
 /**
