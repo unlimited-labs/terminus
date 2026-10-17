@@ -91,6 +91,8 @@ export type ExistingEntry = {
   email: string
   /** Początek slotu, w którym osoba ma zapis; `null` = bez zapisu. */
   slotStartsAt: Date | null
+  /** Ocena z zapisu: podgląd pokazuje, co zniknie razem z zapisem wycofanej osoby. */
+  grade: Grade | null
 }
 
 export type RosterImportPlan = {

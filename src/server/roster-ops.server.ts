@@ -15,7 +15,9 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     tx.roster.findUnique({ where: { examId_name: { examId, name: rosterName } } }),
     tx.rosterEntry.findMany({
       where: { examId },
-      include: { enrollment: { select: { slot: { select: { startsAt: true } } } } },
+      include: {
+        enrollment: { select: { grade: true, slot: { select: { startsAt: true } } } },
+      },
     }),
   ])
   const existing = entries.map((e) => ({
@@ -25,6 +27,7 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     lastName: e.lastName,
     email: e.email,
     slotStartsAt: e.enrollment?.slot.startsAt ?? null,
+    grade: e.enrollment?.grade ?? null,
   }))
   const rosterId = roster?.id ?? null
   const plan = planRosterImport(parsed, rosterId ?? "", existing)

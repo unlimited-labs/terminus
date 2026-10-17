@@ -76,6 +76,7 @@ const at = (studentNumber: string, email: string): ExistingEntry => ({
   lastName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
   email,
   slotStartsAt: null,
+  grade: null,
 })
 
 describe("adresy e-mail w pliku", () => {
@@ -129,6 +130,7 @@ describe("planRosterImport", () => {
         lastName: "Mazur",
         email: "x@student.agh.edu.pl",
         slotStartsAt: null,
+        grade: null,
       },
     ]
     const plan = planRosterImport(parsed, "g1", existing)
@@ -147,6 +149,7 @@ describe("planRosterImport", () => {
         lastName: "Nowak",
         email: "anna.nowak@student.example.com",
         slotStartsAt: new Date("2030-01-02T09:00:00Z"),
+        grade: null,
       },
       {
         studentNumber: "400002",
@@ -155,6 +158,7 @@ describe("planRosterImport", () => {
         lastName: "Wisniewski",
         email: "x@student.agh.edu.pl",
         slotStartsAt: null,
+        grade: null,
       },
       {
         studentNumber: "400003",
@@ -163,6 +167,7 @@ describe("planRosterImport", () => {
         lastName: "Zając",
         email: "x@student.agh.edu.pl",
         slotStartsAt: null,
+        grade: null,
       },
       {
         studentNumber: "400004",
@@ -171,6 +176,7 @@ describe("planRosterImport", () => {
         lastName: "Lis",
         email: "x@student.agh.edu.pl",
         slotStartsAt: new Date("2030-01-02T09:00:00Z"),
+        grade: "G4" as const,
       },
       {
         studentNumber: "400099",
@@ -179,6 +185,7 @@ describe("planRosterImport", () => {
         lastName: "Byk",
         email: "x@student.agh.edu.pl",
         slotStartsAt: null,
+        grade: null,
       },
     ]
     const plan = planRosterImport(parsed, "g1", existing)
@@ -194,7 +201,9 @@ describe("planRosterImport", () => {
     ])
     expect(plan.unchanged).toBe(1)
     expect(plan.remove.map((e) => e.studentNumber)).toEqual(["400003", "400004"])
-    expect(plan.withdrawnEnrolled.map((e) => e.studentNumber)).toEqual(["400004"])
+    expect(plan.withdrawnEnrolled.map((e) => [e.studentNumber, e.grade])).toEqual([
+      ["400004", "G4"],
+    ])
     expect(plan.notInFile.map((e) => e.studentNumber)).toEqual(["400099"])
   })
 })
