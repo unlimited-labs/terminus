@@ -36,5 +36,5 @@ test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, wida�
   ])
   const csv = readFileSync(await download.path(), "utf8")
   expect(csv).toContain('"imie";"ocena";"komentarz";"Tytuł projektu"')
-  expect(csv).toContain('"500003";"Cis";"Celina";"Robot sprzątający"')
+  expect(csv).toContain('"500003";"Cis";"Celina";"";"";"Robot sprzątający"')
 })
