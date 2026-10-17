@@ -194,6 +194,11 @@ test("zespół musi zawierać indeks z adresem sesji (NOT_YOUR_INDEX), nie zdrad
   expect(await enroll(examId, ["1"], {}, asMe)).toMatchObject({ ok: true })
 })
 
+const mk = (address: string, role = "student") =>
+  db.user.create({
+    data: { id: randomUUID(), name: "", email: address, emailVerified: true, role },
+  })
+
 const session = (userId: string, expiresAt: Date) =>
   db.session.create({ data: { id: randomUUID(), token: randomUUID(), userId, expiresAt } })
 
@@ -202,10 +207,6 @@ const left = async (...ids: string[]) =>
 
 test("sprzątanie: znika student bez sesji i bez wpisu listy; zostają aktywni i ci z wpisem", async () => {
   await createExam({ rosters: { g1: { students: ["1"], slots: [] } } })
-  const mk = (address: string, role = "student") =>
-    db.user.create({
-      data: { id: randomUUID(), name: "", email: address, emailVerified: true, role },
-    })
   const onList = await mk("1@Student.Agh.edu.pl")
   const stale = await mk(email())
   const active = await mk(email())
