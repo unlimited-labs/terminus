@@ -49,7 +49,14 @@ test("indeks najwyżej raz na listach zaliczenia i raz w zapisach", async () => 
   const { examId, rosterIds, slotId } = await enrolledExam()
   await expect(
     db.rosterEntry.create({
-      data: { examId, studentNumber: "1", rosterId: rosterIds.g1!, firstName: "X", lastName: "Y" },
+      data: {
+        examId,
+        studentNumber: "1",
+        rosterId: rosterIds.g1!,
+        firstName: "X",
+        lastName: "Y",
+        email: "x@example.com",
+      },
     }),
   ).rejects.toThrow(/Unique constraint/)
   await expect(

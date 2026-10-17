@@ -4,12 +4,16 @@ import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
 import { withExamLock } from "@/server/exam-access.server"
+import { examCsv } from "@/server/exam-ops.server"
+import { loadExam } from "@/server/exam-state.server"
 import {
   addEntry,
   applyImport,
   deleteEntry,
+  entryEmails,
   previewImport,
   removeRoster,
+  setEntryEmail,
 } from "@/server/roster-ops.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
@@ -228,4 +232,74 @@ test("podgląd importu nie czeka na blokadę zaliczenia (nie wstrzymuje zapisów
   released.resolve()
   await held
   expect(preview).toMatchObject({ ok: true })
+})
+
+const emailOf = async (examId: string, studentNumber: string) =>
+  (
+    await db.rosterEntry.findUniqueOrThrow({
+      where: { examId_studentNumber: { examId, studentNumber } },
+    })
+  ).email
+
+test("import: adres z pliku małymi literami, domyślny bez kolumny, reimport nie nadpisuje pustym ani złym", async () => {
+  const { examId, teacherId } = await createExam({ rosters: {} })
+  const withEmail = (...rows: string[]) => ["indeks;imie;nazwisko;email", ...rows].join("\n")
+  await applyImport(
+    examId,
+    teacherId,
+    "g1",
+    withEmail("1;Ala;A;Ala@AGH.edu.pl", "2;Bob;B;", "3;Cyd;C;zly"),
+    [],
+  )
+  expect(await emailOf(examId, "1")).toBe("ala@agh.edu.pl")
+  expect(await emailOf(examId, "2")).toBe("2@student.agh.edu.pl")
+  expect(await emailOf(examId, "3")).toBe("3@student.agh.edu.pl")
+
+  const next = withEmail("1;Ala;A;inny@agh.edu.pl", "2;Bob;B;", "3;Cyd;C;zly")
+  expect(await previewImport(examId, teacherId, "g1", next)).toMatchObject({
+    badEmails: 1,
+    update: [{ studentNumber: "1" }],
+  })
+  await applyImport(examId, teacherId, "g1", next, [])
+  expect(await emailOf(examId, "1")).toBe("inny@agh.edu.pl")
+  expect(await emailOf(examId, "3")).toBe("3@student.agh.edu.pl")
+})
+
+test("adres wpisu: dodanie z adresem i bez, zmiana, powrót do domyślnego; cudze zaliczenie nie widzi", async () => {
+  const { examId, teacherId, rosterIds } = await createExam({
+    rosters: { g1: { students: [], slots: [] } },
+  })
+  const person = { rosterId: rosterIds.g1!, firstName: "A", lastName: "B" }
+  await addEntry(examId, teacherId, { ...person, studentNumber: "1", email: "a@agh.edu.pl" })
+  await addEntry(examId, teacherId, { ...person, studentNumber: "2" })
+  expect(await entryEmails(examId, teacherId)).toEqual({
+    "1": "a@agh.edu.pl",
+    "2": "2@student.agh.edu.pl",
+  })
+  expect(await setEntryEmail(examId, teacherId, "2", "b@agh.edu.pl")).toEqual({ ok: true })
+  expect(await setEntryEmail(examId, teacherId, "1", "")).toEqual({ ok: true })
+  expect(await entryEmails(examId, teacherId)).toEqual({
+    "1": "1@student.agh.edu.pl",
+    "2": "b@agh.edu.pl",
+  })
+  expect(await setEntryEmail(examId, teacherId, "9", "c@agh.edu.pl")).toEqual({
+    ok: false,
+    code: "NOT_FOUND",
+  })
+  const other = await createExam({ rosters: {} })
+  expect(await entryEmails(examId, other.teacherId)).toBeNull()
+  expect(await setEntryEmail(examId, other.teacherId, "1", "x@agh.edu.pl")).toEqual({
+    ok: false,
+    code: "NOT_FOUND",
+  })
+})
+
+test("adres nie trafia do stanu zaliczenia ani do eksportu CSV", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [] } },
+  })
+  await setEntryEmail(examId, teacherId, "1", "tajny@agh.edu.pl")
+  expect(JSON.stringify(await loadExam(examId))).not.toContain("tajny@agh.edu.pl")
+  const exported = await examCsv(examId, teacherId)
+  expect(JSON.stringify(exported)).not.toContain("tajny@agh.edu.pl")
 })

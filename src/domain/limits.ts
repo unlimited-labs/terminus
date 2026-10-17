@@ -2,3 +2,4 @@
 export const STUDENT_NUMBER_MAX = 20
 export const PERSON_NAME_MAX = 100
 export const ROSTER_NAME_MAX = 50
+export const EMAIL_MAX = 254

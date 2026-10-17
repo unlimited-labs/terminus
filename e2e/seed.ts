@@ -1,5 +1,6 @@
 import { warsawDateTime } from "../src/domain/time.ts"
 import { warsawDay } from "../src/domain/time.ts"
+import { defaultEmail } from "../src/domain/email.ts"
 import { db } from "../src/server/db.server.ts"
 
 import { dayOf, E2E, type E2EState } from "./config.ts"
@@ -36,6 +37,7 @@ async function createExam(
       studentNumber,
       firstName,
       lastName,
+      email: defaultEmail(studentNumber),
     })),
   })
   const created = await db.slot.createManyAndReturn({
@@ -119,6 +121,7 @@ async function twoRostersExam() {
       studentNumber: "980003",
       firstName: "Tomasz",
       lastName: "Tur",
+      email: defaultEmail("980003"),
     },
   })
   return id

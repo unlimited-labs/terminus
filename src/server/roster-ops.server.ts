@@ -1,6 +1,7 @@
 import type { z } from "zod"
 
 import { parseRosterCsv, planRosterImport } from "../domain/csv.ts"
+import { defaultEmail } from "../domain/email.ts"
 import type { Result } from "../messages.pl.ts"
 import type { addEntrySchema } from "../schemas/roster.ts"
 
@@ -17,12 +18,13 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
       include: { enrollment: { select: { slot: { select: { startsAt: true } } } } },
     }),
   ])
-  const existing = entries.map(({ studentNumber, rosterId, firstName, lastName, enrollment }) => ({
-    studentNumber,
-    rosterId,
-    firstName,
-    lastName,
-    slotStartsAt: enrollment?.slot.startsAt ?? null,
+  const existing = entries.map((e) => ({
+    studentNumber: e.studentNumber,
+    rosterId: e.rosterId,
+    firstName: e.firstName,
+    lastName: e.lastName,
+    email: e.email,
+    slotStartsAt: e.enrollment?.slot.startsAt ?? null,
   }))
   const rosterId = roster?.id ?? null
   const plan = planRosterImport(parsed, rosterId ?? "", existing)
@@ -32,6 +34,7 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     people: parsed.rows.length,
     withdrawn: parsed.withdrawn.length,
     invalid: parsed.invalid,
+    badEmails: parsed.badEmails,
     ...plan,
   }
 }
@@ -67,19 +70,21 @@ export async function applyImport(
     const rosterId =
       plan.rosterId ?? (await tx.roster.create({ data: { examId, name: rosterName } })).id
     await tx.rosterEntry.createMany({
-      data: plan.add.map(({ studentNumber, firstName, lastName }) => ({
+      data: plan.add.map(({ studentNumber, firstName, lastName, email }) => ({
         examId,
         rosterId,
         studentNumber,
         firstName,
         lastName,
+        email: email ?? defaultEmail(studentNumber),
       })),
     })
     await Promise.all(
-      plan.update.map(({ studentNumber, firstName, lastName }) =>
+      plan.update.map(({ studentNumber, firstName, lastName, email }) =>
         tx.rosterEntry.update({
           where: { examId_studentNumber: { examId, studentNumber } },
-          data: { firstName, lastName },
+          // Pusty albo niepoprawny adres w pliku nie nadpisuje zapisanego.
+          data: { firstName, lastName, ...(email && { email }) },
         }),
       ),
     )
@@ -95,7 +100,13 @@ export async function applyImport(
 export async function addEntry(
   examId: string,
   userId: string,
-  { rosterId, studentNumber, firstName, lastName }: Omit<z.infer<typeof addEntrySchema>, "examId">,
+  {
+    rosterId,
+    studentNumber,
+    firstName,
+    lastName,
+    email,
+  }: Omit<z.infer<typeof addEntrySchema>, "examId" | "email"> & { email?: string },
 ): Promise<Result> {
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const current = await tx.rosterEntry.findUnique({
@@ -113,9 +124,41 @@ export async function addEntry(
       return { ok: false, code: "NOT_FOUND" }
     }
     await tx.rosterEntry.create({
-      data: { examId, rosterId: targetRosterId, studentNumber, firstName, lastName },
+      data: {
+        examId,
+        rosterId: targetRosterId,
+        studentNumber,
+        firstName,
+        lastName,
+        email: email || defaultEmail(studentNumber),
+      },
     })
     return { ok: true }
+  })
+}
+
+/** Adresy wpisów listy; tylko dla prowadzącego, poza stanem zaliczenia i tablicą. */
+export async function entryEmails(examId: string, userId: string) {
+  if (!(await getOwnedExam(examId, userId))) return null
+  const entries = await db.rosterEntry.findMany({
+    where: { examId },
+    select: { studentNumber: true, email: true },
+  })
+  return Object.fromEntries(entries.map((e) => [e.studentNumber, e.email]))
+}
+
+export async function setEntryEmail(
+  examId: string,
+  userId: string,
+  studentNumber: string,
+  email: string,
+): Promise<Result> {
+  return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
+    const { count } = await tx.rosterEntry.updateMany({
+      where: { examId, studentNumber },
+      data: { email: email || defaultEmail(studentNumber) },
+    })
+    return count > 0 ? { ok: true } : { ok: false, code: "NOT_FOUND" }
   })
 }
 

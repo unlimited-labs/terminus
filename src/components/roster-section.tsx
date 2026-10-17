@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
@@ -23,13 +23,15 @@ import { toastUnexpected, useExamMutation } from "@/components/use-result-mutati
 import { suggestRosterName } from "@/domain/csv"
 import { formatDayTime } from "@/domain/time"
 import { errorMessage, INVALID_ROW, UNEXPECTED_ERROR } from "@/messages.pl"
-import { addEntrySchema, rosterImportSchema } from "@/schemas/roster"
+import { addEntrySchema, entryEmail, rosterImportSchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
   addRosterEntry,
   applyRosterImport,
   deleteRoster,
+  changeEntryEmail,
   deleteRosterEntry,
+  entryEmailsQuery,
   previewRosterImport,
 } from "@/server/rosters"
 
@@ -38,6 +40,7 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
   const rosterName = rosterNames(exam.rosters)
   const removeEntry = useExamMutation(deleteRosterEntry, exam.id)
   const removeRoster = useExamMutation(deleteRoster, exam.id)
+  const emails = useQuery(entryEmailsQuery(exam.id)).data
 
   return (
     <SectionCard
@@ -79,6 +82,7 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
             <TableRow>
               <TableHead>Indeks</TableHead>
               <TableHead>Nazwisko i imię</TableHead>
+              <TableHead>Adres e-mail</TableHead>
               {multi && <TableHead>Lista</TableHead>}
               <TableHead>Zapis</TableHead>
               <TableHead />
@@ -90,6 +94,15 @@ export function RosterSection({ exam }: { exam: ExamDetail }) {
                 <TableCell className="tabular-nums">{p.studentNumber}</TableCell>
                 <TableCell>
                   {p.lastName} {p.firstName}
+                </TableCell>
+                <TableCell>
+                  {emails?.[p.studentNumber] !== undefined && (
+                    <EmailCell
+                      examId={exam.id}
+                      studentNumber={p.studentNumber}
+                      email={emails[p.studentNumber]!}
+                    />
+                  )}
                 </TableCell>
                 {multi && <TableCell>{rosterName.get(p.rosterId)}</TableCell>}
                 <TableCell>{p.slotId ? <Badge>zapisany</Badge> : null}</TableCell>
@@ -126,6 +139,7 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
       studentNumber: "",
       firstName: "",
       lastName: "",
+      email: "",
     },
     ...schemaSubmit(addEntrySchema, add.mutateAsync, {
       prepare: (v) => ({ ...v, rosterId: currentRosterId(exam.rosters, v.rosterId) }),
@@ -138,6 +152,9 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
         <form.AppField name="studentNumber">{(f) => <f.TextField label="Indeks" />}</form.AppField>
         <form.AppField name="firstName">{(f) => <f.TextField label="Imię" />}</form.AppField>
         <form.AppField name="lastName">{(f) => <f.TextField label="Nazwisko" />}</form.AppField>
+        <form.AppField name="email">
+          {(f) => <f.TextField label="Adres e-mail (opcjonalnie)" type="email" />}
+        </form.AppField>
         <form.AppField name="rosterId">
           {(f) => <f.RosterField rosters={exam.rosters} />}
         </form.AppField>
@@ -218,6 +235,8 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
             pliku: {result.people} (nowe {result.add.length}, zmienione nazwiska{" "}
             {result.update.length}, bez zmian {result.unchanged}). W pliku skreśleni lub z
             rezygnacją: {result.withdrawn}.
+            {result.badEmails > 0 &&
+              ` Zastąpionych niepoprawnych adresów e-mail: ${result.badEmails}.`}
           </p>
           <PreviewList title="Błędne — nie zostaną zaimportowane">
             {[
@@ -261,6 +280,38 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
         </div>
       )}
     </div>
+  )
+}
+
+/** Adres zapisuje się po opuszczeniu pola; pusty wraca do domyślnego. */
+function EmailCell({
+  examId,
+  studentNumber,
+  email,
+}: {
+  examId: string
+  studentNumber: string
+  email: string
+}) {
+  const change = useExamMutation(changeEntryEmail, examId)
+  return (
+    <Input
+      key={email}
+      type="email"
+      aria-label={`Adres e-mail, indeks ${studentNumber}`}
+      defaultValue={email}
+      className="h-8 min-w-56"
+      onBlur={(e) => {
+        const next = e.target.value.trim().toLowerCase()
+        if (next === email) return
+        if (!entryEmail.safeParse(next).success) {
+          toast.error("Podaj poprawny adres e-mail.")
+          e.target.value = email
+          return
+        }
+        change.mutate({ examId, studentNumber, email: next })
+      }}
+    />
   )
 }
 

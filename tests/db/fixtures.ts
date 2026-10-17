@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto"
 
+import { defaultEmail } from "@/domain/email"
 import { db } from "@/server/db.server"
 import { enrollTeam } from "@/server/enrollment.server"
 
@@ -42,6 +43,7 @@ export async function createExam({
         studentNumber,
         firstName: `Imię${studentNumber}`,
         lastName: `Nazwisko${studentNumber}`,
+        email: defaultEmail(studentNumber),
       })),
     })
     await db.slot.createMany({

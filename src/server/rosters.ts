@@ -1,7 +1,9 @@
+import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 
 import {
   addEntrySchema,
+  entryEmailSchema,
   entryRefSchema,
   rosterApplySchema,
   rosterImportSchema,
@@ -12,9 +14,12 @@ import {
   addEntry,
   applyImport,
   deleteEntry,
+  entryEmails,
   previewImport,
   removeRoster,
+  setEntryEmail,
 } from "./roster-ops.server.ts"
+import { examIdSchema } from "../schemas/exam.ts"
 import { requireUser } from "./session.ts"
 
 export const previewRosterImport = createServerFn({ method: "POST" })
@@ -45,3 +50,22 @@ export const deleteRoster = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(rosterRefSchema)
   .handler(({ data, context }) => removeRoster(data.examId, context.user.id, data.rosterId))
+
+const getEntryEmails = createServerFn()
+  .middleware([requireUser])
+  .validator(examIdSchema)
+  .handler(({ data, context }) => entryEmails(data.examId, context.user.id))
+
+/** Klucz pod `["exam", id]`, więc każda zmiana zaliczenia odświeża też adresy. */
+export const entryEmailsQuery = (examId: string) =>
+  queryOptions({
+    queryKey: ["exam", examId, "emails"],
+    queryFn: () => getEntryEmails({ data: { examId } }),
+  })
+
+export const changeEntryEmail = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(entryEmailSchema)
+  .handler(({ data, context }) =>
+    setEntryEmail(data.examId, context.user.id, data.studentNumber, data.email),
+  )

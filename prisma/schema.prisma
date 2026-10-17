@@ -26,6 +26,8 @@ model Exam {
   /// Start zapisów; null = od razu po utworzeniu.
   enrollmentOpensAt  DateTime?      @db.Timestamptz
   assignmentMode     AssignmentMode @default(RANDOM)
+  /// Student wchodzi na stronę zapisów dopiero po zalogowaniu linkiem wysłanym na adres z listy.
+  requireEmailLogin  Boolean        @default(false)
   createdAt          DateTime       @default(now()) @db.Timestamptz
   rosters            Roster[]
   enrollments        Enrollment[]
@@ -53,6 +55,8 @@ model RosterEntry {
   roster        Roster      @relation(fields: [rosterId, examId], references: [id, examId], onDelete: Cascade)
   firstName     String
   lastName      String
+  /// Adres z listy uczelni (małe litery), na który idzie link logowania; nigdy nie opuszcza panelu prowadzącego.
+  email         String
   enrollment    Enrollment?
 
   @@id([examId, studentNumber])

@@ -1,9 +1,16 @@
 import Papa from "papaparse"
-
+import { normalizeEmail } from "./email.ts"
 import { PERSON_NAME_MAX, ROSTER_NAME_MAX, STUDENT_NUMBER_MAX } from "./limits.ts"
 import { warsawDay, warsawTime } from "./time.ts"
 
-export type RosterRow = { line: number; studentNumber: string; firstName: string; lastName: string }
+export type RosterRow = {
+  line: number
+  studentNumber: string
+  firstName: string
+  lastName: string
+  /** Poprawny adres z pliku (małe litery); `null` = pusty albo niepoprawny, wtedy działa adres domyślny. */
+  email: string | null
+}
 export type InvalidRowReason = "NOT_DIGITS" | "TOO_LONG" | "BAD_NAME" | "DUPLICATE_IN_FILE"
 type InvalidRow = { line: number; studentNumber: string; reason: InvalidRowReason }
 
@@ -14,6 +21,8 @@ export type ParsedRoster =
       /** `skreslony = 1` lub `rezygnacja = 1` — pomijane. */
       withdrawn: RosterRow[]
       invalid: InvalidRow[]
+      /** Wiersze z niepustym, niepoprawnym adresem — adres zastąpiony domyślnym. */
+      badEmails: number
     }
   | { ok: false; code: "MISSING_COLUMNS"; columns: string[] }
 
@@ -45,12 +54,15 @@ export function parseRosterCsv(text: string): ParsedRoster {
   const withdrawn: RosterRow[] = []
   const invalid: InvalidRow[] = []
   const seen = new Set<string>()
+  let badEmails = 0
   data.forEach((record, i) => {
+    const rawEmail = record.email ?? ""
     const row: RosterRow = {
       line: i + 2,
       studentNumber: record.indeks ?? "",
       firstName: record.imie ?? "",
       lastName: record.nazwisko ?? "",
+      email: normalizeEmail(rawEmail),
     }
     if (record.skreslony === "1" || record.rezygnacja === "1") {
       withdrawn.push(row)
@@ -61,10 +73,11 @@ export function parseRosterCsv(text: string): ParsedRoster {
       invalid.push({ line: row.line, studentNumber: row.studentNumber, reason })
       return
     }
+    if (rawEmail !== "" && row.email === null) badEmails++
     seen.add(row.studentNumber)
     rows.push(row)
   })
-  return { ok: true, rows, withdrawn, invalid }
+  return { ok: true, rows, withdrawn, invalid, badEmails }
 }
 
 export type ExistingEntry = {
@@ -72,6 +85,7 @@ export type ExistingEntry = {
   rosterId: string
   firstName: string
   lastName: string
+  email: string
   /** Początek slotu, w którym osoba ma zapis; `null` = bez zapisu. */
   slotStartsAt: Date | null
 }
@@ -110,7 +124,11 @@ export function planRosterImport(
     const current = byNumber.get(row.studentNumber)
     if (!current) plan.add.push(row)
     else if (current.rosterId !== rosterId) plan.otherRoster.push(row)
-    else if (current.firstName !== row.firstName || current.lastName !== row.lastName)
+    else if (
+      current.firstName !== row.firstName ||
+      current.lastName !== row.lastName ||
+      (row.email !== null && row.email !== current.email)
+    )
       plan.update.push(row)
     else plan.unchanged++
   }

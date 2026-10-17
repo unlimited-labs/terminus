@@ -108,7 +108,9 @@ export function copyExam(
           rosters: {
             select: {
               name: true,
-              entries: { select: { studentNumber: true, firstName: true, lastName: true } },
+              entries: {
+                select: { studentNumber: true, firstName: true, lastName: true, email: true },
+              },
             },
           },
         },

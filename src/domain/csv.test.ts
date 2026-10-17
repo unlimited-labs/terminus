@@ -10,6 +10,7 @@ import {
   suggestRosterName,
   type ExistingEntry,
 } from "./csv"
+import { defaultEmail } from "./email"
 
 const fixture = readFileSync(
   new URL("./fixtures/studenci_110-ITE-2S-027_g1_2026-09-30.csv", import.meta.url),
@@ -22,9 +23,27 @@ describe("parseRosterCsv", () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(result.rows).toEqual([
-      { line: 2, studentNumber: "400001", firstName: "Anna", lastName: "Nowak" },
-      { line: 3, studentNumber: "400002", firstName: "Piotr", lastName: "Wiśniewski" },
-      { line: 7, studentNumber: "400006", firstName: "Ola", lastName: "Mazur" },
+      {
+        line: 2,
+        studentNumber: "400001",
+        firstName: "Anna",
+        lastName: "Nowak",
+        email: "anna.nowak@student.example.com",
+      },
+      {
+        line: 3,
+        studentNumber: "400002",
+        firstName: "Piotr",
+        lastName: "Wiśniewski",
+        email: "piotr.w@student.example.com",
+      },
+      {
+        line: 7,
+        studentNumber: "400006",
+        firstName: "Ola",
+        lastName: "Mazur",
+        email: "ola.m@student.example.com",
+      },
     ])
     expect(result.withdrawn.map((r) => r.studentNumber)).toEqual(["400003", "400004"])
     expect(result.invalid).toEqual([
@@ -50,6 +69,52 @@ describe("parseRosterCsv", () => {
   })
 })
 
+describe("adresy e-mail w pliku", () => {
+  const csv = [
+    "indeks;imie;nazwisko;email",
+    "1;A;A; Jan.Kowalski@AGH.edu.pl ",
+    "2;B;B;",
+    "3;C;C;nie-adres",
+    `4;D;D;${"a".repeat(250)}@x.pl`,
+  ].join("\n")
+
+  test("zapisuje małymi literami, pusty i zły traktuje jak brak, zlicza złe", () => {
+    const parsed = parseRosterCsv(csv)
+    if (!parsed.ok) throw new Error("parse")
+    expect(parsed.rows.map((r) => r.email)).toEqual(["jan.kowalski@agh.edu.pl", null, null, null])
+    expect(parsed.badEmails).toBe(2)
+  })
+
+  test("plik bez kolumny email jest poprawny", () => {
+    const parsed = parseRosterCsv("indeks;imie;nazwisko\n1;A;A")
+    expect(parsed).toMatchObject({ ok: true, badEmails: 0, rows: [{ email: null }] })
+  })
+
+  test("domyślny adres to indeks@student.agh.edu.pl", () => {
+    expect(defaultEmail("400001")).toBe("400001@student.agh.edu.pl")
+  })
+
+  test("reimport nadpisuje innym poprawnym adresem, pustego i zepsutego nie", () => {
+    const parsed = parseRosterCsv(csv)
+    if (!parsed.ok) throw new Error("parse")
+    const at = (studentNumber: string, email: string): ExistingEntry => ({
+      studentNumber,
+      rosterId: "g1",
+      firstName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
+      lastName: studentNumber === "1" ? "A" : studentNumber === "2" ? "B" : "C",
+      email,
+      slotStartsAt: null,
+    })
+    const plan = planRosterImport(parsed, "g1", [
+      at("1", "stary@agh.edu.pl"),
+      at("2", "reczny@agh.edu.pl"),
+      at("3", "reczny@agh.edu.pl"),
+    ])
+    expect(plan.update.map((r) => r.studentNumber)).toEqual(["1"])
+    expect(plan.unchanged).toBe(2)
+  })
+})
+
 describe("planRosterImport", () => {
   const parsed = parseRosterCsv(fixture)
   if (!parsed.ok) throw new Error("fixture")
@@ -61,6 +126,7 @@ describe("planRosterImport", () => {
         rosterId: "g2",
         firstName: "Ola",
         lastName: "Mazur",
+        email: "x@student.agh.edu.pl",
         slotStartsAt: null,
       },
     ]
@@ -78,6 +144,7 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Anna",
         lastName: "Nowak",
+        email: "anna.nowak@student.example.com",
         slotStartsAt: new Date("2030-01-02T09:00:00Z"),
       },
       {
@@ -85,6 +152,7 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Piotr",
         lastName: "Wisniewski",
+        email: "x@student.agh.edu.pl",
         slotStartsAt: null,
       },
       {
@@ -92,6 +160,7 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Ewa",
         lastName: "Zając",
+        email: "x@student.agh.edu.pl",
         slotStartsAt: null,
       },
       {
@@ -99,6 +168,7 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Adam",
         lastName: "Lis",
+        email: "x@student.agh.edu.pl",
         slotStartsAt: new Date("2030-01-02T09:00:00Z"),
       },
       {
@@ -106,13 +176,20 @@ describe("planRosterImport", () => {
         rosterId: "g1",
         firstName: "Iza",
         lastName: "Byk",
+        email: "x@student.agh.edu.pl",
         slotStartsAt: null,
       },
     ]
     const plan = planRosterImport(parsed, "g1", existing)
     expect(plan.add.map((r) => r.studentNumber)).toEqual(["400006"])
     expect(plan.update).toEqual([
-      { line: 3, studentNumber: "400002", firstName: "Piotr", lastName: "Wiśniewski" },
+      {
+        line: 3,
+        studentNumber: "400002",
+        firstName: "Piotr",
+        lastName: "Wiśniewski",
+        email: "piotr.w@student.example.com",
+      },
     ])
     expect(plan.unchanged).toBe(1)
     expect(plan.remove.map((e) => e.studentNumber)).toEqual(["400003", "400004"])

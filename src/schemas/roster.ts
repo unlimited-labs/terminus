@@ -1,6 +1,12 @@
 import { z } from "zod"
 
-import { PERSON_NAME_MAX, ROSTER_NAME_MAX, STUDENT_NUMBER_MAX } from "../domain/limits.ts"
+import { normalizeEmail } from "../domain/email.ts"
+import {
+  EMAIL_MAX,
+  PERSON_NAME_MAX,
+  ROSTER_NAME_MAX,
+  STUDENT_NUMBER_MAX,
+} from "../domain/limits.ts"
 import { tooLong } from "../messages.pl.ts"
 import { examIdSchema } from "./exam.ts"
 
@@ -9,6 +15,14 @@ export const studentNumber = z
   .trim()
   .regex(/^\d+$/, "Numer indeksu to same cyfry.")
   .max(STUDENT_NUMBER_MAX, "Za długi numer indeksu.")
+
+/** Pusty = adres domyślny (`defaultEmail`). */
+export const entryEmail = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .max(EMAIL_MAX, tooLong(EMAIL_MAX))
+  .refine((v) => v === "" || normalizeEmail(v) !== null, "Podaj poprawny adres e-mail.")
 
 export const personName = (label: string) =>
   z.string().trim().min(1, `Podaj ${label}.`).max(PERSON_NAME_MAX, tooLong(PERSON_NAME_MAX))
@@ -31,8 +45,11 @@ export const addEntrySchema = examIdSchema.extend({
   studentNumber,
   firstName: personName("imię"),
   lastName: personName("nazwisko"),
+  email: entryEmail,
 })
 
 export const entryRefSchema = examIdSchema.extend({ studentNumber })
 
 export const rosterRefSchema = examIdSchema.extend({ rosterId: z.uuid() })
+
+export const entryEmailSchema = entryRefSchema.extend({ email: entryEmail })
