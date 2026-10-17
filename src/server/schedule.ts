@@ -11,7 +11,7 @@ import { sessionEmail, studentAccess } from "./student-access.server.ts"
 export type Schedule = NonNullable<Awaited<ReturnType<typeof loadSchedule>>>
 
 /** Zaliczenie z logowaniem mailem bez sesji studenta: tylko nazwa i powód, nigdy harmonogram, liczba slotów, termin ani opis. */
-export type ScheduleView =
+type ScheduleView =
   | { gate: "open"; schedule: Schedule; studentIndex: string | null }
   | { gate: "login" | "unavailable"; name: string }
 

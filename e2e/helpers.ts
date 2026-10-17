@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs"
 
 import type { Locator, Page } from "@playwright/test"
+import { z } from "zod"
 
 import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
 
@@ -11,9 +12,9 @@ export const state = (): E2EState =>
 
 export const exams = () => state().exams
 
-type Mail = { to: string; subject: string; text: string }
-const mailsTo = (address: string): Mail[] =>
-  (JSON.parse(readFileSync(MAIL_FILE, "utf8")) as Mail[]).filter((m) => m.to === address)
+const mailsSchema = z.array(z.object({ to: z.string(), subject: z.string(), text: z.string() }))
+const mailsTo = (address: string) =>
+  mailsSchema.parse(JSON.parse(readFileSync(MAIL_FILE, "utf8"))).filter((m) => m.to === address)
 
 /** Liczba maili, które fałszywy SMTP odebrał dla adresu. */
 export const mailCount = (address: string) => mailsTo(address).length

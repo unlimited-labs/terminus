@@ -1,7 +1,6 @@
 // Serwer do testów e2e: PostgreSQL w kontenerze, migracje, superadmin, dane testowe, aplikacja.
 import { execSync, spawn } from "node:child_process"
 import { writeFileSync } from "node:fs"
-import type { AddressInfo } from "node:net"
 
 import { PostgreSqlContainer } from "@testcontainers/postgresql"
 import { simpleParser } from "mailparser"
@@ -25,7 +24,10 @@ const smtp = new SMTPServer({
   },
 })
 await new Promise<void>((resolve) => smtp.listen(0, "127.0.0.1", resolve))
-const smtpPort = (smtp.server.address() as AddressInfo).port
+const smtpAddress = smtp.server.address()
+if (!smtpAddress || typeof smtpAddress === "string")
+  throw new Error("Fałszywy SMTP nie nasłuchuje.")
+const smtpPort = smtpAddress.port
 
 const container = await new PostgreSqlContainer("postgres:18-alpine").start()
 const env = {

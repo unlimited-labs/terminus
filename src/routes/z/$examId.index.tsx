@@ -129,15 +129,17 @@ function StudentBar({
 function StudentPage() {
   const { examId } = Route.useParams()
   const { data: view } = useSuspenseQuery(scheduleQuery(examId))
-  const schedule = view?.gate === "open" ? view.schedule : null
   // Sesja wygasła, gdy strona była już otwarta, a serwer znów żąda logowania.
   const [hadAccess, setHadAccess] = useState(false)
-  if (schedule && !hadAccess) setHadAccess(true)
-  const [open, setOpen] = useState(false)
-  const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
-  const [picked, setPickedId] = usePickedSlot(schedule)
-  const [showCount, setShowCount] = useState(0)
-  if (view && view.gate !== "open") {
+  if (view?.gate === "open" && !hadAccess) setHadAccess(true)
+  if (!view) {
+    return (
+      <p role="status" className="mx-auto max-w-3xl px-4 pt-6">
+        Tego zaliczenia już nie ma — prowadzący je usunął.
+      </p>
+    )
+  }
+  if (view.gate !== "open") {
     return (
       <StudentGate
         examId={examId}
@@ -147,25 +149,39 @@ function StudentPage() {
       />
     )
   }
-  if (!view || !schedule) {
-    return (
-      <p role="status" className="mx-auto max-w-3xl px-4 pt-6">
-        Tego zaliczenia już nie ma — prowadzący je usunął.
-      </p>
-    )
-  }
+  return (
+    <OpenSchedule
+      examId={examId}
+      schedule={view.schedule}
+      studentIndex={view.studentIndex}
+      onLoggedOut={() => setHadAccess(false)}
+    />
+  )
+}
+
+function OpenSchedule({
+  examId,
+  schedule,
+  studentIndex,
+  onLoggedOut,
+}: {
+  examId: string
+  schedule: Schedule
+  studentIndex: string | null
+  onLoggedOut: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
+  const [picked, setPickedId] = usePickedSlot(schedule)
+  const [showCount, setShowCount] = useState(0)
 
   const mode = entryMode(schedule, picked)
   const title = mine ? "Twój slot" : mode.action
 
   return (
     <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
-      {view.studentIndex && (
-        <StudentBar
-          examId={examId}
-          index={view.studentIndex}
-          onLoggedOut={() => setHadAccess(false)}
-        />
+      {studentIndex && (
+        <StudentBar examId={examId} index={studentIndex} onLoggedOut={onLoggedOut} />
       )}
       <header className="grid gap-1">
         <h1 className="text-2xl leading-tight font-extrabold">{schedule.name}</h1>

@@ -15,6 +15,11 @@ export default defineConfig({
     overrides: [
       // Pola tablicy TanStack Form są sterowane stanem formularza; indeks to ich tożsamość.
       { files: ["src/components/enroll-sheet.tsx"], rules: ["react-doctor/no-array-index-as-key"] },
+      // Prośba o link wysyła maila i niczego nie zmienia w danych zaliczenia.
+      {
+        files: ["src/components/student-gate.tsx"],
+        rules: ["react-doctor/query-mutation-missing-invalidation"],
+      },
     ],
   },
 })

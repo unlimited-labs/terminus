@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/fallow/schema.json",
-  "entry": ["doctor.config.ts"],
+  "entry": ["doctor.config.ts", "src/server/tasks/*.ts"],
   "ignoreDependencies": ["prisma", "shadcn"],
   "ignorePatterns": ["src/generated/**", ".scratch/**"],
   "ignoreExports": [
