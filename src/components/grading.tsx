@@ -69,7 +69,7 @@ export function GradeChip({
           size="sm"
           spacing={0}
           value={person.grade ? [person.grade] : []}
-          onValueChange={(v) => set((v[0] as Grade | undefined) ?? null)}
+          onValueChange={(v) => set(GRADES.find((g) => g === v[0]) ?? null)}
         >
           {GRADES.map((g) => (
             <ToggleGroupItem
