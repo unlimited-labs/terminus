@@ -35,6 +35,6 @@ test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, wida�
     page.getByRole("button", { name: "Eksport CSV" }).click(),
   ])
   const csv = readFileSync(await download.path(), "utf8")
-  expect(csv).toContain('"imie";"Tytuł projektu"')
+  expect(csv).toContain('"imie";"ocena";"komentarz";"Tytuł projektu"')
   expect(csv).toContain('"500003";"Cis";"Celina";"Robot sprzątający"')
 })

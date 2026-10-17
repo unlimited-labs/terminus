@@ -1,4 +1,7 @@
 import Papa from "papaparse"
+
+import { GRADE } from "../messages.pl.ts"
+import type { Grade } from "./board.ts"
 import { normalizeEmail } from "./email.ts"
 import { PERSON_NAME_MAX, ROSTER_NAME_MAX, STUDENT_NUMBER_MAX } from "./limits.ts"
 import { warsawDay, warsawTime } from "./time.ts"
@@ -161,9 +164,14 @@ type ExportPerson = {
   rosterName: string
   slotId: string | null
   answers?: Record<string, string>
+  grade?: Grade | null
+  gradeComment?: string | null
 }
 
-/** Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu; potem kolumny dodatkowych pól. */
+/**
+ * Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu;
+ * ocena i komentarz po imieniu, potem kolumny dodatkowych pól.
+ */
 export function buildExportCsv(
   slots: ExportSlot[],
   people: ExportPerson[],
@@ -184,6 +192,8 @@ export function buildExportCsv(
         p.studentNumber,
         p.lastName,
         p.firstName,
+        p.grade ? GRADE[p.grade].csv : "",
+        p.gradeComment ?? "",
         ...fields.map((f) => p.answers?.[f.id] ?? ""),
       ]
     })
@@ -199,6 +209,8 @@ export function buildExportCsv(
           "indeks",
           "nazwisko",
           "imie",
+          "ocena",
+          "komentarz",
           ...fields.map((f) => f.label),
         ],
         data: rows,

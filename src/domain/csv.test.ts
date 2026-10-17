@@ -230,7 +230,7 @@ test("buildExportCsv: formuły w odpowiedziach, nazwiskach i etykietach nie wyko
   expect(csv).toContain(`"'=HYPERLINK(`)
 })
 
-test("buildExportCsv: sortuje po slocie i nazwisku, niezapisani na końcu, wolne sloty pominięte", () => {
+test("buildExportCsv: sortuje po slocie i nazwisku, niezapisani na końcu, wolne sloty pominięte; ocena 3,5 / nb / pusta", () => {
   const slots = [
     {
       id: "s2",
@@ -250,18 +250,42 @@ test("buildExportCsv: sortuje po slocie i nazwisku, niezapisani na końcu, wolne
   ]
   const people = [
     { studentNumber: "3", firstName: "Ewa", lastName: "Źrebiec", rosterName: "g1", slotId: null },
-    { studentNumber: "1", firstName: "Jan", lastName: "Żak", rosterName: "g1", slotId: "s1" },
-    { studentNumber: "2", firstName: "Ola", lastName: "Łuk", rosterName: "g2", slotId: "s1" },
-    { studentNumber: "4", firstName: "Adam", lastName: "Abc", rosterName: "g1", slotId: "s2" },
+    {
+      studentNumber: "1",
+      firstName: "Jan",
+      lastName: "Żak",
+      rosterName: "g1",
+      slotId: "s1",
+      grade: "G3_5" as const,
+      gradeComment: 'dobrze; "poprawka"',
+    },
+    {
+      studentNumber: "2",
+      firstName: "Ola",
+      lastName: "Łuk",
+      rosterName: "g2",
+      slotId: "s1",
+      grade: "ABSENT" as const,
+      gradeComment: null,
+    },
+    {
+      studentNumber: "4",
+      firstName: "Adam",
+      lastName: "Abc",
+      rosterName: "g1",
+      slotId: "s2",
+      grade: null,
+      gradeComment: "tylko komentarz",
+    },
   ]
   expect(buildExportCsv(slots, people)).toBe(
     "﻿" +
       [
-        '"data";"od";"do";"lista";"indeks";"nazwisko";"imie"',
-        '"2026-10-05";"09:00";"09:30";"g2";"2";"Łuk";"Ola"',
-        '"2026-10-05";"09:00";"09:30";"g1";"1";"Żak";"Jan"',
-        '"2026-10-05";"10:00";"10:30";"g1";"4";"Abc";"Adam"',
-        '"";"";"";"g1";"3";"Źrebiec";"Ewa"',
+        '"data";"od";"do";"lista";"indeks";"nazwisko";"imie";"ocena";"komentarz"',
+        '"2026-10-05";"09:00";"09:30";"g2";"2";"Łuk";"Ola";"nb";""',
+        '"2026-10-05";"09:00";"09:30";"g1";"1";"Żak";"Jan";"3,5";"dobrze; ""poprawka"""',
+        '"2026-10-05";"10:00";"10:30";"g1";"4";"Abc";"Adam";"";"tylko komentarz"',
+        '"";"";"";"g1";"3";"Źrebiec";"Ewa";"";""',
       ].join("\r\n"),
   )
 })
@@ -289,7 +313,7 @@ test("buildExportCsv: dodatkowe pola zespołu jako kolumny po imieniu", () => {
     { id: "notes", label: "Uwagi" },
   ]
   expect(buildExportCsv(slots, people, fields).split("\r\n")).toEqual([
-    `﻿"data";"od";"do";"lista";"indeks";"nazwisko";"imie";"Tytuł projektu";"Uwagi"`,
-    `"2026-10-05";"09:00";"09:30";"g1";"1";"Żak";"Jan";"Robot";""`,
+    `﻿"data";"od";"do";"lista";"indeks";"nazwisko";"imie";"ocena";"komentarz";"Tytuł projektu";"Uwagi"`,
+    `"2026-10-05";"09:00";"09:30";"g1";"1";"Żak";"Jan";"";"";"Robot";""`,
   ])
 })
