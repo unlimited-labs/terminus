@@ -62,7 +62,7 @@ test("dodanie osoby do wybranej listy czyści formularz", async ({ page }) => {
   await form.getByRole("button", { name: "Dodaj osobę" }).click()
 
   await expect(page.getByText("Dodano osobę do listy.")).toBeVisible()
-  await expect(page.getByRole("row", { name: /980010 Ul Urszula g2/ })).toBeVisible()
+  await expect(page.getByRole("row", { name: /980010 Ul Urszula .* g2/ })).toBeVisible()
   await expect(form.getByLabel("Indeks")).toHaveValue("")
   await expect(form.getByLabel("Imię")).toHaveValue("")
   await expect(form.getByLabel("Nazwisko")).toHaveValue("")
