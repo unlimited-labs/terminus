@@ -23,19 +23,21 @@ export function PrivacyNotice({ emailLogin = false }: { emailLogin?: boolean }) 
           53 25;
         </li>
         <li>
-          Pani/Pana dane osobowe (numer albumu, imię i nazwisko, adres e-mail oraz informacje
-          wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą w
-          celu organizacji zaliczenia, w tym przydziału terminu zaliczenia oraz wysłania linku
-          potwierdzającego tożsamość przed zapisem, w ramach realizacji procesu kształcenia na
-          studiach, w trybie art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20 lipca 2018 r.
-          Prawo o szkolnictwie wyższym i nauce; numer albumu, imię i nazwisko oraz adres e-mail
-          pochodzą z listy zaliczenia przygotowanej na podstawie danych z systemu uczelni, a
-          informacje w dodatkowych polach podaje osoba zapisująca się;
+          Pani/Pana dane osobowe (numer albumu, imię i nazwisko, adres e-mail, informacje wpisane w
+          dodatkowych polach formularza zapisu, np. tytuł projektu, oraz ocena z zaliczenia z
+          ewentualnym komentarzem prowadzącego) przetwarzane będą w celu organizacji i
+          przeprowadzenia zaliczenia, w tym przydziału terminu zaliczenia, wystawienia oceny oraz
+          wysłania linku potwierdzającego tożsamość przed zapisem, w ramach realizacji procesu
+          kształcenia na studiach, w trybie art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20
+          lipca 2018 r. Prawo o szkolnictwie wyższym i nauce; numer albumu, imię i nazwisko oraz
+          adres e-mail pochodzą z listy zaliczenia przygotowanej na podstawie danych z systemu
+          uczelni, informacje w dodatkowych polach podaje osoba zapisująca się, a ocenę i komentarz
+          wpisuje prowadzący zaliczenie;
         </li>
         <li>
           {emailLogin
-            ? "imiona i nazwiska zapisanych wraz z przydzielonymi terminami widzą wyłącznie osoby z listy zaliczenia po potwierdzeniu tożsamości; numer albumu i adres e-mail nie są ujawniane;"
-            : "imię i nazwisko osoby zapisanej wraz z przydzielonym terminem są widoczne dla każdej osoby, która ma link do zaliczenia; numer albumu i adres e-mail nie są ujawniane;"}
+            ? "imiona i nazwiska zapisanych wraz z przydzielonymi terminami widzą wyłącznie osoby z listy zaliczenia po potwierdzeniu tożsamości; numer albumu i adres e-mail nie są ujawniane; ocenę i komentarz widzą wyłącznie prowadzący zaliczenie;"
+            : "imię i nazwisko osoby zapisanej wraz z przydzielonym terminem są widoczne dla każdej osoby, która ma link do zaliczenia; numer albumu i adres e-mail nie są ujawniane; ocenę i komentarz widzą wyłącznie prowadzący zaliczenie;"}
         </li>
         <li>
           odbiorcą Pani/Pana danych osobowych mogą być podmioty uprawnione do ich uzyskania na

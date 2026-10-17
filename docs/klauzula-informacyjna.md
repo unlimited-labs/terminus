@@ -26,21 +26,25 @@ zwanego dalej: RODO, informujemy, że:
 2. dane kontaktowe Inspektora Ochrony Danych Osobowych dostępne są w sekcji
    "Kontakt" na stronie internetowej agh.edu.pl/uczelnia/kontakt, e-mail:
    iodo(at)agh.edu.pl, tel.: 12 617 53 25;
-3. Pani/Pana dane osobowe (numer albumu, imię i nazwisko, adres e-mail oraz
-   informacje wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu)
-   przetwarzane będą w celu organizacji zaliczenia, w tym przydziału terminu
-   zaliczenia oraz wysłania linku potwierdzającego tożsamość przed zapisem,
-   w ramach realizacji procesu kształcenia na studiach, w trybie art. 6 ust. 1
-   lit. c RODO, na podstawie Ustawy z dnia 20 lipca 2018 r. Prawo o szkolnictwie
-   wyższym i nauce; numer albumu, imię i nazwisko oraz adres e-mail pochodzą
-   z listy zaliczenia przygotowanej na podstawie danych z systemu uczelni,
-   a informacje w dodatkowych polach podaje osoba zapisująca się;
+3. Pani/Pana dane osobowe (numer albumu, imię i nazwisko, adres e-mail,
+   informacje wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu,
+   oraz ocena z zaliczenia z ewentualnym komentarzem prowadzącego) przetwarzane
+   będą w celu organizacji i przeprowadzenia zaliczenia, w tym przydziału terminu
+   zaliczenia, wystawienia oceny oraz wysłania linku potwierdzającego tożsamość
+   przed zapisem, w ramach realizacji procesu kształcenia na studiach, w trybie
+   art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20 lipca 2018 r. Prawo
+   o szkolnictwie wyższym i nauce; numer albumu, imię i nazwisko oraz adres
+   e-mail pochodzą z listy zaliczenia przygotowanej na podstawie danych z systemu
+   uczelni, informacje w dodatkowych polach podaje osoba zapisująca się, a ocenę
+   i komentarz wpisuje prowadzący zaliczenie;
 4. (zaliczenie z logowaniem mailem) imiona i nazwiska zapisanych wraz
    z przydzielonymi terminami widzą wyłącznie osoby z listy zaliczenia po
    potwierdzeniu tożsamości; numer albumu i adres e-mail nie są ujawniane;
+   ocenę i komentarz widzą wyłącznie prowadzący zaliczenie;
    (zaliczenie bez logowania mailem) imię i nazwisko osoby zapisanej wraz
    z przydzielonym terminem są widoczne dla każdej osoby, która ma link do
-   zaliczenia; numer albumu i adres e-mail nie są ujawniane;
+   zaliczenia; numer albumu i adres e-mail nie są ujawniane; ocenę i komentarz
+   widzą wyłącznie prowadzący zaliczenie;
 5. odbiorcą Pani/Pana danych osobowych mogą być podmioty uprawnione do ich
    uzyskania na podstawie przepisów prawa lub podmioty prowadzące wsparcie
    technologiczne dla systemów informatycznych, w których przetwarzane są
