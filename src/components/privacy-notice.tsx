@@ -1,16 +1,16 @@
 /** Klauzula informacyjna RODO — tekst z docs/klauzula-informacyjna.md (zaakceptowany przez IOD AGH). */
-export function PrivacyNotice() {
+export function PrivacyNotice({ emailLogin = false }: { emailLogin?: boolean }) {
   return (
     <details className="text-sm text-muted-foreground">
       <summary className="cursor-pointer text-foreground">
         Informacja o przetwarzaniu danych osobowych
       </summary>
       <p className="mt-2">
-        Realizując obowiązek informacyjny na podstawie art. 13 ust. 1 i 2 Rozporządzenia Parlamentu
-        Europejskiego i Rady (UE) nr 2016/679 z dnia 27 kwietnia 2016 r. w sprawie ochrony osób
-        fizycznych w związku z przetwarzaniem danych osobowych i w sprawie swobodnego przepływu
-        takich danych oraz uchylenia dyrektywy 95/46/WE (ogólne rozporządzenie o ochronie danych),
-        zwanego dalej: RODO, informujemy, że:
+        Realizując obowiązek informacyjny na podstawie art. 13 ust. 1 i 2 oraz art. 14 ust. 1 i 2
+        Rozporządzenia Parlamentu Europejskiego i Rady (UE) nr 2016/679 z dnia 27 kwietnia 2016 r. w
+        sprawie ochrony osób fizycznych w związku z przetwarzaniem danych osobowych i w sprawie
+        swobodnego przepływu takich danych oraz uchylenia dyrektywy 95/46/WE (ogólne rozporządzenie
+        o ochronie danych), zwanego dalej: RODO, informujemy, że:
       </p>
       <ol className="mt-2 grid list-decimal gap-1 pl-5">
         <li>
@@ -23,25 +23,32 @@ export function PrivacyNotice() {
           53 25;
         </li>
         <li>
-          Pani/Pana dane osobowe (numer albumu, imię i nazwisko oraz informacje wpisane w
-          dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą w celu
-          organizacji zaliczenia, w tym przydziału terminu zaliczenia, w ramach realizacji procesu
-          kształcenia na studiach, w trybie art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20
-          lipca 2018 r. Prawo o szkolnictwie wyższym i nauce;
+          Pani/Pana dane osobowe (numer albumu, imię i nazwisko, adres e-mail oraz informacje
+          wpisane w dodatkowych polach formularza zapisu, np. tytuł projektu) przetwarzane będą w
+          celu organizacji zaliczenia, w tym przydziału terminu zaliczenia oraz wysłania linku
+          potwierdzającego tożsamość przed zapisem, w ramach realizacji procesu kształcenia na
+          studiach, w trybie art. 6 ust. 1 lit. c RODO, na podstawie Ustawy z dnia 20 lipca 2018 r.
+          Prawo o szkolnictwie wyższym i nauce; numer albumu, imię i nazwisko oraz adres e-mail
+          pochodzą z listy zaliczenia przygotowanej na podstawie danych z systemu uczelni, a
+          informacje w dodatkowych polach podaje osoba zapisująca się;
         </li>
         <li>
-          imię i nazwisko osoby zapisanej wraz z przydzielonym terminem są widoczne dla każdej
-          osoby, która ma link do zaliczenia; numer albumu nie jest ujawniany;
+          {emailLogin
+            ? "imiona i nazwiska zapisanych wraz z przydzielonymi terminami widzą wyłącznie osoby z listy zaliczenia po potwierdzeniu tożsamości; numer albumu i adres e-mail nie są ujawniane;"
+            : "imię i nazwisko osoby zapisanej wraz z przydzielonym terminem są widoczne dla każdej osoby, która ma link do zaliczenia; numer albumu i adres e-mail nie są ujawniane;"}
         </li>
         <li>
           odbiorcą Pani/Pana danych osobowych mogą być podmioty uprawnione do ich uzyskania na
           podstawie przepisów prawa lub podmioty prowadzące wsparcie technologiczne dla systemów
-          informatycznych, w których przetwarzane są Pani/Pana dane osobowe;
+          informatycznych, w których przetwarzane są Pani/Pana dane osobowe, w tym podmiot
+          obsługujący pocztę elektroniczną aplikacji (podmiot przetwarzający), któremu adres e-mail
+          jest przekazywany w celu wysłania linku;
         </li>
         <li>
           Pani/Pana dane osobowe będą przetwarzane przez okres niezbędny do organizacji i
           przeprowadzenia zaliczenia, do czasu usunięcia zaliczenia przez prowadzącego lub
-          administratora aplikacji;
+          administratora aplikacji; konto i sesja osoby logującej się linkiem są usuwane
+          automatycznie, najpóźniej po dobie od usunięcia jej z listy zaliczenia;
         </li>
         <li>
           posiada Pani/Pan prawo do żądania od Administratora dostępu do swoich danych oraz prawo
@@ -62,8 +69,10 @@ export function PrivacyNotice() {
         <li>
           przy każdej próbie zapisu adres IP, z którego wysłano formularz, oraz wpisane numery
           albumu są zapisywane w dzienniku zdarzeń serwera w celu wyjaśniania zapisów dokonanych bez
-          wiedzy zapisanej osoby; dziennik ma ograniczony rozmiar, a najstarsze wpisy są usuwane
-          automatycznie w miarę dopisywania nowych.
+          wiedzy zapisanej osoby; przy żądaniu linku logowania zapisywane są numer albumu i adres IP
+          (bez adresu e-mail), a sesje zawierają adres IP i dane przeglądarki; dziennik ma
+          ograniczony rozmiar, a najstarsze wpisy są usuwane automatycznie w miarę dopisywania
+          nowych.
         </li>
       </ol>
     </details>

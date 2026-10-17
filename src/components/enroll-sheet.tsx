@@ -22,6 +22,7 @@ export function EnrollSheet({
   title,
   submitLabel,
   assignmentMode,
+  emailLogin,
   choosing,
   picked,
   maxTeamSize,
@@ -37,6 +38,7 @@ export function EnrollSheet({
   title: string
   submitLabel: string
   assignmentMode: AssignmentMode
+  emailLogin: boolean
   choosing: boolean
   picked: PickedSlot | null
   maxTeamSize: number
@@ -63,6 +65,7 @@ export function EnrollSheet({
             <EnrollForm
               examId={examId}
               assignmentMode={assignmentMode}
+              emailLogin={emailLogin}
               choosing={choosing}
               picked={picked}
               maxTeamSize={maxTeamSize}
@@ -148,6 +151,7 @@ function PendingStatus({ text }: { text: string }) {
 function EnrollForm({
   examId,
   assignmentMode,
+  emailLogin,
   choosing,
   picked,
   maxTeamSize,
@@ -157,6 +161,7 @@ function EnrollForm({
 }: {
   examId: string
   assignmentMode: AssignmentMode
+  emailLogin: boolean
   choosing: boolean
   picked: PickedSlot | null
   maxTeamSize: number
@@ -233,7 +238,7 @@ function EnrollForm({
           </form.AppField>
         ))}
         <form.SubmitButton disabled={choosing && !picked}>{submitLabel}</form.SubmitButton>
-        <PrivacyNotice />
+        <PrivacyNotice emailLogin={emailLogin} />
       </form.Form>
     </form.AppForm>
   )

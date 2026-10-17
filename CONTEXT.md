@@ -49,7 +49,7 @@ Sposób przydziału, w którym student sam wskazuje wolny slot; wszystkie indeks
 _Avoid_: Rezerwacja
 
 **Harmonogram**:
-Widok wszystkich slotów zaliczenia z imionami i nazwiskami zapisanych, dostępny dla każdego, kto ma link zaliczenia.
+Widok wszystkich slotów zaliczenia z imionami i nazwiskami zapisanych, dostępny dla każdego, kto ma link zaliczenia (przy logowaniu mailem: po zalogowaniu).
 _Avoid_: Lista zapisów, grafik
 
 **Link zaliczenia**:
@@ -71,5 +71,8 @@ Wyłączenie logowania prowadzącego bez usuwania jego zaliczeń; kont się nie 
 _Avoid_: Usunięcie konta
 
 **Student**:
-Osoba bez konta, rozpoznawana wyłącznie po numerze indeksu.
+Osoba z listy zaliczenia, zapisuje się numerem albumu; przy opcji logowania mailem potwierdza się linkiem. W bazie wiersz z rolą `student`, nie konto prowadzącego.
 _Avoid_: Użytkownik
+
+**Logowanie mailem**:
+Opcja zaliczenia ("Wymagaj logowania mailem"): bez zalogowania student widzi tylko ekran logowania, a po podaniu numeru albumu dostaje jednorazowy link na adres z listy zaliczenia. Dostęp wynika z tego, że adres z sesji jest na liście zaliczenia.

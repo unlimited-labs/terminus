@@ -203,6 +203,7 @@ function StudentPage() {
         title={title}
         submitLabel={mode.submitLabel}
         assignmentMode={schedule.assignmentMode}
+        emailLogin={schedule.requireEmailLogin}
         choosing={mode.choosing}
         picked={picked}
         maxTeamSize={mode.maxTeamSize}

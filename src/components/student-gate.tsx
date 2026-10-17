@@ -66,7 +66,7 @@ function LoginForm({ examId }: { examId: string }) {
   return (
     <>
       <p className="text-sm text-muted-foreground">{T.lead}</p>
-      <PrivacyNotice />
+      <PrivacyNotice emailLogin />
       <form
         className="grid gap-2"
         onSubmit={(e) => {
