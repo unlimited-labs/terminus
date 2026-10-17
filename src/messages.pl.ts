@@ -236,3 +236,25 @@ ${ignore}`,
     html: `<p>${lead}</p><p><a href="${link}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none">Przejdź do zapisów</a></p><p style="color:#555">${ignore}</p>`,
   }
 }
+
+/** Ekrany logowania mailem po stronie studenta. */
+export const STUDENT_LOGIN = {
+  prompt: "Zaloguj się, żeby zobaczyć harmonogram.",
+  unavailable: "Logowanie mailem jest chwilowo niedostępne, spróbuj później.",
+  open: "Zaloguj się mailem",
+  lead: "Adres z listy służy tylko do wysłania linku.",
+  indexLabel: "Numer albumu",
+  send: "Wyślij link",
+  sentTitle: "Sprawdź skrzynkę",
+  sent: (index: string) =>
+    `Jeśli numer ${index} jest na liście, wysłaliśmy link (ważny ${LOGIN_LINK_MINUTES} min).`,
+  resend: "Wyślij ponownie",
+  resendIn: (seconds: number) => `Wyślij ponownie za ${seconds} s`,
+  changeIndex: "Zmień numer",
+  linkExpired: "Link wygasł lub został użyty.",
+  sessionExpired: "Sesja wygasła.",
+  enterTitle: "Wejdź na listę zapisów",
+  enterLead: "Kliknij, żeby się zalogować.",
+  enter: "Wejdź",
+  logout: "Wyloguj",
+}

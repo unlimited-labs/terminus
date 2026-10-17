@@ -1,27 +1,32 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
+import { toast } from "sonner"
 import { z } from "zod"
 
 import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
+import { StudentGate } from "@/components/student-gate"
 import { ScheduleBoard } from "@/components/schedule-board"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
 import { formatDayTime } from "@/domain/time"
-import { errorMessage } from "@/messages.pl"
+import { authClient, authFailure } from "@/lib/auth-client"
+import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
 
-export const Route = createFileRoute("/z/$examId")({
+export const Route = createFileRoute("/z/$examId/")({
   loader: async ({ context, params }) => {
     if (!z.uuid().safeParse(params.examId).success) throw notFound()
-    const schedule = await context.queryClient.query({
+    const view = await context.queryClient.query({
       ...scheduleQuery(params.examId),
       staleTime: "static",
     })
-    if (!schedule) throw notFound()
-    return { title: schedule.name }
+    if (!view) throw notFound()
+    return { title: view.gate === "open" ? view.schedule.name : view.name }
   },
   head: ({ loaderData }) => ({
     meta: [
@@ -91,14 +96,58 @@ function usePickedSlot(schedule: Schedule | null | undefined) {
   return [picked, setPickedId] as const
 }
 
+/** Pasek zalogowanego studenta (opcja logowania mailem): plakietka indeksu i wylogowanie. */
+function StudentBar({
+  examId,
+  index,
+  onLoggedOut,
+}: {
+  examId: string
+  index: string
+  onLoggedOut: () => void
+}) {
+  const queryClient = useQueryClient()
+  const logout = async () => {
+    const failure = await authFailure(authClient.signOut())
+    if (failure) {
+      toast.error(failure)
+      return
+    }
+    onLoggedOut()
+    await queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey })
+  }
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
+      <Badge variant="secondary">{index}</Badge>
+      <Button variant="ghost" size="sm" onClick={logout}>
+        {STUDENT_LOGIN.logout}
+      </Button>
+    </div>
+  )
+}
+
 function StudentPage() {
   const { examId } = Route.useParams()
-  const { data: schedule } = useSuspenseQuery(scheduleQuery(examId))
+  const { data: view } = useSuspenseQuery(scheduleQuery(examId))
+  const schedule = view?.gate === "open" ? view.schedule : null
+  // Sesja wygasła, gdy strona była już otwarta, a serwer znów żąda logowania.
+  const [hadAccess, setHadAccess] = useState(false)
+  if (schedule && !hadAccess) setHadAccess(true)
   const [open, setOpen] = useState(false)
   const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
   const [picked, setPickedId] = usePickedSlot(schedule)
   const [showCount, setShowCount] = useState(0)
-  if (!schedule) {
+  if (view && view.gate !== "open") {
+    return (
+      <StudentGate
+        examId={examId}
+        name={view.name}
+        unavailable={view.gate === "unavailable"}
+        notice={hadAccess ? STUDENT_LOGIN.sessionExpired : undefined}
+      />
+    )
+  }
+  if (!view || !schedule) {
     return (
       <p role="status" className="mx-auto max-w-3xl px-4 pt-6">
         Tego zaliczenia już nie ma — prowadzący je usunął.
@@ -111,6 +160,13 @@ function StudentPage() {
 
   return (
     <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
+      {view.studentIndex && (
+        <StudentBar
+          examId={examId}
+          index={view.studentIndex}
+          onLoggedOut={() => setHadAccess(false)}
+        />
+      )}
       <header className="grid gap-1">
         <h1 className="text-2xl leading-tight font-extrabold">{schedule.name}</h1>
         {schedule.description && (

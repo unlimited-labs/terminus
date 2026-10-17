@@ -11,6 +11,11 @@ export function getRouter() {
   // Sesja wygasła lub odebrana, a `beforeLoad` wziął ją z cache: zamiast strony błędu logowanie.
   const onError = (error: Error) => {
     if (error.message !== ACCESS_DENIED || typeof window === "undefined") return
+    // Student na stronie zapisów wraca do ekranu logowania tego zaliczenia, nie do logowania prowadzących.
+    if (router.state.location.pathname.startsWith("/z/")) {
+      void queryClient.invalidateQueries({ queryKey: ["schedule"] })
+      return
+    }
     queryClient.clear()
     void router.navigate({ to: "/login", search: { redirect: router.state.location.href } })
   }
