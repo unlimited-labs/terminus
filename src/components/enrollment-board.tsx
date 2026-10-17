@@ -34,6 +34,7 @@ const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
   unenrollTeam: "Usunięto zapis zespołu.",
   enrollTeam: "Przywrócono zespół.",
   setAnswers: "Zapisano odpowiedzi zespołu.",
+  setGrades: "Zapisano ocenę.",
 }
 
 function doneMessage(command: BoardCommand, exam: ExamDetail) {

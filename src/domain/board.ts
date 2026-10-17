@@ -6,7 +6,13 @@ export type BoardPerson = {
   firstName: string
   lastName: string
   answers?: Answers
+  grade?: Grade | null
+  gradeComment?: string | null
 }
+
+export const GRADES = ["G2", "G3", "G3_5", "G4", "G4_5", "G5", "ABSENT"] as const
+export type Grade = (typeof GRADES)[number]
+export type GradeEntry = { grade: Grade | null; comment: string | null }
 
 export type BoardState<P extends BoardPerson = BoardPerson> = {
   maxTeamSize: number
@@ -14,15 +20,28 @@ export type BoardState<P extends BoardPerson = BoardPerson> = {
   people: P[]
 }
 
-/** `toSlotId: null` to panel "Niezapisani"; `answers` niesie Cofnij wypisania. */
+/** `toSlotId: null` to panel "Niezapisani"; `answers` i `grade(s)` niesie Cofnij wypisania. */
 export type BoardCommand =
-  | { kind: "move"; studentNumber: string; toSlotId: string | null; answers?: Answers }
+  | {
+      kind: "move"
+      studentNumber: string
+      toSlotId: string | null
+      answers?: Answers
+      grade?: GradeEntry
+    }
   | { kind: "swapPeople"; a: string; b: string }
   | { kind: "swapSlots"; a: string; b: string }
   | { kind: "rename"; studentNumber: string; firstName: string; lastName: string }
   | { kind: "unenrollTeam"; slotId: string }
-  | { kind: "enrollTeam"; slotId: string; studentNumbers: string[]; answers?: Answers }
+  | {
+      kind: "enrollTeam"
+      slotId: string
+      studentNumbers: string[]
+      answers?: Answers
+      grades?: Record<string, GradeEntry>
+    }
   | { kind: "setAnswers"; slotId: string; answers: Answers }
+  | { kind: "setGrades"; grades: Record<string, GradeEntry> }
 
 export type BoardErrorCode =
   | "SLOT_FULL"
@@ -45,6 +64,14 @@ const hasSlot = (s: BoardState, id: string) => s.slots.some((slot) => slot.id ==
 const findPerson = <P extends BoardPerson>(s: BoardState<P>, n: string) =>
   s.people.find((p) => p.studentNumber === n)
 
+const gradeOf = (p: BoardPerson): GradeEntry => ({
+  grade: p.grade ?? null,
+  comment: p.gradeComment ?? null,
+})
+const isGraded = (p: BoardPerson) => p.grade != null || p.gradeComment != null
+const withGrade = (g: GradeEntry) => ({ grade: g.grade, gradeComment: g.comment })
+const NO_GRADE = withGrade({ grade: null, comment: null })
+
 function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step<P> {
   const p = findPerson(s, c.studentNumber)
   if (!p) return "PERSON_NOT_FOUND"
@@ -54,13 +81,21 @@ function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step
   if (to !== null && teamSize(s, to) >= s.maxTeamSize) return "SLOT_FULL"
   return {
     people: s.people.map((q) =>
-      q === p ? { ...q, slotId: to, ...(c.answers && { answers: c.answers }) } : q,
+      q === p
+        ? {
+            ...q,
+            slotId: to,
+            ...(c.answers && { answers: c.answers }),
+            ...(to === null ? NO_GRADE : c.grade && withGrade(c.grade)),
+          }
+        : q,
     ),
     inverse: {
       kind: "move",
       studentNumber: p.studentNumber,
       toSlotId: p.slotId,
       ...(to === null && p.answers && { answers: p.answers }),
+      ...(to === null && isGraded(p) && { grade: gradeOf(p) }),
     },
   }
 }
@@ -114,13 +149,17 @@ function unenrollTeam<P extends BoardPerson>(
   const team = teamOf(s, slotId)
   if (team.length === 0) return "NO_CHANGE"
   const answers = team[0]!.answers
+  const graded = team.filter(isGraded)
   return {
-    people: s.people.map((q) => (q.slotId === slotId ? { ...q, slotId: null } : q)),
+    people: s.people.map((q) => (q.slotId === slotId ? { ...q, slotId: null, ...NO_GRADE } : q)),
     inverse: {
       kind: "enrollTeam",
       slotId,
       studentNumbers: team.map((p) => p.studentNumber),
       ...(answers && { answers }),
+      ...(graded.length > 0 && {
+        grades: Object.fromEntries(graded.map((p) => [p.studentNumber, gradeOf(p)])),
+      }),
     },
   }
 }
@@ -136,7 +175,12 @@ function enrollTeam<P extends BoardPerson>(s: BoardState<P>, c: Command<"enrollT
   return {
     people: s.people.map((q) =>
       joining.has(q.studentNumber)
-        ? { ...q, slotId: c.slotId, ...(c.answers && { answers: c.answers }) }
+        ? {
+            ...q,
+            slotId: c.slotId,
+            ...(c.answers && { answers: c.answers }),
+            ...withGrade(c.grades?.[q.studentNumber] ?? gradeOf(q)),
+          }
         : q,
     ),
     inverse: { kind: "unenrollTeam", slotId: c.slotId },
@@ -161,6 +205,30 @@ function setAnswers<P extends BoardPerson>(
   }
 }
 
+function setGrades<P extends BoardPerson>(s: BoardState<P>, c: Command<"setGrades">): Step<P> {
+  const next = new Map(
+    Object.entries(c.grades).map(([n, g]) => [n, { ...g, comment: g.comment?.trim() || null }]),
+  )
+  const people = [...next.keys()].map((n) => findPerson(s, n))
+  if (people.some((p) => !p)) return "PERSON_NOT_FOUND"
+  if (people.some((p) => p!.slotId === null)) return "NOT_ENROLLED"
+  const changed = people.some((p) => {
+    const [before, after] = [gradeOf(p!), next.get(p!.studentNumber)!]
+    return before.grade !== after.grade || before.comment !== after.comment
+  })
+  if (!changed) return "NO_CHANGE"
+  return {
+    people: s.people.map((q) => {
+      const g = next.get(q.studentNumber)
+      return g ? { ...q, ...withGrade(g) } : q
+    }),
+    inverse: {
+      kind: "setGrades",
+      grades: Object.fromEntries(people.map((p) => [p!.studentNumber, gradeOf(p!)])),
+    },
+  }
+}
+
 function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P> {
   switch (c.kind) {
     case "move":
@@ -177,6 +245,8 @@ function step<P extends BoardPerson>(s: BoardState<P>, c: BoardCommand): Step<P>
       return enrollTeam(s, c)
     case "setAnswers":
       return setAnswers(s, c)
+    case "setGrades":
+      return setGrades(s, c)
   }
 }
 
@@ -215,7 +285,9 @@ export function changedPeople<P extends BoardPerson>(
       (o.slotId !== p.slotId ||
         o.firstName !== p.firstName ||
         o.lastName !== p.lastName ||
-        o.answers !== p.answers)
+        o.answers !== p.answers ||
+        o.grade !== p.grade ||
+        o.gradeComment !== p.gradeComment)
     return changed ? [[o, p]] : []
   })
 }

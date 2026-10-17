@@ -32,6 +32,10 @@ _Avoid_: Grupa, drużyna
 Wartości pól zaliczenia podane przy zapisie, jedne na zespół; kto dołącza do istniejącego zespołu, przejmuje jego odpowiedzi, a przeniesiony cały zespół zachowuje swoje.
 _Avoid_: Odpowiedzi studenta
 
+**Ocena**:
+Wynik zaliczenia jednego zapisanego indeksu, wystawiany przez dowolnego prowadzącego zaliczenia: stopień 2–5 albo „nieobecny”, z opcjonalnym komentarzem; brak oceny znaczy „jeszcze nie oceniono”. Należy do zapisu (idzie z nim przy przeniesieniu, znika z nim) i jest widoczna tylko dla prowadzących.
+_Avoid_: Wynik, stopień (jako nazwa bytu), ocena zespołu
+
 **Przydział**:
 Sposób, w jaki zespół dostaje slot przy zapisie; wynik jest dla studenta zawsze niezmienny (zmienia go tylko prowadzący na tablicy).
 _Avoid_: Rezerwacja

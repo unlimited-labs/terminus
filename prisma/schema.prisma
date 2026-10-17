@@ -13,6 +13,17 @@ enum AssignmentMode {
   MANUAL
 }
 
+/// Stopień 2–5 albo nieobecny.
+enum Grade {
+  G2
+  G3
+  G3_5
+  G4
+  G4_5
+  G5
+  ABSENT
+}
+
 model Exam {
   id                 String         @id @default(uuid())
   /// Prowadzący zaliczenia: każdy może wszystko, zawsze co najmniej jeden.
@@ -91,6 +102,13 @@ model Enrollment {
   createdAt     DateTime    @default(now()) @db.Timestamptz
   /// Wartości dodatkowych pól zaliczenia (id pola → tekst); takie same dla całego zespołu.
   answers       Json        @default("{}")
+  /// null = jeszcze nie oceniono; komentarz bywa bez stopnia.
+  grade         Grade?
+  gradeComment  String?
+  /// Ostatnia zmiana oceny lub komentarza; null, gdy oba puste.
+  gradedAt      DateTime?   @db.Timestamptz
+  gradedById    String?
+  gradedBy      User?       @relation(fields: [gradedById], references: [id], onDelete: SetNull)
 
   @@id([examId, studentNumber])
   @@index([slotId])
@@ -112,6 +130,7 @@ model User {
   sessions      Session[]
   accounts      Account[]
   taughtExams   Exam[]    @relation("ExamTeachers")
+  grades        Enrollment[]
 
   @@unique([email])
   @@map("user")
