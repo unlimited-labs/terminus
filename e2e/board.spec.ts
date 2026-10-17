@@ -86,6 +86,8 @@ test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z
   await undo().press("Enter")
   await expect(chip("Bartosz Bąk")).toHaveText("ocena")
   await expect(counter).toContainText("ocenieni 1 / 2")
+  // Tablica pokazuje zmianę od razu; przeładowanie przed odpowiedzią serwera zgubiłoby Cofnij.
+  await page.waitForLoadState("networkidle")
 
   await page.reload()
   await expect(chip("Anna Adamska")).toHaveText("4")
@@ -93,6 +95,17 @@ test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z
   await expect(page.getByLabel("Komentarz (opcjonalny)")).toHaveValue("dobra prezentacja")
   await expect(page.getByText(/^Admin E2E, /)).toBeVisible()
   await page.keyboard.press("Escape")
+  await expect(page.getByLabel("Komentarz (opcjonalny)")).toHaveCount(0)
+
+  await chip("Bartosz Bąk").click()
+  await page.getByLabel("Komentarz (opcjonalny)").fill("spóźniony")
+  await page.keyboard.press("Escape")
+  await page.waitForLoadState("networkidle")
+  await page.reload()
+  await chip("Bartosz Bąk").click()
+  await expect(page.getByLabel("Komentarz (opcjonalny)")).toHaveValue("spóźniony")
+  await page.keyboard.press("Escape")
+  await expect(chip("Bartosz Bąk")).toHaveText("ocena")
 
   const remove = page.getByRole("button", { name: "Usuń zapis: Anna Adamska", exact: true })
   await remove.click()

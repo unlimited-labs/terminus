@@ -1,4 +1,4 @@
-import { applyCommand, changedPeople, type BoardCommand } from "../domain/board.ts"
+import { applyCommand, changedPeople, isGraded, type BoardCommand } from "../domain/board.ts"
 import { cleanAnswers, type ExamField } from "../domain/fields.ts"
 import type { Result } from "../messages.pl.ts"
 
@@ -8,11 +8,11 @@ import { loadExam, type ExamDetail } from "./exam-state.server.ts"
 type Person = ExamDetail["people"][number]
 
 /** „Kto/kiedy” zawsze z sesji, także przy Cofnij; pusta ocena i komentarz czyszczą oba. */
-function gradeData(userId: string, { grade, gradeComment }: Person) {
-  const graded = grade !== null || gradeComment !== null
+function gradeData(userId: string, person: Person) {
+  const graded = isGraded(person)
   return {
-    grade,
-    gradeComment,
+    grade: person.grade,
+    gradeComment: person.gradeComment,
     gradedById: graded ? userId : null,
     gradedAt: graded ? new Date() : null,
   }

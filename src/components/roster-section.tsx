@@ -22,7 +22,7 @@ import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roste
 import { toastUnexpected, useExamMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { formatDayTime } from "@/domain/time"
-import { errorMessage, GRADE, INVALID_ROW, UNEXPECTED_ERROR } from "@/messages.pl"
+import { errorMessage, GRADE, GRADING, INVALID_ROW, UNEXPECTED_ERROR } from "@/messages.pl"
 import { addEntrySchema, entryEmail, rosterImportSchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
@@ -255,7 +255,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
             {result.withdrawnEnrolled.map(
               (e) =>
-                `${entryLine(e)} — slot ${formatDayTime(e.slotStartsAt)}${e.grade ? `, ocena ${GRADE[e.grade].name}` : ""}`,
+                `${entryLine(e)} — slot ${formatDayTime(e.slotStartsAt)}${e.grade ? GRADING.previewGrade(GRADE[e.grade].name) : ""}`,
             )}
           </PreviewList>
           <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">

@@ -278,6 +278,8 @@ export const GRADING = {
   commentHint:
     "Komentarz widzą wszyscy prowadzący tego zaliczenia. Nie wpisuj danych o zdrowiu ani innych danych wrażliwych.",
   notGraded: "nieocenione",
+  noGrade: "bez stopnia",
+  previewGrade: (name: string) => `, ocena ${name}`,
   deletedAccount: "usunięte konto",
   sameForTeam: (n: number) => `Ta sama ocena dla całego zespołu (${n})`,
   counter: (graded: number, enrolled: number) => `ocenieni ${graded} / ${enrolled}`,

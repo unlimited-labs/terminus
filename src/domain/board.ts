@@ -68,7 +68,8 @@ const gradeOf = (p: BoardPerson): GradeEntry => ({
   grade: p.grade ?? null,
   comment: p.gradeComment ?? null,
 })
-const isGraded = (p: BoardPerson) => p.grade != null || p.gradeComment != null
+/** Ma ocenę albo sam komentarz: jest co stracić przy usunięciu zapisu. */
+export const isGraded = (p: BoardPerson) => p.grade != null || p.gradeComment != null
 const withGrade = (g: GradeEntry) => ({ grade: g.grade, gradeComment: g.comment })
 const NO_GRADE = withGrade({ grade: null, comment: null })
 

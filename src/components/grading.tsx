@@ -12,7 +12,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { GRADES, type BoardCommand, type Grade } from "@/domain/board"
+import { GRADES, isGraded, type BoardCommand, type Grade } from "@/domain/board"
 import { fullName } from "@/domain/schedule"
 import { formatDayTime } from "@/domain/time"
 import { GRADE, GRADING } from "@/messages.pl"
@@ -20,7 +20,6 @@ import type { ExamDetail } from "@/server/exam-state.server"
 
 type Person = ExamDetail["people"][number]
 
-const isGraded = (p: Person) => p.grade !== null || p.gradeComment !== null
 const failing = (g: Grade | null) => g === "G2" || g === "ABSENT"
 
 const chipTone = (g: Grade | null) =>
@@ -47,9 +46,16 @@ export function GradeChip({
 }) {
   const set = (grade: Grade | null, comment = person.gradeComment) =>
     onCommand({ kind: "setGrades", grades: { [person.studentNumber]: { grade, comment } } })
+  const [comment, setComment] = useState("")
+  // Zapis przy wyjściu z pola i przy zamknięciu okienka (Escape nie zawsze wywołuje blur).
+  const saveComment = () => {
+    if (comment.trim() !== (person.gradeComment ?? "")) set(person.grade, comment)
+  }
   const name = fullName(person)
   return (
-    <Popover>
+    <Popover
+      onOpenChange={(open) => (open ? setComment(person.gradeComment ?? "") : saveComment())}
+    >
       <PopoverTrigger
         onPointerDown={(e) => e.stopPropagation()}
         aria-label={GRADING.chipLabel(name)}
@@ -84,17 +90,12 @@ export function GradeChip({
         </ToggleGroup>
         <div className="grid gap-1">
           <Textarea
-            // Po zmianie z serwera (także Cofnij) pole pokazuje zapisany komentarz.
-            key={person.gradeComment ?? ""}
             aria-label={GRADING.comment}
             placeholder={GRADING.comment}
-            defaultValue={person.gradeComment ?? ""}
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
             maxLength={500}
-            onBlur={(e) => {
-              if (e.target.value.trim() !== (person.gradeComment ?? "")) {
-                set(person.grade, e.target.value)
-              }
-            }}
+            onBlur={saveComment}
             className="min-h-14"
           />
           <p className="text-xs text-muted-foreground">{GRADING.commentHint}</p>
@@ -156,7 +157,7 @@ export function useUnenrollGuard(people: Person[], run: (command: BoardCommand) 
         <ul className="grid gap-1 text-sm">
           {pending?.who.map((p) => (
             <li key={p.studentNumber}>
-              {fullName(p)} ({p.studentNumber}): {p.grade ? GRADE[p.grade].name : "—"}
+              {fullName(p)} ({p.studentNumber}): {p.grade ? GRADE[p.grade].name : GRADING.noGrade}
               {p.gradeComment && `, „${p.gradeComment}”`}
             </li>
           ))}
