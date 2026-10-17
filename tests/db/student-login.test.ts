@@ -7,6 +7,7 @@ import { auth, sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { sendMail } from "@/server/mail.server"
 import { addTeacher } from "@/server/exam-ops.server"
+import { cleanupStudents } from "@/server/student-cleanup.server"
 import { sessionEmail, studentAccess } from "@/server/student-access.server"
 
 import { createExam, enroll } from "./fixtures"
@@ -191,4 +192,39 @@ test("zespół musi zawierać indeks z adresem sesji (NOT_YOUR_INDEX), nie zdrad
     code: "NOT_ON_ROSTER",
   })
   expect(await enroll(examId, ["1"], {}, asMe)).toMatchObject({ ok: true })
+})
+
+test("sprzątanie: znika student bez sesji i bez wpisu listy; zostają aktywni i ci z wpisem", async () => {
+  await createExam({ rosters: { g1: { students: ["1"], slots: [] } } })
+  const mk = (address: string, role = "student") =>
+    db.user.create({
+      data: { id: randomUUID(), name: "", email: address, emailVerified: true, role },
+    })
+  const onList = await mk("1@Student.Agh.edu.pl")
+  const stale = await mk(email())
+  const active = await mk(email())
+  const expired = await mk(email())
+  const teacher = await mk(email(), "user")
+  const session = (userId: string, expiresAt: Date) =>
+    db.session.create({
+      data: { id: randomUUID(), token: randomUUID(), userId, expiresAt },
+    })
+  await session(active.id, new Date(Date.now() + 3_600_000))
+  await session(expired.id, new Date(Date.now() - 3_600_000))
+  await db.verification.createMany({
+    data: [
+      { id: randomUUID(), identifier: "a", value: "{}", expiresAt: new Date(Date.now() - 1000) },
+      { id: randomUUID(), identifier: "b", value: "{}", expiresAt: new Date(Date.now() + 60_000) },
+    ],
+  })
+
+  await cleanupStudents()
+  const left = async (...ids: string[]) =>
+    (await db.user.findMany({ where: { id: { in: ids } } })).map((u) => u.id).toSorted()
+  expect(await left(onList.id, stale.id, active.id, expired.id, teacher.id)).toEqual(
+    [onList.id, active.id, teacher.id].toSorted(),
+  )
+  expect(await db.session.count({ where: { userId: expired.id } })).toBe(0)
+  expect(await db.verification.count({ where: { identifier: { in: ["a", "b"] } } })).toBe(1)
+  expect(await cleanupStudents()).toMatchObject({ sessions: 0, users: 0, verifications: 0 })
 })
