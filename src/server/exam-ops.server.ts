@@ -9,6 +9,7 @@ import type { examSchema } from "../schemas/exam.ts"
 import { db } from "./db.server.ts"
 import { getOwnedExam, taughtBy, withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { loadExam, parseFields } from "./exam-state.server.ts"
+import { STUDENT_ROLE } from "./roles.ts"
 
 /** Zaliczenia, których konto jest prowadzącym, od najnowszych, z etapem i terminami do listy. */
 export async function examsOf(userId: string, now = new Date()) {
@@ -192,7 +193,10 @@ export function removeExam(
 export function addTeacher(examId: string, userId: string, email: string): Promise<Result> {
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const teacher = await tx.user.findFirst({
-      where: { email: { equals: email, mode: "insensitive" } },
+      where: {
+        email: { equals: email, mode: "insensitive" },
+        OR: [{ role: null }, { role: { not: STUDENT_ROLE } }],
+      },
       select: {
         id: true,
         banned: true,

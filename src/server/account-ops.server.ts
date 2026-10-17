@@ -16,6 +16,7 @@ import { auth, replacePassword, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
+import { STUDENT_ROLE } from "./roles.ts"
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
@@ -35,6 +36,7 @@ async function assertAdmin(headers: Headers) {
 export async function accountList(headers: Headers) {
   await assertAdmin(headers)
   return db.user.findMany({
+    where: { OR: [{ role: null }, { role: { not: STUDENT_ROLE } }] },
     orderBy: { name: "asc" },
     select: { id: true, name: true, email: true, role: true, banned: true },
   })
@@ -46,7 +48,8 @@ export async function addAccount(
 ): Promise<Result> {
   await assertAdmin(headers)
   try {
-    await auth.api.createUser({ body: { ...data, role: "user" } })
+    // Zweryfikowany adres: link logowania studenta nie może skasować konta prowadzącego.
+    await auth.api.createUser({ body: { ...data, role: "user", data: { emailVerified: true } } })
     return { ok: true }
   } catch (e) {
     if (isEmailTaken(e)) return { ok: false, code: "EMAIL_TAKEN" }

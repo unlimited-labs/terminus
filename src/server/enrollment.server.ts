@@ -23,7 +23,7 @@ export type EnrollmentOutcome =
   | { ok: true; slotId: string; ticket: Ticket }
   | Exclude<EnrollmentPlan, { ok: true }>
   | Exclude<AnswersCheck, { ok: true }>
-  | { ok: false; code: "NOT_FOUND" | "BUSY" }
+  | { ok: false; code: "NOT_FOUND" | "BUSY" | "NOT_YOUR_INDEX" }
   | { ok: false; code: "MODE_CHANGED"; assignmentMode: AssignmentMode }
 
 /**
@@ -38,9 +38,17 @@ export async function enrollTeam(
   {
     shownMode = "RANDOM",
     slotId,
+    sessionEmail,
     now = () => new Date(),
     timeout,
-  }: { shownMode?: AssignmentMode; slotId?: string; now?: () => Date; timeout?: number } = {},
+  }: {
+    shownMode?: AssignmentMode
+    slotId?: string
+    /** Adres zalogowanego studenta (opcja logowania mailem): zespół musi zawierać jego indeks. */
+    sessionEmail?: string
+    now?: () => Date
+    timeout?: number
+  } = {},
 ): Promise<EnrollmentOutcome> {
   return withExamLock(
     examId,
@@ -56,7 +64,7 @@ export async function enrollTeam(
           enrollments: { select: { studentNumber: true, slotId: true } },
           rosters: {
             select: {
-              entries: { select: { studentNumber: true, rosterId: true } },
+              entries: { select: { studentNumber: true, rosterId: true, email: true } },
               slots: { select: { id: true, rosterId: true, startsAt: true } },
             },
           },
@@ -65,10 +73,22 @@ export async function enrollTeam(
       if (exam.assignmentMode !== shownMode) {
         return { ok: false, code: "MODE_CHANGED", assignmentMode: exam.assignmentMode }
       }
+      const entries = exam.rosters.flatMap((r) => r.entries)
+      // Przed planem, żeby brak własnego indeksu nie zdradzał, które numery są na liście.
+      if (
+        sessionEmail !== undefined &&
+        !studentNumbers.some(
+          (n) =>
+            entries.find((e) => e.studentNumber === n)?.email.toLowerCase() ===
+            sessionEmail.toLowerCase(),
+        )
+      ) {
+        return { ok: false, code: "NOT_YOUR_INDEX" }
+      }
       const data = {
         maxTeamSize: exam.maxTeamSize,
         opensAt: exam.enrollmentOpensAt,
-        entries: exam.rosters.flatMap((r) => r.entries),
+        entries,
         slots: exam.rosters.flatMap((r) => r.slots),
         enrollments: exam.enrollments,
       }

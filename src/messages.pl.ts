@@ -36,6 +36,7 @@ export type AppError =
         | "TEACHER_BANNED"
         | "ALREADY_TEACHER"
         | "LAST_TEACHER"
+        | "NOT_YOUR_INDEX"
     }
 
 export type Result<T = object> = ({ ok: true } & T) | ({ ok: false } & AppError)
@@ -50,6 +51,8 @@ export function errorMessage(e: AppError): string {
       return `Zespół może mieć najwyżej ${e.maxTeamSize} os.`
     case "DUPLICATE_NUMBER":
       return `Ten sam indeks wpisano dwa razy: ${list(e.studentNumbers)}.`
+    case "NOT_YOUR_INDEX":
+      return "Zapisu dokonuje się z własnego indeksu: w zespole musi być numer, którego adres jest przypisany do Twojego logowania."
     case "NOT_ON_ROSTER":
       return `Tego indeksu nie ma na liście zaliczenia: ${list(e.studentNumbers)}. Sprawdź numer.`
     case "ALREADY_ENROLLED":
@@ -209,4 +212,22 @@ export function phaseStatus(phase: ExamPhase, opensAt: Date | null): string {
   return phase === "scheduled" && opensAt
     ? `Zapisy od ${formatDayTime(opensAt)}`
     : PHASE_LABEL[phase]
+}
+
+/** Mail z linkiem logowania studenta (ważny `LOGIN_LINK_MINUTES` minut). */
+export const LOGIN_LINK_MINUTES = 15
+
+export function loginMail(link: string) {
+  const subject = "Link do logowania na stronę zapisów"
+  const lead = `Kliknij, żeby wejść na stronę zapisów. Link jest ważny ${LOGIN_LINK_MINUTES} minut i działa jednorazowo.`
+  const ignore = "Jeśli ta wiadomość nie dotyczy Ciebie, zignoruj ją."
+  return {
+    subject,
+    text: `${lead}
+
+${link}
+
+${ignore}`,
+    html: `<p>${lead}</p><p><a href="${link}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none">Przejdź do zapisów</a></p><p style="color:#555">${ignore}</p>`,
+  }
 }

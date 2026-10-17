@@ -26,6 +26,7 @@ if (existing) {
       password: admin.ADMIN_PASSWORD,
       name: admin.ADMIN_NAME,
       role: "admin",
+      data: { emailVerified: true },
     },
   })
   console.log(`Utworzono superadmina ${admin.ADMIN_EMAIL}.`)
