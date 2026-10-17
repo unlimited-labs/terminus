@@ -2,6 +2,7 @@ import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
 import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import { useRef, useState } from "react"
 
+import { GradeChip } from "@/components/grading"
 import { hasManyRosters } from "@/components/roster-choice"
 import { SlotAnswers } from "@/components/slot-answers"
 import { Button } from "@/components/ui/button"
@@ -26,11 +27,14 @@ const TileAction = (props: React.ComponentProps<typeof Button>) => (
 
 function PersonTile({
   person,
+  team,
   highlighted,
   foreignRoster,
   onCommand,
 }: {
   person: Person
+  /** Zespół osoby w slocie: kafelek na całą szerokość ze znaczkiem oceny. */
+  team?: Person[]
   highlighted: boolean
   foreignRoster?: string
   onCommand: (command: BoardCommand) => boolean
@@ -73,14 +77,14 @@ function PersonTile({
         drag.ref(el)
         drop.ref(el)
       }}
-      className={`flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-lg border bg-card px-2 py-1 text-sm ${
+      className={`flex shrink-0 ${team ? "w-full" : ""} cursor-grab touch-none items-center gap-2 rounded-lg border bg-card px-2 py-1 text-sm ${
         drop.isDropTarget ? "ring-2 ring-primary" : ""
       } ${drag.isDragging ? "opacity-50" : ""} ${highlighted ? "bg-yellow-100 ring-2 ring-yellow-400" : ""}`}
     >
       {unenrolled ? (
         <span className="font-semibold tabular-nums">{person.studentNumber}</span>
       ) : (
-        <span className="grid leading-tight">
+        <span className="grid flex-1 leading-tight">
           <span className="font-semibold whitespace-nowrap">{fullName(person)}</span>
           <span className="text-xs text-muted-foreground tabular-nums">
             {person.studentNumber}
@@ -90,6 +94,7 @@ function PersonTile({
       )}
       {!unenrolled && (
         <>
+          {team && <GradeChip person={person} team={team} onCommand={onCommand} />}
           <TileAction
             ref={(el: HTMLButtonElement | null) => {
               if (el && refocusPencil.current) {
@@ -212,11 +217,12 @@ function TeamCell({
 }) {
   if (team.length === 0) return <span className="text-free">wolny</span>
   return (
-    <div className="flex gap-2 overflow-x-auto">
+    <div className="grid gap-1">
       {team.map((p) => (
         <PersonTile
           key={p.studentNumber}
           person={p}
+          team={team}
           highlighted={highlight(p)}
           foreignRoster={p.rosterId === slot.rosterId ? undefined : rosterOf(p.rosterId)}
           onCommand={onCommand}

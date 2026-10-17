@@ -61,3 +61,52 @@ test("za długie nazwisko: komunikat z limitem, formularz zostaje otwarty", asyn
   await expect(page.getByLabel("Nazwisko", { exact: true })).toBeVisible()
   await expect(page.getByText("Coś poszło nie tak")).toHaveCount(0)
 })
+
+test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z oceną", async ({
+  page,
+}) => {
+  await openBoard(page, exams().boardGrades)
+  const counter = page.getByText(/ocenieni \d+ \/ \d+/)
+  // Toasty leżą w stosie; klikalny jest tylko najnowszy (z przodu).
+  const undo = () =>
+    page.locator("[data-sonner-toast][data-front=true]").getByRole("button", { name: "Cofnij" })
+  const chip = (name: string) => page.getByRole("button", { name: `Ocena: ${name}`, exact: true })
+  await expect(counter).toContainText("ocenieni 0 / 2")
+
+  await chip("Anna Adamska").click()
+  await page.getByRole("button", { name: "4", exact: true }).click()
+  await expect(page.getByText("Zapisano ocenę.")).toBeVisible()
+  await page.getByLabel("Komentarz (opcjonalny)").fill("dobra prezentacja")
+  await page.getByRole("button", { name: "Ta sama ocena dla całego zespołu (2)" }).click()
+  await expect(chip("Bartosz Bąk")).toHaveText("4")
+  await expect(counter).toContainText("ocenieni 2 / 2")
+  await expect(page.getByText("Zapisano ocenę.")).toHaveCount(3)
+  await page.keyboard.press("Escape")
+
+  await undo().press("Enter")
+  await expect(chip("Bartosz Bąk")).toHaveText("ocena")
+  await expect(counter).toContainText("ocenieni 1 / 2")
+
+  await page.reload()
+  await expect(chip("Anna Adamska")).toHaveText("4")
+  await chip("Anna Adamska").click()
+  await expect(page.getByLabel("Komentarz (opcjonalny)")).toHaveValue("dobra prezentacja")
+  await expect(page.getByText(/^Admin E2E, /)).toBeVisible()
+  await page.keyboard.press("Escape")
+
+  const remove = page.getByRole("button", { name: "Usuń zapis: Anna Adamska", exact: true })
+  await remove.click()
+  await expect(page.getByRole("dialog", { name: "Usunąć zapis z oceną?" })).toContainText(
+    "Anna Adamska (500001): 4",
+  )
+  await page.getByRole("button", { name: "Anuluj" }).click()
+  await expect(row(page, "09:00–09:20")).toContainText("Anna Adamska")
+
+  await remove.click()
+  await page.getByRole("button", { name: "Usuń zapis i ocenę" }).click()
+  await expect(pool(page).getByText("500001")).toBeVisible()
+  await expect(page.getByText("Usunięto zapis.")).toBeVisible()
+  await expect(counter).toContainText("ocenieni 0 / 1")
+  await undo().press("Enter")
+  await expect(chip("Anna Adamska")).toHaveText("4")
+})

@@ -15,6 +15,7 @@ const EXAMS = [
   "boardMouse",
   "boardKeyboard",
   "boardTeam",
+  "boardGrades",
   "exportDuplicate",
   "fields",
   "student",

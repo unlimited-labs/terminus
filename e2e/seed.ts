@@ -193,6 +193,10 @@ export async function seed(): Promise<E2EState> {
       ["500002", 0],
     ]),
     boardTeam: await board([["500001", 1]]),
+    boardGrades: await board([
+      ["500001", 0],
+      ["500002", 0],
+    ]),
     exportDuplicate: await board(),
     fields: await board(),
     student: await kolokwium(),

@@ -1,4 +1,4 @@
-import type { BoardErrorCode } from "./domain/board.ts"
+import type { BoardErrorCode, Grade } from "./domain/board.ts"
 import type { InvalidRowReason } from "./domain/csv.ts"
 import type { AssignmentMode, EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
@@ -257,4 +257,32 @@ export const STUDENT_LOGIN = {
   enterLead: "Kliknij, żeby się zalogować.",
   enter: "Wejdź",
   logout: "Wyloguj",
+}
+
+/** Ocena na tablicy: znaczek (`short`), czytnik ekranu (`name`), eksport CSV (`csv`). */
+export const GRADE: Record<Grade, { short: string; name: string; csv: string }> = {
+  G2: { short: "2", name: "2", csv: "2" },
+  G3: { short: "3", name: "3", csv: "3" },
+  G3_5: { short: "3,5", name: "3,5", csv: "3,5" },
+  G4: { short: "4", name: "4", csv: "4" },
+  G4_5: { short: "4,5", name: "4,5", csv: "4,5" },
+  G5: { short: "5", name: "5", csv: "5" },
+  ABSENT: { short: "nieob.", name: "nieobecny", csv: "nb" },
+}
+
+export const GRADING = {
+  chipEmpty: "ocena",
+  chipLabel: (name: string) => `Ocena: ${name}`,
+  picker: "Ocena",
+  comment: "Komentarz (opcjonalny)",
+  commentHint:
+    "Komentarz widzą wszyscy prowadzący tego zaliczenia. Nie wpisuj danych o zdrowiu ani innych danych wrażliwych.",
+  notGraded: "nieocenione",
+  deletedAccount: "usunięte konto",
+  sameForTeam: (n: number) => `Ta sama ocena dla całego zespołu (${n})`,
+  counter: (graded: number, enrolled: number) => `ocenieni ${graded} / ${enrolled}`,
+  confirmTitle: "Usunąć zapis z oceną?",
+  confirmLead: "Ocena i komentarz znikną razem z zapisem:",
+  confirm: "Usuń zapis i ocenę",
+  cancel: "Anuluj",
 }

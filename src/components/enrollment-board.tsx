@@ -5,6 +5,7 @@ import { toast } from "sonner"
 
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
+import { gradedCount, useUnenrollGuard } from "@/components/grading"
 import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
@@ -110,7 +111,7 @@ function useBoardCommand(exam: ExamDetail) {
 
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
-  const run = useBoardCommand(exam)
+  const { run, dialog } = useUnenrollGuard(exam.people, useBoardCommand(exam))
   const multi = hasManyRosters(exam.rosters)
   const rosterName = rosterNames(exam.rosters)
   const q = search.trim().toLowerCase()
@@ -134,7 +135,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
           <h1 className="text-2xl font-extrabold">{exam.name} — tablica zapisów</h1>
           <p className="tabular-nums text-muted-foreground">
             zapisani {enrolled} / {exam.people.length} · wolne sloty {freeSlots} · miejsca{" "}
-            {exam.slots.length * exam.maxTeamSize}
+            {exam.slots.length * exam.maxTeamSize} · {gradedCount(exam.people)}
           </p>
           <CapacitySummary exam={exam} />
           <Input
@@ -186,6 +187,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
           </div>
         </div>
       </div>
+      {dialog}
     </DragDropProvider>
   )
 }
