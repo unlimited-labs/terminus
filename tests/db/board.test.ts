@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest"
 import type { BoardCommand } from "@/domain/board"
 import { runBoardCommand } from "@/server/board-ops.server"
 import { db } from "@/server/db.server"
+import { loadExam } from "@/server/exam-state.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
 
@@ -59,6 +60,47 @@ describe("runBoardCommand", () => {
     if (!team.ok) throw new Error(team.code)
     await run(team.inverse)
     expect([await slotOf("1"), await slotOf("2")]).toEqual([s3, s3])
+  })
+
+  test("ocena: kto i kiedy z sesji, idzie z zapisem, Cofnij wypisania ją oddaje", async () => {
+    const { examId, teacherId, s1, s2, run } = await setup()
+    const gradeOf = (studentNumber: string) =>
+      db.enrollment.findUnique({
+        where: { examId_studentNumber: { examId, studentNumber } },
+        select: { grade: true, gradeComment: true, gradedById: true, gradedAt: true },
+      })
+    await run({ kind: "move", studentNumber: "1", toSlotId: s1 })
+    await run({ kind: "setGrades", grades: { "1": { grade: "G3_5", comment: " ok " } } })
+    expect(await gradeOf("1")).toMatchObject({
+      grade: "G3_5",
+      gradeComment: "ok",
+      gradedById: teacherId,
+      gradedAt: expect.any(Date),
+    })
+
+    await run({ kind: "move", studentNumber: "1", toSlotId: s2 })
+    expect(await gradeOf("1")).toMatchObject({ grade: "G3_5", gradeComment: "ok" })
+
+    const removed = await run({ kind: "move", studentNumber: "1", toSlotId: null })
+    expect(await gradeOf("1")).toBeNull()
+    if (!removed.ok) throw new Error(removed.code)
+    await run(removed.inverse)
+    expect(await gradeOf("1")).toMatchObject({ grade: "G3_5", gradedById: teacherId })
+
+    const exam = await loadExam(examId)
+    expect(exam?.people.find((p) => p.studentNumber === "1")).toMatchObject({
+      grade: "G3_5",
+      gradeComment: "ok",
+      gradedBy: expect.any(String),
+    })
+
+    await run({ kind: "setGrades", grades: { "1": { grade: null, comment: "" } } })
+    expect(await gradeOf("1")).toEqual({
+      grade: null,
+      gradeComment: null,
+      gradedById: null,
+      gradedAt: null,
+    })
   })
 
   test("pełny slot odrzucony; przeniesienie do slotu cudzej listy dozwolone", async () => {

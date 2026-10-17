@@ -25,7 +25,17 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
         select: { id: true, name: true, email: true, banned: true },
       },
       rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
-      enrollments: { select: { studentNumber: true, slotId: true, answers: true } },
+      enrollments: {
+        select: {
+          studentNumber: true,
+          slotId: true,
+          answers: true,
+          grade: true,
+          gradeComment: true,
+          gradedAt: true,
+          gradedBy: { select: { name: true } },
+        },
+      },
     },
   })
   if (!exam) return null
@@ -65,6 +75,11 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
         ...e,
         slotId: enrollment?.slotId ?? null,
         answers: enrollment ? parseAnswers(enrollment.answers) : {},
+        grade: enrollment?.grade ?? null,
+        gradeComment: enrollment?.gradeComment ?? null,
+        gradedAt: enrollment?.gradedAt ?? null,
+        /** null przy `gradedAt` = konto prowadzącego usunięte. */
+        gradedBy: enrollment?.gradedBy?.name ?? null,
       }
     }),
     phase: examPhase(

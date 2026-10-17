@@ -7,7 +7,18 @@ import { loadExam, type ExamDetail } from "./exam-state.server.ts"
 
 type Person = ExamDetail["people"][number]
 
-async function savePerson(tx: Tx, examId: string, prev: Person, next: Person) {
+/** „Kto/kiedy” zawsze z sesji, także przy Cofnij; pusta ocena i komentarz czyszczą oba. */
+function gradeData(userId: string, { grade, gradeComment }: Person) {
+  const graded = grade !== null || gradeComment !== null
+  return {
+    grade,
+    gradeComment,
+    gradedById: graded ? userId : null,
+    gradedAt: graded ? new Date() : null,
+  }
+}
+
+async function savePerson(tx: Tx, examId: string, userId: string, prev: Person, next: Person) {
   const key = { examId_studentNumber: { examId, studentNumber: next.studentNumber } }
   if (prev.firstName !== next.firstName || prev.lastName !== next.lastName) {
     await tx.rosterEntry.update({
@@ -16,14 +27,16 @@ async function savePerson(tx: Tx, examId: string, prev: Person, next: Person) {
     })
   }
   const { slotId, answers } = next
+  const gradeChanged = prev.grade !== next.grade || prev.gradeComment !== next.gradeComment
+  const grade = gradeChanged ? gradeData(userId, next) : {}
   if (slotId === null) {
     if (prev.slotId !== null) await tx.enrollment.delete({ where: key })
   } else if (prev.slotId === null) {
     await tx.enrollment.create({
-      data: { examId, studentNumber: next.studentNumber, slotId, answers },
+      data: { examId, studentNumber: next.studentNumber, slotId, answers, ...grade },
     })
-  } else if (prev.slotId !== slotId || prev.answers !== answers) {
-    await tx.enrollment.update({ where: key, data: { slotId, answers } })
+  } else if (prev.slotId !== slotId || prev.answers !== answers || gradeChanged) {
+    await tx.enrollment.update({ where: key, data: { slotId, answers, ...grade } })
   }
 }
 
@@ -47,7 +60,7 @@ export async function runBoardCommand(
     if (!applied.ok) return applied
     await Promise.all(
       changedPeople(before, applied.state).map(([prev, next]) =>
-        savePerson(tx, examId, prev, next),
+        savePerson(tx, examId, userId, prev, next),
       ),
     )
     return { ok: true, inverse: applied.inverse }
