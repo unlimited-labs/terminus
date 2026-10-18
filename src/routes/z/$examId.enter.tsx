@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { z } from "zod"
 
@@ -11,23 +11,12 @@ import { STUDENT_LOGIN as T } from "@/messages.pl"
 import { enterWithToken } from "@/server/login-link"
 import { scheduleQuery } from "@/server/schedule"
 
+import { loadSchedule, scheduleHead } from "./-load-schedule"
+
 export const Route = createFileRoute("/z/$examId/enter")({
   validateSearch: z.object({ token: z.string().optional().catch(undefined) }),
-  loader: async ({ context, params }) => {
-    if (!z.uuid().safeParse(params.examId).success) throw notFound()
-    const view = await context.queryClient.query({
-      ...scheduleQuery(params.examId),
-      staleTime: "static",
-    })
-    if (!view) throw notFound()
-    return { title: view.gate === "open" ? view.schedule.name : view.name }
-  },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData?.title ?? "Terminus" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  loader: loadSchedule,
+  head: scheduleHead,
   component: EnterPage,
 })
 

@@ -1,9 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
@@ -18,22 +17,11 @@ import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
 
+import { loadSchedule, scheduleHead } from "./-load-schedule"
+
 export const Route = createFileRoute("/z/$examId/")({
-  loader: async ({ context, params }) => {
-    if (!z.uuid().safeParse(params.examId).success) throw notFound()
-    const view = await context.queryClient.query({
-      ...scheduleQuery(params.examId),
-      staleTime: "static",
-    })
-    if (!view) throw notFound()
-    return { title: view.gate === "open" ? view.schedule.name : view.name }
-  },
-  head: ({ loaderData }) => ({
-    meta: [
-      { title: loaderData?.title ?? "Terminus" },
-      { name: "robots", content: "noindex, nofollow" },
-    ],
-  }),
+  loader: loadSchedule,
+  head: scheduleHead,
   component: StudentPage,
 })
 
