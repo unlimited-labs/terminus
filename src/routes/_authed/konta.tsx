@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
-import { UNEXPECTED_ERROR } from "@/messages.pl"
+import { UNEXPECTED_ERROR, type Result } from "@/messages.pl"
 import { createAccountSchema, setPasswordSchema, updateAccountSchema } from "@/schemas/account"
 import {
   accountsQuery,
@@ -35,6 +35,11 @@ export const Route = createFileRoute("/_authed/konta")({
 
 type Account = Awaited<ReturnType<typeof listAccounts>>[number]
 
+const useAccountMutation = <TInput, TOut extends object>(
+  fn: (opts: { data: TInput }) => Promise<Result<TOut>>,
+  onOk?: (result: { ok: true } & TOut) => void,
+) => useResultMutation(fn, [accountsQuery().queryKey], onOk)
+
 function Accounts() {
   const { data: accounts } = useSuspenseQuery(accountsQuery())
   const { user } = Route.useRouteContext()
@@ -52,7 +57,7 @@ function Accounts() {
 }
 
 function CreateAccountForm() {
-  const create = useResultMutation(createAccount, [accountsQuery().queryKey], () =>
+  const create = useAccountMutation(createAccount, () =>
     toast.success("Konto utworzone. Przekaż hasło prowadzącemu."),
   )
   const form = useAppForm({
@@ -85,8 +90,8 @@ function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) 
   const [mode, setMode] = useState<"view" | "edit" | "password">("view")
   const toggle = (m: "edit" | "password") => setMode(mode === m ? "view" : m)
   const isAdmin = account.role === "admin"
-  const ban = useResultMutation(setAccountBanned, [accountsQuery().queryKey])
-  const admin = useResultMutation(setAccountAdmin, [accountsQuery().queryKey])
+  const ban = useAccountMutation(setAccountBanned)
+  const admin = useAccountMutation(setAccountAdmin)
   return (
     <li>
       <Card size="sm">
@@ -135,7 +140,7 @@ function AccountRow({ account, isSelf }: { account: Account; isSelf: boolean }) 
 }
 
 function EditAccountForm({ account, onDone }: { account: Account; onDone: () => void }) {
-  const update = useResultMutation(updateAccount, [accountsQuery().queryKey], onDone)
+  const update = useAccountMutation(updateAccount, onDone)
   const form = useAppForm({
     defaultValues: { userId: account.id, email: account.email, name: account.name },
     ...schemaSubmit(updateAccountSchema, update.mutateAsync),
@@ -154,7 +159,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
 }
 
 function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }) {
-  const set = useResultMutation(setAccountPassword, [accountsQuery().queryKey], () => {
+  const set = useAccountMutation(setAccountPassword, () => {
     toast.success("Hasło ustawione, sesje tej osoby wylogowane.")
     onDone()
   })
