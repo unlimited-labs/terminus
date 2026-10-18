@@ -1,7 +1,5 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
-import type { z } from "zod"
 
 import { ConfirmButton } from "@/components/confirm-button"
 import { schemaSubmit, useAppForm } from "@/components/form"
@@ -19,15 +17,14 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roster-choice"
-import { toastUnexpected, useExamMutation } from "@/components/use-result-mutation"
-import { suggestRosterName } from "@/domain/csv"
+import { useExamMutation } from "@/components/use-result-mutation"
+import { useRosterImport, type ImportInput } from "@/components/use-roster-import"
 import { formatDayTime } from "@/domain/time"
-import { errorMessage, GRADE, GRADING, INVALID_ROW, firstIssue } from "@/messages.pl"
-import { addEntrySchema, entryEmail, rosterImportSchema } from "@/schemas/roster"
+import { errorMessage, GRADE, GRADING, INVALID_ROW } from "@/messages.pl"
+import { addEntrySchema, entryEmail } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
   addRosterEntry,
-  applyRosterImport,
   deleteRoster,
   changeEntryEmail,
   deleteRosterEntry,
@@ -164,40 +161,10 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
   )
 }
 
-type ImportInput = z.input<typeof rosterImportSchema>
-
 function RosterImport({ exam }: { exam: ExamDetail }) {
-  const [input, setInput] = useState<ImportInput | null>(null)
-  const preview = useMutation({
-    mutationFn: (data: ImportInput) => previewRosterImport({ data }),
-    onError: toastUnexpected,
-  })
-  const previewChecked = (data: ImportInput) => {
-    const parsed = rosterImportSchema.safeParse(data)
-    if (parsed.success) preview.mutate(data)
-    else toast.error(firstIssue(parsed.error))
-  }
-  const apply = useExamMutation(applyRosterImport, exam.id, () => {
-    setInput(null)
-    preview.reset()
-    toast.success("Zaimportowano listę.")
-  })
-
-  const load = async (file: File) => {
-    const next = {
-      examId: exam.id,
-      rosterName: suggestRosterName(file.name),
-      csv: await file.text(),
-    }
-    setInput(next)
-    previewChecked(next)
-  }
-  const previewedName = preview.variables?.rosterName
-  const refresh = () => {
-    if (input?.rosterName.trim() && input.rosterName !== previewedName) previewChecked(input)
-  }
+  const importer = useRosterImport(exam.id)
+  const { input, preview } = importer
   const result = preview.data
-
   return (
     <div className="grid gap-3">
       <div className="grid gap-1.5">
@@ -208,7 +175,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           accept=".csv,text/csv"
           onChange={(e) => {
             const file = e.target.files?.[0]
-            if (file) void load(file)
+            if (file) void importer.load(file)
             e.target.value = ""
           }}
         />
@@ -216,68 +183,73 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
       {input && result && !result.ok && (
         <p className="text-sm text-destructive">{errorMessage(result)}</p>
       )}
-      {input && result?.ok && (
-        <div className="grid gap-3 rounded-xl border p-4 text-sm">
-          <div className="grid max-w-xs gap-1.5">
-            <Label htmlFor="roster-name">Nazwa listy</Label>
-            <Input
-              id="roster-name"
-              value={input.rosterName}
-              onChange={(e) => setInput({ ...input, rosterName: e.target.value })}
-              onBlur={refresh}
-              onKeyDown={(e) => e.key === "Enter" && refresh()}
-            />
-          </div>
-          <p>
-            {result.rosterId ? "Ponowny import do istniejącej listy." : "Nowa lista."} Osoby w
-            pliku: {result.people} (nowe {result.add.length}, zmienione nazwiska{" "}
-            {result.update.length}, bez zmian {result.unchanged}). W pliku skreśleni lub z
-            rezygnacją: {result.withdrawn}.
-            {result.badEmails > 0 &&
-              ` Zastąpionych niepoprawnych adresów e-mail: ${result.badEmails}.`}
-          </p>
-          <PreviewList title="Błędne — nie zostaną zaimportowane">
-            {[
-              ...result.invalid.map(
-                (r) =>
-                  `wiersz ${r.line}: ${r.studentNumber || "(pusty)"} — ${INVALID_ROW[r.reason]}`,
-              ),
-              ...result.otherRoster.map(
-                (r) => `wiersz ${r.line}: ${r.studentNumber} — ${INVALID_ROW.OTHER_ROSTER}`,
-              ),
-            ]}
-          </PreviewList>
-          <PreviewList title="Znikną z listy (skreśleni, bez zapisu)">
-            {result.remove.filter((e) => !e.slotStartsAt).map(entryLine)}
-          </PreviewList>
-          <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
-            {result.withdrawnEnrolled.map(
-              (e) =>
-                `${entryLine(e)} — slot ${formatDayTime(e.slotStartsAt)}${e.grade ? GRADING.previewGrade(GRADE[e.grade].name) : ""}`,
-            )}
-          </PreviewList>
-          <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
-            {result.notInFile.map(entryLine)}
-          </PreviewList>
-          <div className="flex gap-2">
-            <Button
-              disabled={apply.isPending || preview.isPending || input.rosterName !== previewedName}
-              onClick={async () => {
-                const done = await apply.mutateAsync({
-                  ...input,
-                  withdrawnEnrolled: result.withdrawnEnrolled.map((e) => e.studentNumber),
-                })
-                if (!done.ok && done.code === "IMPORT_PREVIEW_STALE") preview.mutate(input)
-              }}
-            >
-              Zapisz listę
-            </Button>
-            <Button variant="outline" onClick={() => setInput(null)}>
-              Anuluj
-            </Button>
-          </div>
-        </div>
-      )}
+      {input && result?.ok && <ImportPreview importer={importer} input={input} result={result} />}
+    </div>
+  )
+}
+
+type PreviewResult = Extract<Awaited<ReturnType<typeof previewRosterImport>>, { ok: true }>
+
+function ImportPreview({
+  importer,
+  input,
+  result,
+}: {
+  importer: ReturnType<typeof useRosterImport>
+  input: ImportInput
+  result: PreviewResult
+}) {
+  return (
+    <div className="grid gap-3 rounded-xl border p-4 text-sm">
+      <div className="grid max-w-xs gap-1.5">
+        <Label htmlFor="roster-name">Nazwa listy</Label>
+        <Input
+          id="roster-name"
+          value={input.rosterName}
+          onChange={(e) => importer.setInput({ ...input, rosterName: e.target.value })}
+          onBlur={importer.refresh}
+          onKeyDown={(e) => e.key === "Enter" && importer.refresh()}
+        />
+      </div>
+      <p>
+        {result.rosterId ? "Ponowny import do istniejącej listy." : "Nowa lista."} Osoby w pliku:{" "}
+        {result.people} (nowe {result.add.length}, zmienione nazwiska {result.update.length}, bez
+        zmian {result.unchanged}). W pliku skreśleni lub z rezygnacją: {result.withdrawn}.
+        {result.badEmails > 0 && ` Zastąpionych niepoprawnych adresów e-mail: ${result.badEmails}.`}
+      </p>
+      <PreviewList title="Błędne — nie zostaną zaimportowane">
+        {[
+          ...result.invalid.map(
+            (r) => `wiersz ${r.line}: ${r.studentNumber || "(pusty)"} — ${INVALID_ROW[r.reason]}`,
+          ),
+          ...result.otherRoster.map(
+            (r) => `wiersz ${r.line}: ${r.studentNumber} — ${INVALID_ROW.OTHER_ROSTER}`,
+          ),
+        ]}
+      </PreviewList>
+      <PreviewList title="Znikną z listy (skreśleni, bez zapisu)">
+        {result.remove.filter((e) => !e.slotStartsAt).map(entryLine)}
+      </PreviewList>
+      <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
+        {result.withdrawnEnrolled.map(
+          (e) =>
+            `${entryLine(e)} — slot ${formatDayTime(e.slotStartsAt)}${e.grade ? GRADING.previewGrade(GRADE[e.grade].name) : ""}`,
+        )}
+      </PreviewList>
+      <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
+        {result.notInFile.map(entryLine)}
+      </PreviewList>
+      <div className="flex gap-2">
+        <Button
+          disabled={importer.saveDisabled}
+          onClick={() => importer.apply(result.withdrawnEnrolled.map((e) => e.studentNumber))}
+        >
+          Zapisz listę
+        </Button>
+        <Button variant="outline" onClick={() => importer.setInput(null)}>
+          Anuluj
+        </Button>
+      </div>
     </div>
   )
 }
