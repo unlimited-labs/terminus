@@ -127,6 +127,7 @@ function useDraw(
     onSuccess: (outcome) => {
       if (outcome.ok) onEnrolled(outcome.slotId, outcome.ticket)
     },
+    onError: (error) => console.error(error),
     onSettled: () => queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
   })
 }

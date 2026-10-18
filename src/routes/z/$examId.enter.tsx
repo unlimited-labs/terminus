@@ -6,10 +6,10 @@ import { z } from "zod"
 import { StudentGate } from "@/components/student-gate"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { STUDENT_LOGIN as T, UNEXPECTED_ERROR } from "@/messages.pl"
+import { toastUnexpected } from "@/components/use-result-mutation"
+import { STUDENT_LOGIN as T } from "@/messages.pl"
 import { enterWithToken } from "@/server/login-link"
 import { scheduleQuery } from "@/server/schedule"
-import { toast } from "sonner"
 
 export const Route = createFileRoute("/z/$examId/enter")({
   validateSearch: z.object({ token: z.string().optional().catch(undefined) }),
@@ -49,7 +49,7 @@ function EnterPage() {
       await queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey })
       await navigate({ to: "/z/$examId", params: { examId } })
     },
-    onError: () => toast.error(UNEXPECTED_ERROR),
+    onError: toastUnexpected,
   })
 
   if (failed) {
