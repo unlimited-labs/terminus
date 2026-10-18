@@ -38,6 +38,34 @@ function FieldErrors({ id }: { id: string }) {
   )
 }
 
+/** Etykieta (z opcjonalnym przyciskiem obok), kontrolka i komunikat błędu pola `id`. */
+function FieldShell({
+  id,
+  label,
+  action,
+  children,
+}: {
+  id: string
+  label: string
+  action?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className="grid gap-1.5">
+      {action ? (
+        <div className="flex items-baseline justify-between">
+          <Label htmlFor={id}>{label}</Label>
+          {action}
+        </div>
+      ) : (
+        <Label htmlFor={id}>{label}</Label>
+      )}
+      {children}
+      <FieldErrors id={`${id}-errors`} />
+    </div>
+  )
+}
+
 type TextFieldProps = {
   label: string
   type?: "text" | "email" | "password" | "date" | "time"
@@ -76,11 +104,7 @@ function TextField({
     autoFocus,
   }
   return (
-    <div className="grid gap-1.5">
-      <div className="flex items-baseline justify-between">
-        <Label htmlFor={id}>{label}</Label>
-        {action}
-      </div>
+    <FieldShell id={id} label={label} action={action}>
       {multiline ? (
         <Textarea {...props} onChange={(e) => field.handleChange(e.target.value)} />
       ) : (
@@ -92,8 +116,7 @@ function TextField({
           onChange={(e) => field.handleChange(e.target.value)}
         />
       )}
-      <FieldErrors id={`${id}-errors`} />
-    </div>
+    </FieldShell>
   )
 }
 
@@ -101,8 +124,7 @@ function NumberField({ label, min, max }: { label: string; min?: number; max?: n
   const field = useFieldContext<number>()
   const id = useId()
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+    <FieldShell id={id} label={label}>
       <Input
         id={id}
         name={field.name}
@@ -117,8 +139,7 @@ function NumberField({ label, min, max }: { label: string; min?: number; max?: n
         aria-describedby={`${id}-errors`}
         className="tabular-nums"
       />
-      <FieldErrors id={`${id}-errors`} />
-    </div>
+    </FieldShell>
   )
 }
 
@@ -132,8 +153,7 @@ function SelectField({
   const field = useFieldContext<string>()
   const id = useId()
   return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
+    <FieldShell id={id} label={label}>
       <Select
         name={field.name}
         items={options}
@@ -157,8 +177,7 @@ function SelectField({
           ))}
         </SelectContent>
       </Select>
-      <FieldErrors id={`${id}-errors`} />
-    </div>
+    </FieldShell>
   )
 }
 
