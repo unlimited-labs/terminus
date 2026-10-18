@@ -44,11 +44,7 @@ export function DeleteExamButton({
       confirmDisabled={confirmName.trim() !== exam.name}
       triggerVariant="destructive"
       triggerSize={size}
-      onConfirm={async () => {
-        const result = await remove.mutateAsync({ examId: exam.id, confirmName })
-        // Dialog zostaje otwarty, gdy serwer odmówi (komunikat już w toaście).
-        if (!result.ok) throw new Error(result.code)
-      }}
+      onConfirm={() => remove.mutateAsync({ examId: exam.id, confirmName })}
     >
       Usuń
     </ConfirmButton>

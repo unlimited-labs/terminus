@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type ReactNode } from "react"
+import { useRef, useState, type ComponentProps, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,7 +12,10 @@ import {
 
 type ButtonProps = ComponentProps<typeof Button>
 
-/** Przycisk akcji nieodwracalnej: pyta w dialogu, w trakcie blokuje potwierdzenie. */
+/**
+ * Przycisk akcji nieodwracalnej: pyta w dialogu, w trakcie blokuje potwierdzenie.
+ * Porażka `onConfirm` (wyjątek albo `{ ok: false }`) zostawia dialog otwarty — komunikat jest już w toaście.
+ */
 export function ConfirmButton({
   children,
   title,
@@ -29,7 +32,7 @@ export function ConfirmButton({
   title: string
   description: ReactNode
   confirmLabel: string
-  onConfirm: () => Promise<unknown>
+  onConfirm: () => unknown
   disabled?: boolean
   body?: ReactNode
   confirmDisabled?: boolean
@@ -38,14 +41,18 @@ export function ConfirmButton({
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  // `busy` dociera do przycisku asynchronicznie — podwójne kliknięcie blokuje dopiero ref.
+  const inFlight = useRef(false)
   const confirm = async () => {
+    if (inFlight.current) return
+    inFlight.current = true
     setBusy(true)
     try {
-      await onConfirm()
-      setOpen(false)
+      if (!isFailure(await onConfirm())) setOpen(false)
     } catch {
       // błąd pokazuje już mutacja (toast)
     } finally {
+      inFlight.current = false
       setBusy(false)
     }
   }
@@ -77,3 +84,6 @@ export function ConfirmButton({
     </Dialog>
   )
 }
+
+const isFailure = (result: unknown) =>
+  typeof result === "object" && result !== null && "ok" in result && result.ok === false

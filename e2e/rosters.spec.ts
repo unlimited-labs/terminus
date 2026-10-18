@@ -89,6 +89,9 @@ test("usuwanie osób i list: osoba i lista z zapisem zostają", async ({ page })
   await expect(
     page.getByText("Na liście są indeksy z zapisem — najpierw przenieś albo usuń ich zapisy."),
   ).toBeVisible()
+  await expect(page.getByRole("dialog")).toBeVisible()
+  await page.getByRole("button", { name: "Anuluj" }).click()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
   await expect(row("980001")).toBeVisible()
 
   await chip("g2").getByRole("button", { name: "Usuń listę" }).click()
