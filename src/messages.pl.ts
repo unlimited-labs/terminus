@@ -286,5 +286,4 @@ export const GRADING = {
   confirmTitle: "Usunąć zapis z oceną?",
   confirmLead: "Ocena i komentarz znikną razem z zapisem:",
   confirm: "Usuń zapis i ocenę",
-  cancel: "Anuluj",
 }

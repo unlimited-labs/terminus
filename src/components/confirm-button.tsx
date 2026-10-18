@@ -12,21 +12,13 @@ import {
 
 type ButtonProps = ComponentProps<typeof Button>
 
-/**
- * Przycisk akcji nieodwracalnej: pyta w dialogu, w trakcie blokuje potwierdzenie.
- * Porażka `onConfirm` (wyjątek albo `{ ok: false }`) zostawia dialog otwarty — komunikat jest już w toaście.
- */
+/** Przycisk akcji nieodwracalnej: pyta w dialogu (`ConfirmDialog`). */
 export function ConfirmButton({
   children,
-  title,
-  description,
-  confirmLabel,
-  onConfirm,
   disabled,
-  body,
-  confirmDisabled,
   triggerVariant = "ghost",
   triggerSize = "xs",
+  ...dialog
 }: {
   children: ReactNode
   title: string
@@ -40,24 +32,8 @@ export function ConfirmButton({
   triggerSize?: ButtonProps["size"]
 }) {
   const [open, setOpen] = useState(false)
-  const [busy, setBusy] = useState(false)
-  // `busy` dociera do przycisku asynchronicznie — podwójne kliknięcie blokuje dopiero ref.
-  const inFlight = useRef(false)
-  const confirm = async () => {
-    if (inFlight.current) return
-    inFlight.current = true
-    setBusy(true)
-    try {
-      if (!isFailure(await onConfirm())) setOpen(false)
-    } catch {
-      // błąd pokazuje już mutacja (toast)
-    } finally {
-      inFlight.current = false
-      setBusy(false)
-    }
-  }
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <>
       <Button
         variant={triggerVariant}
         size={triggerSize}
@@ -66,6 +42,52 @@ export function ConfirmButton({
       >
         {children}
       </Button>
+      <ConfirmDialog open={open} onOpenChange={setOpen} {...dialog} />
+    </>
+  )
+}
+
+/**
+ * Dialog potwierdzenia akcji nieodwracalnej; w trakcie blokuje potwierdzenie.
+ * Porażka `onConfirm` (wyjątek albo `{ ok: false }`) zostawia dialog otwarty — komunikat jest już w toaście.
+ */
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  body,
+  confirmLabel,
+  confirmDisabled,
+  onConfirm,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  title: string
+  description: ReactNode
+  body?: ReactNode
+  confirmLabel: string
+  confirmDisabled?: boolean
+  onConfirm: () => unknown
+}) {
+  const [busy, setBusy] = useState(false)
+  // `busy` dociera do przycisku asynchronicznie — podwójne kliknięcie blokuje dopiero ref.
+  const inFlight = useRef(false)
+  const confirm = async () => {
+    if (inFlight.current) return
+    inFlight.current = true
+    setBusy(true)
+    try {
+      if (!isFailure(await onConfirm())) onOpenChange(false)
+    } catch {
+      // błąd pokazuje już mutacja (toast)
+    } finally {
+      inFlight.current = false
+      setBusy(false)
+    }
+  }
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
@@ -73,7 +95,7 @@ export function ConfirmButton({
         </DialogHeader>
         {body}
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Anuluj
           </Button>
           <Button variant="destructive" disabled={busy || confirmDisabled} onClick={confirm}>

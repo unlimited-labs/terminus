@@ -1,14 +1,8 @@
 import { MessageSquareIcon, UsersIcon } from "lucide-react"
 import { useState } from "react"
 
+import { ConfirmDialog } from "@/components/confirm-button"
 import { Button } from "@/components/ui/button"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -158,10 +152,12 @@ export function useUnenrollGuard(exam: ExamDetail, run: (command: BoardCommand) 
     return false
   }
   const dialog = (
-    <Dialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
-      <DialogContent>
-        <DialogTitle>{GRADING.confirmTitle}</DialogTitle>
-        <DialogDescription>{GRADING.confirmLead}</DialogDescription>
+    <ConfirmDialog
+      open={pending !== null}
+      onOpenChange={(open) => !open && setPending(null)}
+      title={GRADING.confirmTitle}
+      description={GRADING.confirmLead}
+      body={
         <ul className="grid gap-1 text-sm">
           {pending?.who.map((p) => (
             <li key={p.studentNumber}>
@@ -170,22 +166,12 @@ export function useUnenrollGuard(exam: ExamDetail, run: (command: BoardCommand) 
             </li>
           ))}
         </ul>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setPending(null)}>
-            {GRADING.cancel}
-          </Button>
-          <Button
-            variant="destructive"
-            onClick={() => {
-              run(pending!.command)
-              setPending(null)
-            }}
-          >
-            {GRADING.confirm}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      }
+      confirmLabel={GRADING.confirm}
+      onConfirm={() => {
+        run(pending!.command)
+      }}
+    />
   )
   return { run: guarded, dialog }
 }
