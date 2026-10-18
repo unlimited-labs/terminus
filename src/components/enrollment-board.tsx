@@ -19,6 +19,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
   const multi = hasManyRosters(exam.rosters)
   const rosterName = rosterNames(exam.rosters)
+  const teams = Map.groupBy(exam.people, (p) => p.slotId)
   const q = search.trim().toLowerCase()
   const highlight = (p: ExamDetail["people"][number]) =>
     q !== "" && (p.studentNumber.includes(q) || fullName(p).toLowerCase().includes(q))
@@ -68,7 +69,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                   const day = warsawDay(slot.startsAt)
                   const prev = exam.slots[i - 1]
                   const firstOfDay = !prev || warsawDay(prev.startsAt) !== day
-                  const team = exam.people.filter((p) => p.slotId === slot.id)
+                  const team = teams.get(slot.id) ?? []
                   return (
                     <BoardSlotRow
                       key={slot.id}
