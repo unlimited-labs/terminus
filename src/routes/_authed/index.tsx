@@ -4,6 +4,7 @@ import { Link, createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
 import { ExamForm } from "@/components/exam-form"
+import { examFormValues } from "@/components/exam-form-values"
 import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { useResultMutation } from "@/components/use-result-mutation"
@@ -44,17 +45,7 @@ function ExamList() {
       {creating && (
         <SectionCard title="Nowe zaliczenie">
           <ExamForm
-            defaultValues={{
-              name: "",
-              description: "",
-              defaultSlotMinutes: 15,
-              maxTeamSize: 1,
-              assignmentMode: "RANDOM",
-              requireEmailLogin: false,
-              fields: [],
-              opensDate: "",
-              opensTime: "",
-            }}
+            defaultValues={examFormValues()}
             submitLabel="Utwórz"
             onSubmit={create.mutateAsync}
           />

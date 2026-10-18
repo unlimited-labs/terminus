@@ -1,12 +1,9 @@
-import type { z } from "zod"
-
+import type { ExamValues } from "@/components/exam-form-values"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
 import { Button } from "@/components/ui/button"
 import { EMAIL_LOGIN_UNCONFIGURED } from "@/messages.pl"
-import { examFormSchema, type examSchema } from "@/schemas/exam"
-
-type ExamValues = z.infer<typeof examSchema>
+import { examFormSchema } from "@/schemas/exam"
 
 export function ExamForm({
   defaultValues,

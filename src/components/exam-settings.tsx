@@ -3,13 +3,13 @@ import { toast } from "sonner"
 
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
+import { examFormValues } from "@/components/exam-form-values"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useLeaveExam } from "@/components/use-leave-exam"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { examCounts } from "@/domain/schedule"
-import { warsawDay, warsawTime } from "@/domain/time"
 import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { deleteExam, examsQuery, updateExam } from "@/server/exams"
@@ -87,17 +87,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
   return (
     <SectionCard title="Ustawienia">
       <ExamForm
-        defaultValues={{
-          name: exam.name,
-          description: exam.description,
-          defaultSlotMinutes: exam.defaultSlotMinutes,
-          maxTeamSize: exam.maxTeamSize,
-          assignmentMode: exam.assignmentMode,
-          requireEmailLogin: exam.requireEmailLogin,
-          fields: exam.fields,
-          opensDate: exam.enrollmentOpensAt ? warsawDay(exam.enrollmentOpensAt) : "",
-          opensTime: exam.enrollmentOpensAt ? warsawTime(exam.enrollmentOpensAt) : "",
-        }}
+        defaultValues={examFormValues(exam)}
         submitLabel="Zapisz"
         emailLoginAvailable={exam.emailLoginAvailable}
         onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
