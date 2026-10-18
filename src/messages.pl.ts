@@ -141,6 +141,10 @@ export function errorMessage(e: AppError): string {
 
 export const UNEXPECTED_ERROR = "Coś poszło nie tak. Spróbuj ponownie."
 
+/** `ok` z wyniku wyglądającego na `Result`, inaczej `undefined`. */
+export const resultOk = (value: unknown) =>
+  typeof value === "object" && value !== null && "ok" in value ? value.ok : undefined
+
 export const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? UNEXPECTED_ERROR
 
 export const SLOT_IS_FINAL = "Slot jest przydzielony na stałe."

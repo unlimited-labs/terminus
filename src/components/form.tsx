@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { firstIssue } from "@/messages.pl"
+import { firstIssue, resultOk } from "@/messages.pl"
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
 
@@ -341,8 +341,7 @@ export function schemaSubmit<In, Out>(
         return
       }
       const result = await submit(parsed.data)
-      if (resetOnOk && typeof result === "object" && result !== null && "ok" in result && result.ok)
-        formApi.reset()
+      if (resetOnOk && resultOk(result) === true) formApi.reset()
     },
   }
 }

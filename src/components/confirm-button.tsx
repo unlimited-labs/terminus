@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { resultOk } from "@/messages.pl"
 
 type ButtonProps = ComponentProps<typeof Button>
 
@@ -78,7 +79,7 @@ export function ConfirmDialog({
     inFlight.current = true
     setBusy(true)
     try {
-      if (!isFailure(await onConfirm())) onOpenChange(false)
+      if (resultOk(await onConfirm()) !== false) onOpenChange(false)
     } catch {
       // błąd pokazuje już mutacja (toast)
     } finally {
@@ -106,6 +107,3 @@ export function ConfirmDialog({
     </Dialog>
   )
 }
-
-const isFailure = (result: unknown) =>
-  typeof result === "object" && result !== null && "ok" in result && result.ok === false
