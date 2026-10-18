@@ -192,6 +192,26 @@ function DayTimeline({
   )
 }
 
+function SlotBody({
+  slot,
+  label,
+  open,
+  rosterName,
+}: {
+  slot: Slot
+  label: string
+  open: boolean
+  rosterName?: string
+}) {
+  return (
+    <>
+      <span className="font-extrabold tabular-nums">{warsawTime(slot.startsAt)}</span>
+      <span className={open ? "min-w-0" : "min-w-0 truncate"}>{label}</span>
+      {rosterName && <span className="ml-auto shrink-0 text-xs opacity-75">{rosterName}</span>}
+    </>
+  )
+}
+
 function SlotBlock({
   slot,
   kind,
@@ -218,48 +238,41 @@ function SlotBlock({
   const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
-  const body = (
-    <>
-      <span className="font-extrabold tabular-nums">{warsawTime(slot.startsAt)}</span>
-      <span className={open ? "min-w-0" : "min-w-0 truncate"}>{label}</span>
-      {rosterName && <span className="ml-auto shrink-0 text-xs opacity-75">{rosterName}</span>}
-    </>
-  )
+  const body = <SlotBody slot={slot} label={label} open={open} rosterName={rosterName} />
   const style = open ? { top, minHeight: height } : { top, height }
-  if (kind === "free" && onPick) {
+  const action =
+    kind === "free" && onPick
+      ? {
+          "aria-pressed": picked,
+          "aria-label": `${formatSlotTime(slot)}, wolny`,
+          onClick: () => onPick(slot),
+        }
+      : slot.team.length > 0
+        ? {
+            "aria-expanded": open,
+            "aria-label": `${formatSlotTime(slot)}, ${KINDS[kind].a11y}: ${names}`,
+            onClick: () => setOpen(!open),
+          }
+        : undefined
+  if (!action) {
     return (
       <li>
-        <Button
-          variant="ghost"
-          aria-pressed={picked}
-          aria-label={`${formatSlotTime(slot)}, wolny`}
-          onClick={() => onPick(slot)}
-          className={`h-auto justify-start font-normal whitespace-normal ${className}`}
-          style={style}
-        >
+        <div className={className} style={style}>
           {body}
-        </Button>
+        </div>
       </li>
     )
   }
   return (
     <li>
-      {slot.team.length > 0 ? (
-        <Button
-          variant="ghost"
-          aria-expanded={open}
-          aria-label={`${formatSlotTime(slot)}, ${KINDS[kind].a11y}: ${names}`}
-          onClick={() => setOpen(!open)}
-          className={`h-auto justify-start font-normal whitespace-normal ${className}`}
-          style={style}
-        >
-          {body}
-        </Button>
-      ) : (
-        <div className={className} style={style}>
-          {body}
-        </div>
-      )}
+      <Button
+        variant="ghost"
+        {...action}
+        className={`h-auto justify-start font-normal whitespace-normal ${className}`}
+        style={style}
+      >
+        {body}
+      </Button>
     </li>
   )
 }
