@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, notFound } from "@tanstack/react-router"
 
-import { EnrollmentBoard, useBoardBusy } from "@/components/enrollment-board"
+import { EnrollmentBoard } from "@/components/enrollment-board"
+import { useBoardBusy } from "@/components/use-board-command"
 import { examQuery } from "@/server/exams"
 
 import { loadExam } from "./-load-exam"

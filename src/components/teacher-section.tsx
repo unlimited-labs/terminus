@@ -1,7 +1,7 @@
 import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { useLeaveExam } from "@/components/exam-settings"
+import { useLeaveExam } from "@/components/use-leave-exam"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

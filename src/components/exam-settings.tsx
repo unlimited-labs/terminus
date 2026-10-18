@@ -1,5 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query"
-import { Link, useNavigate, useRouter } from "@tanstack/react-router"
+import { Link, useRouter } from "@tanstack/react-router"
 import { toast } from "sonner"
 
 import { DuplicateButton, ExportButton } from "@/components/exam-actions"
@@ -7,12 +6,13 @@ import { ExamForm } from "@/components/exam-form"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
+import { useLeaveExam } from "@/components/use-leave-exam"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { examCounts } from "@/domain/schedule"
 import { warsawDay, warsawTime } from "@/domain/time"
 import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { deleteExam, examQuery, examsQuery, updateExam } from "@/server/exams"
+import { deleteExam, examsQuery, updateExam } from "@/server/exams"
 
 function ExamLink({ examId }: { examId: string }) {
   const path = `/z/${examId}`
@@ -60,16 +60,6 @@ export function ExamHeader({ exam }: { exam: ExamDetail }) {
       </div>
     </header>
   )
-}
-
-/** Najpierw nawigacja, potem usunięcie z cache: odwrotnie zamontowana strona pobrałaby je od nowa i mignęło 404. */
-export function useLeaveExam(examId: string) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  return () =>
-    void navigate({ to: "/" }).then(() =>
-      queryClient.removeQueries({ queryKey: examQuery(examId).queryKey }),
-    )
 }
 
 export function ExamActions({ exam }: { exam: ExamDetail }) {
