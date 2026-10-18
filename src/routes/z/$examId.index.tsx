@@ -2,7 +2,6 @@ import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { toast } from "sonner"
 
 import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
@@ -13,7 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
 import { formatDayTime } from "@/domain/time"
-import { authClient, authFailure } from "@/lib/auth-client"
+import { signOutWithToast } from "@/lib/auth-client"
 import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
@@ -97,11 +96,7 @@ function StudentBar({
 }) {
   const queryClient = useQueryClient()
   const logout = async () => {
-    const failure = await authFailure(authClient.signOut())
-    if (failure) {
-      toast.error(failure)
-      return
-    }
+    if (!(await signOutWithToast())) return
     onLoggedOut()
     await queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey })
   }
