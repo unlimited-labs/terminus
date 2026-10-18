@@ -1,4 +1,10 @@
-import { applyCommand, changedPeople, isGraded, type BoardCommand } from "../domain/board.ts"
+import {
+  applyCommand,
+  changedPeople,
+  isGraded,
+  sameGrade,
+  type BoardCommand,
+} from "../domain/board.ts"
 import { cleanAnswers, type ExamField } from "../domain/fields.ts"
 import type { Result } from "../messages.pl.ts"
 
@@ -27,7 +33,7 @@ async function savePerson(tx: Tx, examId: string, userId: string, prev: Person, 
     })
   }
   const { slotId, answers } = next
-  const gradeChanged = prev.grade !== next.grade || prev.gradeComment !== next.gradeComment
+  const gradeChanged = !sameGrade(prev, next)
   const grade = gradeChanged ? gradeData(userId, next) : {}
   if (slotId === null) {
     if (prev.slotId !== null) await tx.enrollment.delete({ where: key })

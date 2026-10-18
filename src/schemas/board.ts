@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 import { GRADES } from "../domain/board.ts"
+import { GRADE_COMMENT_MAX } from "../domain/limits.ts"
 import { tooLong } from "../messages.pl.ts"
 import { answersSchema, examIdSchema } from "./exam.ts"
 import { personName, studentNumber } from "./roster.ts"
@@ -8,7 +9,7 @@ import { personName, studentNumber } from "./roster.ts"
 // Bez trim: pusty komentarz zamienia na null domena (setGrades), w kliencie i na serwerze tak samo.
 const gradeEntry = z.object({
   grade: z.enum(GRADES).nullable(),
-  comment: z.string().max(500, tooLong(500)).nullable(),
+  comment: z.string().max(GRADE_COMMENT_MAX, tooLong(GRADE_COMMENT_MAX)).nullable(),
 })
 const gradesSchema = z.record(studentNumber, gradeEntry)
 

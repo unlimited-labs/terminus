@@ -71,6 +71,9 @@ const gradeOf = (p: BoardPerson): GradeEntry => ({
 /** Ma ocenę albo sam komentarz: jest co stracić przy usunięciu zapisu. */
 export const isGraded = (p: BoardPerson) => p.grade != null || p.gradeComment != null
 const withGrade = (g: GradeEntry) => ({ grade: g.grade, gradeComment: g.comment })
+type Graded = Pick<BoardPerson, "grade" | "gradeComment">
+export const sameGrade = (a: Graded, b: Graded) =>
+  (a.grade ?? null) === (b.grade ?? null) && (a.gradeComment ?? null) === (b.gradeComment ?? null)
 const NO_GRADE = withGrade({ grade: null, comment: null })
 
 function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step<P> {
@@ -210,13 +213,10 @@ function setGrades<P extends BoardPerson>(s: BoardState<P>, c: Command<"setGrade
   const next = new Map(
     Object.entries(c.grades).map(([n, g]) => [n, { ...g, comment: g.comment?.trim() || null }]),
   )
-  const people = [...next.keys()].map((n) => findPerson(s, n))
-  if (people.some((p) => !p)) return "PERSON_NOT_FOUND"
-  if (people.some((p) => p!.slotId === null)) return "NOT_ENROLLED"
-  const changed = people.some((p) => {
-    const [before, after] = [gradeOf(p!), next.get(p!.studentNumber)!]
-    return before.grade !== after.grade || before.comment !== after.comment
-  })
+  const people = [...next.keys()].flatMap((n) => findPerson(s, n) ?? [])
+  if (people.length !== next.size) return "PERSON_NOT_FOUND"
+  if (people.some((p) => p.slotId === null)) return "NOT_ENROLLED"
+  const changed = people.some((p) => !sameGrade(p, withGrade(next.get(p.studentNumber)!)))
   if (!changed) return "NO_CHANGE"
   return {
     people: s.people.map((q) => {
@@ -225,7 +225,7 @@ function setGrades<P extends BoardPerson>(s: BoardState<P>, c: Command<"setGrade
     }),
     inverse: {
       kind: "setGrades",
-      grades: Object.fromEntries(people.map((p) => [p!.studentNumber, gradeOf(p!)])),
+      grades: Object.fromEntries(people.map((p) => [p.studentNumber, gradeOf(p)])),
     },
   }
 }
@@ -287,8 +287,7 @@ export function changedPeople<P extends BoardPerson>(
         o.firstName !== p.firstName ||
         o.lastName !== p.lastName ||
         o.answers !== p.answers ||
-        o.grade !== p.grade ||
-        o.gradeComment !== p.gradeComment)
+        !sameGrade(o, p))
     return changed ? [[o, p]] : []
   })
 }

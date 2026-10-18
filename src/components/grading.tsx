@@ -12,7 +12,15 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { GRADES, isGraded, type BoardCommand, type Grade } from "@/domain/board"
+import {
+  applyCommand,
+  changedPeople,
+  GRADES,
+  isGraded,
+  type BoardCommand,
+  type Grade,
+} from "@/domain/board"
+import { GRADE_COMMENT_MAX } from "@/domain/limits"
 import { fullName } from "@/domain/schedule"
 import { formatDayTime } from "@/domain/time"
 import { GRADE, GRADING } from "@/messages.pl"
@@ -44,12 +52,13 @@ export function GradeChip({
   team: Person[]
   onCommand: (command: BoardCommand) => boolean
 }) {
-  const set = (grade: Grade | null, comment = person.gradeComment) =>
-    onCommand({ kind: "setGrades", grades: { [person.studentNumber]: { grade, comment } } })
   const [comment, setComment] = useState("")
+  // Szkic komentarza idzie też z oceną: klik oceny nie zależy od kolejności blur/klik.
+  const set = (grade: Grade | null) =>
+    onCommand({ kind: "setGrades", grades: { [person.studentNumber]: { grade, comment } } })
   // Zapis przy wyjściu z pola i przy zamknięciu okienka (Escape nie zawsze wywołuje blur).
   const saveComment = () => {
-    if (comment.trim() !== (person.gradeComment ?? "")) set(person.grade, comment)
+    if (comment.trim() !== (person.gradeComment ?? "")) set(person.grade)
   }
   const name = fullName(person)
   return (
@@ -94,7 +103,7 @@ export function GradeChip({
             placeholder={GRADING.comment}
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            maxLength={500}
+            maxLength={GRADE_COMMENT_MAX}
             onBlur={saveComment}
             className="min-h-14"
           />
@@ -135,16 +144,15 @@ export function GradedCount({ people }: { people: Person[] }) {
  * Usunięcie zapisu osoby z oceną albo komentarzem czeka na potwierdzenie (tylko w kliencie).
  * `guard` zwraca `false` i otwiera okno; po potwierdzeniu polecenie idzie dalej.
  */
-export function useUnenrollGuard(people: Person[], run: (command: BoardCommand) => boolean) {
+export function useUnenrollGuard(exam: ExamDetail, run: (command: BoardCommand) => boolean) {
   const [pending, setPending] = useState<{ who: Person[]; command: BoardCommand } | null>(null)
-  const losing = (command: BoardCommand) => {
-    if (command.kind === "move" && command.toSlotId === null)
-      return people.filter((p) => p.studentNumber === command.studentNumber && p.slotId !== null)
-    if (command.kind === "unenrollTeam") return people.filter((p) => p.slotId === command.slotId)
-    return []
-  }
   const guarded = (command: BoardCommand) => {
-    const who = losing(command).filter(isGraded)
+    const applied = applyCommand(exam, command)
+    const who = applied.ok
+      ? changedPeople(exam, applied.state).flatMap(([prev, next]) =>
+          prev.slotId !== null && next.slotId === null && isGraded(prev) ? [prev] : [],
+        )
+      : []
     if (who.length === 0) return run(command)
     setPending({ who, command })
     return false

@@ -111,7 +111,7 @@ function useBoardCommand(exam: ExamDetail) {
 
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
-  const { run, dialog } = useUnenrollGuard(exam.people, useBoardCommand(exam))
+  const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
   const multi = hasManyRosters(exam.rosters)
   const rosterName = rosterNames(exam.rosters)
   const q = search.trim().toLowerCase()
