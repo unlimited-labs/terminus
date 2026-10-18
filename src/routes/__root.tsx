@@ -16,8 +16,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Terminus — zapisy na zaliczenia" },
-      { property: "og:title", content: "Terminus — zapisy na zaliczenia" },
+      { title: "Terminus" },
+      { property: "og:title", content: "Terminus" },
       { property: "og:description", content: "Zapisy studentów na terminy zaliczeń." },
       { property: "og:type", content: "website" },
       { property: "og:image", content: `${origin()}/og.jpg` },
