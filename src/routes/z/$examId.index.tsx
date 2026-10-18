@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
 import { StudentGate } from "@/components/student-gate"
+import { StickyAction, StudentPage } from "@/components/student-page"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -22,7 +23,7 @@ import { loadSchedule, scheduleHead } from "./-load-schedule"
 export const Route = createFileRoute("/z/$examId/")({
   loader: loadSchedule,
   head: scheduleHead,
-  component: StudentPage,
+  component: SchedulePage,
 })
 
 function EntryNotice({
@@ -114,7 +115,7 @@ function StudentBar({
   )
 }
 
-function StudentPage() {
+function SchedulePage() {
   const { examId } = Route.useParams()
   const { data: view } = useSuspenseQuery(scheduleQuery(examId))
   // Sesja wygasła, gdy strona była już otwarta, a serwer znów żąda logowania.
@@ -167,17 +168,22 @@ function OpenSchedule({
   const title = mine ? "Twój slot" : mode.action
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
-      {studentIndex && (
-        <StudentBar examId={examId} index={studentIndex} onLoggedOut={onLoggedOut} />
-      )}
-      <header className="grid gap-1">
-        <h1 className="text-2xl leading-tight font-extrabold">{schedule.name}</h1>
-        {schedule.description && (
-          <p className="whitespace-pre-line text-muted-foreground">{schedule.description}</p>
-        )}
-        <p className="text-muted-foreground">Prowadzący: {schedule.teacherNames}</p>
-      </header>
+    <StudentPage
+      title={schedule.name}
+      top={
+        studentIndex && (
+          <StudentBar examId={examId} index={studentIndex} onLoggedOut={onLoggedOut} />
+        )
+      }
+      header={
+        <>
+          {schedule.description && (
+            <p className="whitespace-pre-line text-muted-foreground">{schedule.description}</p>
+          )}
+          <p className="text-muted-foreground">Prowadzący: {schedule.teacherNames}</p>
+        </>
+      }
+    >
       {!mine && <EntryNotice opensAt={schedule.opensAt} open={mode.open} anyFree={mode.anyFree} />}
       <ScheduleBoard
         key={showCount}
@@ -194,13 +200,7 @@ function OpenSchedule({
             : undefined
         }
       />
-      {mode.open && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
-          <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-            {title}
-          </Button>
-        </div>
-      )}
+      {mode.open && <StickyAction onClick={() => setOpen(true)}>{title}</StickyAction>}
       <EnrollSheet
         examId={examId}
         place={schedule.description}
@@ -221,6 +221,6 @@ function OpenSchedule({
           setShowCount(showCount + 1)
         }}
       />
-    </div>
+    </StudentPage>
   )
 }

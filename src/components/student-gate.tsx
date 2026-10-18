@@ -5,6 +5,7 @@ import { z } from "zod"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
 import { PrivacyNotice } from "@/components/privacy-notice"
+import { StickyAction, StudentPage } from "@/components/student-page"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { STUDENT_LOGIN as T, UNEXPECTED_ERROR } from "@/messages.pl"
@@ -100,10 +101,7 @@ export function StudentGate({
 }) {
   const [open, setOpen] = useState(notice !== undefined)
   return (
-    <div className="mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]">
-      <header>
-        <h1 className="text-2xl leading-tight font-extrabold">{name}</h1>
-      </header>
+    <StudentPage title={name}>
       <Notice tone={unavailable ? "error" : "info"} role="status">
         {unavailable ? T.unavailable : T.prompt}
       </Notice>
@@ -112,13 +110,7 @@ export function StudentGate({
           <div key={i} className="h-12 rounded-lg border bg-card" />
         ))}
       </div>
-      {!unavailable && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-4 backdrop-blur">
-          <Button size="lg" className="mx-auto flex w-full max-w-xl" onClick={() => setOpen(true)}>
-            {T.open}
-          </Button>
-        </div>
-      )}
+      {!unavailable && <StickyAction onClick={() => setOpen(true)}>{T.open}</StickyAction>}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto">
           <DialogTitle>{T.open}</DialogTitle>
@@ -130,6 +122,6 @@ export function StudentGate({
           <LoginForm examId={examId} />
         </DialogContent>
       </Dialog>
-    </div>
+    </StudentPage>
   )
 }

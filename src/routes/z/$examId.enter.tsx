@@ -4,6 +4,7 @@ import { useState } from "react"
 import { z } from "zod"
 
 import { StudentGate } from "@/components/student-gate"
+import { StudentPage } from "@/components/student-page"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { toastUnexpected } from "@/components/use-result-mutation"
@@ -45,8 +46,7 @@ function EnterPage() {
     return <StudentGate examId={examId} name={title} unavailable={false} notice={T.linkExpired} />
   }
   return (
-    <div className="mx-auto grid max-w-md gap-5 px-4 pt-10 pb-28 text-[17px]">
-      <h1 className="text-2xl leading-tight font-extrabold">{title}</h1>
+    <StudentPage title={title} narrow>
       <Card>
         <CardContent className="grid gap-4 pt-4">
           <h2 className="text-lg font-bold">{T.enterTitle}</h2>
@@ -56,6 +56,6 @@ function EnterPage() {
           </Button>
         </CardContent>
       </Card>
-    </div>
+    </StudentPage>
   )
 }
