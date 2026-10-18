@@ -22,7 +22,7 @@ import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roste
 import { toastUnexpected, useExamMutation } from "@/components/use-result-mutation"
 import { suggestRosterName } from "@/domain/csv"
 import { formatDayTime } from "@/domain/time"
-import { errorMessage, GRADE, GRADING, INVALID_ROW, UNEXPECTED_ERROR } from "@/messages.pl"
+import { errorMessage, GRADE, GRADING, INVALID_ROW, firstIssue } from "@/messages.pl"
 import { addEntrySchema, entryEmail, rosterImportSchema } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
 import {
@@ -177,7 +177,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
   const previewChecked = (data: ImportInput) => {
     const parsed = rosterImportSchema.safeParse(data)
     if (parsed.success) preview.mutate(data)
-    else toast.error(parsed.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+    else toast.error(firstIssue(parsed.error))
   }
   const apply = useExamMutation(applyRosterImport, exam.id, () => {
     setInput(null)

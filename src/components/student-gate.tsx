@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { STUDENT_LOGIN as T, UNEXPECTED_ERROR } from "@/messages.pl"
+import { STUDENT_LOGIN as T, firstIssue, UNEXPECTED_ERROR } from "@/messages.pl"
 import { studentNumber } from "@/schemas/roster"
 import { requestLink } from "@/server/login-link"
 
@@ -40,7 +40,7 @@ function LoginForm({ examId }: { examId: string }) {
   const submit = () => {
     const parsed = studentNumber.safeParse(index)
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+      setError(firstIssue(parsed.error))
       return
     }
     setError(null)

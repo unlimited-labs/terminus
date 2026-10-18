@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { UNEXPECTED_ERROR } from "@/messages.pl"
+import { firstIssue } from "@/messages.pl"
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
 
@@ -308,7 +308,7 @@ export function schemaSubmit<In, Out>(
     onSubmit: async ({ value, formApi }: { value: In; formApi: { reset: () => void } }) => {
       const parsed = schema.safeParse(prepare ? prepare(value) : value)
       if (!parsed.success) {
-        toast.error(parsed.error.issues[0]?.message ?? UNEXPECTED_ERROR)
+        toast.error(firstIssue(parsed.error))
         return
       }
       const result = await submit(parsed.data)
