@@ -1,13 +1,13 @@
 import { useMutation } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
+import { z } from "zod"
 
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
 import { PrivacyNotice } from "@/components/privacy-notice"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { STUDENT_LOGIN as T, firstIssue, UNEXPECTED_ERROR } from "@/messages.pl"
+import { STUDENT_LOGIN as T, UNEXPECTED_ERROR } from "@/messages.pl"
 import { studentNumber } from "@/schemas/roster"
 import { requestLink } from "@/server/login-link"
 
@@ -25,9 +25,7 @@ function useCountdown(seconds: number) {
 }
 
 function LoginForm({ examId }: { examId: string }) {
-  const [index, setIndex] = useState("")
   const [sent, setSent] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [wait, startWait] = useCountdown(RESEND_SECONDS)
   const send = useMutation({
     mutationFn: (number: string) => requestLink({ data: { examId, studentNumber: number } }),
@@ -35,25 +33,24 @@ function LoginForm({ examId }: { examId: string }) {
       setSent(true)
       startWait()
     },
-    onError: () => setError(UNEXPECTED_ERROR),
+    onError: (error) => console.error(error),
   })
-  const submit = () => {
-    const parsed = studentNumber.safeParse(index)
-    if (!parsed.success) {
-      setError(firstIssue(parsed.error))
-      return
-    }
-    setError(null)
-    send.mutate(parsed.data)
-  }
+  const form = useAppForm({
+    defaultValues: { studentNumber: "" },
+    ...schemaSubmit(z.object({ studentNumber }), (data) => send.mutateAsync(data.studentNumber)),
+  })
 
   if (sent) {
     return (
       <div className="grid gap-3" role="status">
         <h2 className="text-lg font-bold">{T.sentTitle}</h2>
-        <p>{T.sent(index.trim())}</p>
+        <p>{T.sent(send.variables!)}</p>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" disabled={wait > 0 || send.isPending} onClick={submit}>
+          <Button
+            variant="outline"
+            disabled={wait > 0 || send.isPending}
+            onClick={() => send.mutate(send.variables!)}
+          >
             {wait > 0 ? T.resendIn(wait) : T.resend}
           </Button>
           <Button variant="ghost" onClick={() => setSent(false)}>
@@ -67,32 +64,21 @@ function LoginForm({ examId }: { examId: string }) {
     <>
       <p className="text-sm text-muted-foreground">{T.lead}</p>
       <PrivacyNotice emailLogin />
-      <form
-        className="grid gap-2"
-        onSubmit={(e) => {
-          e.preventDefault()
-          submit()
-        }}
-      >
-        <Label htmlFor="login-index">{T.indexLabel}</Label>
-        <Input
-          id="login-index"
-          inputMode="numeric"
-          autoComplete="off"
-          value={index}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? "login-index-error" : undefined}
-          onChange={(e) => setIndex(e.target.value)}
-        />
-        {error && (
-          <p id="login-index-error" className="text-sm text-destructive">
-            {error}
-          </p>
-        )}
-        <Button type="submit" size="lg" disabled={send.isPending || index.trim() === ""}>
-          {T.send}
-        </Button>
-      </form>
+      <form.AppForm>
+        <form.Form className="grid gap-2">
+          <form.AppField name="studentNumber">
+            {(f) => <f.TextField label={T.indexLabel} inputMode="numeric" autoComplete="off" />}
+          </form.AppField>
+          {send.isError && <p className="text-sm text-destructive">{UNEXPECTED_ERROR}</p>}
+          <form.Subscribe selector={(s) => s.values.studentNumber.trim() === ""}>
+            {(empty) => (
+              <form.SubmitButton size="lg" disabled={empty || send.isPending}>
+                {T.send}
+              </form.SubmitButton>
+            )}
+          </form.Subscribe>
+        </form.Form>
+      </form.AppForm>
     </>
   )
 }
