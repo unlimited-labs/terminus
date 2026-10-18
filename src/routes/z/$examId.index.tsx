@@ -113,8 +113,10 @@ function StudentBar({
 function SchedulePage() {
   const { examId } = Route.useParams()
   const { data: view } = useSuspenseQuery(scheduleQuery(examId))
-  // Sesja wygasła, gdy strona była już otwarta, a serwer znów żąda logowania.
+  // Sesja wygasła, gdy strona była już otwarta, a serwer znów żąda logowania — chyba że student
+  // sam się wylogował. Ponowne logowanie idzie przez /enter, więc flaga żyje do opuszczenia strony.
   const [hadAccess, setHadAccess] = useState(false)
+  const [loggedOut, setLoggedOut] = useState(false)
   if (view?.gate === "open" && !hadAccess) setHadAccess(true)
   if (!view) {
     return (
@@ -129,7 +131,7 @@ function SchedulePage() {
         examId={examId}
         name={view.name}
         unavailable={view.gate === "unavailable"}
-        notice={hadAccess ? STUDENT_LOGIN.sessionExpired : undefined}
+        notice={hadAccess && !loggedOut ? STUDENT_LOGIN.sessionExpired : undefined}
       />
     )
   }
@@ -138,7 +140,7 @@ function SchedulePage() {
       examId={examId}
       schedule={view.schedule}
       studentIndex={view.studentIndex}
-      onLoggedOut={() => setHadAccess(false)}
+      onLoggedOut={() => setLoggedOut(true)}
     />
   )
 }

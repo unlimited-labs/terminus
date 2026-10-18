@@ -16,7 +16,9 @@ async function newLink(address: string, before: number) {
   return lastMailLink(address)!
 }
 
-test("brama bez sesji, link w mailu, „Wejdź”, ten sam link drugi raz wygasa", async ({ page }) => {
+test("brama bez sesji, link w mailu, „Wejdź”, wylogowanie, ten sam link drugi raz wygasa", async ({
+  page,
+}) => {
   await page.goto(`/z/${exams().emailLogin}`)
   await expect(page.getByRole("heading", { name: "Logowanie mailem E2E" })).toBeVisible()
   await expect(page.getByText("Zaloguj się, żeby zobaczyć harmonogram.")).toBeVisible()
@@ -34,6 +36,11 @@ test("brama bez sesji, link w mailu, „Wejdź”, ten sam link drugi raz wygasa
   await page.getByRole("button", { name: "Wejdź" }).click()
   await expect(page.getByRole("button", { name: "Zapisz się" })).toBeVisible()
   await expect(page.getByText("710001", { exact: true })).toBeVisible()
+
+  await page.getByRole("button", { name: "Wyloguj" }).click()
+  await expect(page.getByText("Zaloguj się, żeby zobaczyć harmonogram.")).toBeVisible()
+  await expect(page.getByRole("dialog")).toHaveCount(0)
+  await expect(page.getByText("Sesja wygasła.")).toHaveCount(0)
 
   await page.goto(link)
   await page.getByRole("button", { name: "Wejdź" }).click()
