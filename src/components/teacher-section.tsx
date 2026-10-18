@@ -71,9 +71,9 @@ function AddTeacherForm({ examId }: { examId: string }) {
         <form.AppField name="email">
           {(f) => <f.TextField label="E-mail prowadzącego" type="email" autoComplete="off" />}
         </form.AppField>
-        <div className="sm:self-end">
-          <form.SubmitButton>Dodaj prowadzącego</form.SubmitButton>
-        </div>
+        <form.SubmitButton className="sm:self-end justify-self-start">
+          Dodaj prowadzącego
+        </form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )

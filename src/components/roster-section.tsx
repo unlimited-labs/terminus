@@ -158,9 +158,7 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
         <form.AppField name="rosterId">
           {(f) => <f.RosterField rosters={exam.rosters} />}
         </form.AppField>
-        <div className="self-end">
-          <form.SubmitButton>Dodaj osobę</form.SubmitButton>
-        </div>
+        <form.SubmitButton className="self-end justify-self-start">Dodaj osobę</form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )

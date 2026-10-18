@@ -72,9 +72,9 @@ function CreateAccountForm() {
           <form.AppField name="password">
             {(f) => <f.TextField label="Hasło" type="text" autoComplete="off" />}
           </form.AppField>
-          <div className="self-end">
-            <form.SubmitButton>Utwórz konto</form.SubmitButton>
-          </div>
+          <form.SubmitButton className="self-end justify-self-start">
+            Utwórz konto
+          </form.SubmitButton>
         </form.Form>
       </form.AppForm>
     </SectionCard>
@@ -147,9 +147,7 @@ function EditAccountForm({ account, onDone }: { account: Account; onDone: () => 
         <form.AppField name="email">
           {(f) => <f.TextField label="E-mail" type="email" />}
         </form.AppField>
-        <div className="self-end">
-          <form.SubmitButton>Zapisz</form.SubmitButton>
-        </div>
+        <form.SubmitButton className="self-end justify-self-start">Zapisz</form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )
@@ -170,9 +168,7 @@ function PasswordForm({ userId, onDone }: { userId: string; onDone: () => void }
         <form.AppField name="password">
           {(f) => <f.TextField label="Nowe hasło" type="text" autoComplete="off" />}
         </form.AppField>
-        <div className="self-end">
-          <form.SubmitButton>Ustaw hasło</form.SubmitButton>
-        </div>
+        <form.SubmitButton className="self-end justify-self-start">Ustaw hasło</form.SubmitButton>
       </form.Form>
     </form.AppForm>
   )

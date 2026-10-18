@@ -260,12 +260,22 @@ function Form({ className, children }: { className?: string; children: React.Rea
   )
 }
 
-function SubmitButton({ children, disabled }: { children: React.ReactNode; disabled?: boolean }) {
+function SubmitButton({
+  children,
+  disabled,
+  className,
+  size,
+}: {
+  children: React.ReactNode
+  disabled?: boolean
+  className?: string
+  size?: React.ComponentProps<typeof Button>["size"]
+}) {
   const form = useFormContext()
   return (
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting || disabled}>
+        <Button type="submit" disabled={isSubmitting || disabled} className={className} size={size}>
           {children}
         </Button>
       )}
