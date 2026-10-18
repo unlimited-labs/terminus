@@ -8,6 +8,7 @@ import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
 import { useBoardCommand } from "@/components/use-board-command"
+import { PageTitle } from "@/components/page-title"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { dropCommand, parseDragId } from "@/domain/board"
 import { examCounts, fullName } from "@/domain/schedule"
@@ -38,7 +39,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>
       <div className="grid gap-4">
         <header className="grid gap-2">
-          <h1 className="text-2xl font-extrabold">{exam.name} — tablica zapisów</h1>
+          <PageTitle>{exam.name} — tablica zapisów</PageTitle>
           <p className="tabular-nums text-muted-foreground">
             zapisani {enrolled} / {exam.people.length} · wolne sloty {freeSlots} · miejsca{" "}
             {exam.slots.length * exam.maxTeamSize} · <GradedCount people={exam.people} />

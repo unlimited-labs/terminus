@@ -8,6 +8,7 @@ import { examFormValues } from "@/components/exam-form-values"
 import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { useResultMutation } from "@/components/use-result-mutation"
+import { PageTitle } from "@/components/page-title"
 import type { ExamPhase } from "@/domain/schedule"
 import { formatDateRange, formatWarsaw } from "@/domain/time"
 import { PHASE_LABEL, phaseStatus } from "@/messages.pl"
@@ -35,7 +36,7 @@ function ExamList() {
   return (
     <div className="grid max-w-3xl gap-8">
       <div className="flex items-end gap-4">
-        <h1 className="text-3xl font-extrabold tracking-tight">Moje zaliczenia</h1>
+        <PageTitle>Moje zaliczenia</PageTitle>
         {!creating && (
           <Button className="ml-auto" onClick={() => setCreating(true)}>
             Nowe zaliczenie

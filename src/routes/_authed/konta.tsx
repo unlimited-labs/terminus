@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { useResultMutation } from "@/components/use-result-mutation"
+import { PageTitle } from "@/components/page-title"
 import { UNEXPECTED_ERROR, type Result } from "@/messages.pl"
 import { createAccountSchema, setPasswordSchema, updateAccountSchema } from "@/schemas/account"
 import {
@@ -45,7 +46,7 @@ function Accounts() {
   const { user } = Route.useRouteContext()
   return (
     <div className="grid gap-6">
-      <h1 className="text-2xl font-extrabold">Konta prowadzących</h1>
+      <PageTitle>Konta prowadzących</PageTitle>
       <CreateAccountForm />
       <ul className="grid gap-3">
         {accounts.map((a) => (
