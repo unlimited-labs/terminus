@@ -168,8 +168,8 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
     <div className="grid gap-3">
       <div className="grid gap-1.5">
         <Label htmlFor="roster-csv">
-          Import listy z pliku CSV (eksport z systemu uczelni) — wybierz plik albo przeciągnij go
-          na pole
+          Import listy z pliku CSV (eksport z systemu uczelni) — wybierz plik albo przeciągnij go na
+          pole
         </Label>
         <Input
           id="roster-csv"
