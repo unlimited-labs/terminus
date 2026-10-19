@@ -34,6 +34,8 @@ export function useRosterImport(examId: string) {
   })
 
   const load = async (file: File) => {
+    // accept= nie obowiązuje przy upuszczaniu ani przy „Wszystkie pliki” w oknie wyboru
+    if (!file.name.toLowerCase().endsWith(".csv")) return void toast.error("Wybierz plik CSV.")
     const next = { examId, rosterName: suggestRosterName(file.name), csv: await file.text() }
     setInput(next)
     previewChecked(next)

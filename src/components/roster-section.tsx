@@ -168,11 +168,15 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
   return (
     <div className="grid gap-3">
       <div className="grid gap-1.5">
-        <Label htmlFor="roster-csv">Import listy z pliku CSV (eksport z systemu uczelni)</Label>
+        <Label htmlFor="roster-csv">
+          Import listy z pliku CSV (eksport z systemu uczelni) — wybierz plik albo przeciągnij go
+          na pole
+        </Label>
         <Input
           id="roster-csv"
           type="file"
           accept=".csv,text/csv"
+          className="h-20 border-2 border-dashed"
           onChange={(e) => {
             const file = e.target.files?.[0]
             if (file) void importer.load(file)
