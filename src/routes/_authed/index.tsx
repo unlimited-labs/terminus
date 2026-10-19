@@ -102,6 +102,9 @@ function ExamRow({ exam }: { exam: Exam }) {
         <div className="min-w-0">
           <p className="truncate font-bold">{exam.name}</p>
           <p className="truncate text-sm text-muted-foreground">{details}</p>
+          {exam.description && (
+            <p className="mt-1 line-clamp-2 text-sm whitespace-pre-line">{exam.description}</p>
+          )}
         </div>
         {exam.phase !== "draft" && (
           <div className="col-span-2 grid gap-1 sm:col-span-1">

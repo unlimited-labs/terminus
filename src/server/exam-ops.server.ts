@@ -22,6 +22,7 @@ export async function examsOf(userId: string, now = new Date()) {
       select: {
         id: true,
         name: true,
+        description: true,
         enrollmentOpensAt: true,
         teachers: { where: { id: { not: userId } }, select: { name: true } },
         _count: { select: { enrollments: true } },
@@ -44,6 +45,7 @@ export async function examsOf(userId: string, now = new Date()) {
     return {
       id: exam.id,
       name: exam.name,
+      description: exam.description,
       phase: examPhase({ entries, lastSlotEnd, opensAt }, now),
       entries,
       enrolled: exam._count.enrollments,
