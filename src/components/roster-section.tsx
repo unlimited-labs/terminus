@@ -163,8 +163,7 @@ function AddEntryForm({ exam }: { exam: ExamDetail }) {
 
 function RosterImport({ exam }: { exam: ExamDetail }) {
   const importer = useRosterImport(exam.id)
-  const { input, preview } = importer
-  const result = preview.data
+  const { input, result } = importer
   return (
     <div className="grid gap-3">
       <div className="grid gap-1.5">
@@ -211,8 +210,6 @@ function ImportPreview({
           id="roster-name"
           value={input.rosterName}
           onChange={(e) => importer.setInput({ ...input, rosterName: e.target.value })}
-          onBlur={importer.refresh}
-          onKeyDown={(e) => e.key === "Enter" && importer.refresh()}
         />
       </div>
       <p>
@@ -244,10 +241,7 @@ function ImportPreview({
         {result.notInFile.map(entryLine)}
       </PreviewList>
       <div className="flex gap-2">
-        <Button
-          disabled={importer.saveDisabled}
-          onClick={() => importer.apply(result.withdrawnEnrolled.map((e) => e.studentNumber))}
-        >
+        <Button disabled={importer.saveDisabled} onClick={importer.apply}>
           Zapisz listę
         </Button>
         <Button variant="outline" onClick={() => importer.setInput(null)}>

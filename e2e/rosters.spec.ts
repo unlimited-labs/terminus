@@ -18,8 +18,12 @@ test("import CSV z podglądem, druga lista i okno slotów dla wybranej listy", a
 
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await page.getByLabel("Nazwa listy").fill("g2")
-  await page.getByLabel("Nazwa listy").press("Enter")
+  await page.getByLabel("Nazwa listy").blur()
+  // Nazwa liczy się przy zapisie: inna lista docelowa najpierw pokazuje nowy podgląd.
+  await expect(page.getByText("Ponowny import do istniejącej listy.")).toBeVisible()
+  await page.getByRole("button", { name: "Zapisz listę" }).click()
   await expect(page.getByText("Nowa lista.")).toBeVisible()
+  await expect(page.getByLabel("Nazwa listy")).toHaveValue("g2")
   await page.getByRole("button", { name: "Zapisz listę" }).click()
   await expect(page.getByText("Listy indeksów")).toBeVisible()
 
