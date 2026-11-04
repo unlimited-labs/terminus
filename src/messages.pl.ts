@@ -48,7 +48,7 @@ export const EMAIL_LOGIN_UNCONFIGURED = "Brak konfiguracji poczty (SMTP) na serw
 
 const list = (items: string[]) => items.join(", ")
 
-/** `when`: jak pokazać chwilę slotu (godzina albo numer slotu); kolizja slotów zawsze z godzinami. */
+/** `when`: jak pokazać chwilę slotu studentowi (godzina albo numer slotu); komunikaty prowadzącego zawsze z godzinami. */
 export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): string {
   switch (e.code) {
     case "NO_INPUT":
@@ -112,7 +112,7 @@ export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): strin
     case "MISSING_COLUMNS":
       return `W pliku brakuje kolumn: ${list(e.columns)}. Plik odrzucony.`
     case "TEAM_SIZE_BELOW_EXISTING":
-      return `Są już większe zespoły, w slotach: ${list(e.slots.map(when))}.`
+      return `Są już większe zespoły, w slotach: ${list(e.slots.map(formatDayTime))}.`
     case "NAME_MISMATCH":
       return "Wpisana nazwa nie zgadza się z nazwą zaliczenia."
     case "EMAIL_TAKEN":

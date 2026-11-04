@@ -17,7 +17,7 @@ Pozycja slotu wśród slotów jego dnia w zaliczeniu (od 1, po kolei w czasie, w
 _Avoid_: Kolejka, pozycja w kolejce
 
 **Pokazywanie godzin**:
-Ustawienie zaliczenia („Pokazuj godziny zaliczenia”, domyślnie włączone). Wyłączone chowa godziny slotów przed studentami i w widokach prowadzącego poza sekcją slotów, tablicą i eksportem; dzień zostaje widoczny, a godziny nie są tajemnicą (ukrywa je tylko interfejs).
+Ustawienie zaliczenia („Pokazuj godziny zaliczenia”, domyślnie włączone). Wyłączone chowa godziny slotów w widokach studenta (prowadzący dalej widzi godziny); dzień zostaje widoczny, a godziny nie są tajemnicą (ukrywa je tylko interfejs).
 _Avoid_: Tryb bez godzin
 
 **Okno**:

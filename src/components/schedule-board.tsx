@@ -230,23 +230,26 @@ function DayTimeline(day: DayProps) {
   )
 }
 
+/** `number`: numer slotu zamiast godziny; `null` = godzina startu. */
 function SlotBody({
-  when,
-  numbered,
+  slot,
+  number,
   label,
   open,
   rosterName,
 }: {
-  when: string
-  numbered: boolean
+  slot: Slot
+  number: number | null
   label: string
   open: boolean
   rosterName?: string
 }) {
   return (
     <>
-      <span className={`shrink-0 font-extrabold tabular-nums ${numbered ? "min-w-[4.2rem]" : ""}`}>
-        {when}
+      <span
+        className={`shrink-0 font-extrabold tabular-nums ${number === null ? "" : "min-w-[4.2rem]"}`}
+      >
+        {number === null ? warsawTime(slot.startsAt) : `Slot ${number}`}
       </span>
       <span className={open ? "min-w-0" : "min-w-0 truncate"}>{label}</span>
       {rosterName && <span className="ml-auto shrink-0 text-xs opacity-75">{rosterName}</span>}
@@ -284,16 +287,9 @@ function SlotBlock({
   const className = `${at} flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
-  const when = number === null ? warsawTime(slot.startsAt) : `Slot ${number}`
   const a11yWhen = number === null ? formatSlotTime(slot) : `slot ${number}`
   const body = (
-    <SlotBody
-      when={when}
-      numbered={number !== null}
-      label={label}
-      open={open}
-      rosterName={rosterName}
-    />
+    <SlotBody slot={slot} number={number} label={label} open={open} rosterName={rosterName} />
   )
   const style = box ? (open ? { top: box.top, minHeight: box.height } : box) : undefined
   const action =

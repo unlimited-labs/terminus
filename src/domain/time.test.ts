@@ -41,6 +41,12 @@ test("numer slotu: od 1 w każdym dniu, wszystkie listy razem, wejście nieposor
   expect(slotNumber(slots, new Date("2026-10-07T07:00:00Z"))).toBe(1)
 })
 
+test("numer slotu: slot spoza listy (nieodświeżony harmonogram) nie dostaje 0 ani numeru za mały", () => {
+  const slots = [slot("2026-10-06T07:00:00Z")] // wtorek 9:00
+  expect(slotNumber(slots, new Date("2026-10-06T07:20:00Z"))).toBe(2)
+  expect(slotNumber(slots, new Date("2026-10-07T07:00:00Z"))).toBe(1)
+})
+
 test("numer slotu: granica dnia liczona w czasie polskim", () => {
   const slots = [
     slot("2026-10-06T07:00:00Z"), // wtorek 9:00

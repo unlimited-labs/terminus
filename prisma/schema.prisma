@@ -39,7 +39,7 @@ model Exam {
   assignmentMode     AssignmentMode @default(RANDOM)
   /// Student wchodzi na stronę zapisów dopiero po zalogowaniu linkiem wysłanym na adres z listy.
   requireEmailLogin  Boolean        @default(false)
-  /// Wyłączone: zamiast godziny widać numer slotu w danym dniu (poza sekcją slotów, tablicą i eksportem).
+  /// Wyłączone: student widzi numer slotu w danym dniu zamiast godziny; prowadzący dalej widzi godziny.
   showSlotTimes      Boolean        @default(true)
   createdAt          DateTime       @default(now()) @db.Timestamptz
   rosters            Roster[]

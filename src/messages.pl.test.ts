@@ -48,7 +48,7 @@ test("bez godzin: komunikaty o slocie podają numer slotu, kolizja slotów dalej
     "Indeks 111 ma już slot: poniedziałek 5 października, slot 2.",
   )
   expect(errorMessage({ code: "TEAM_SIZE_BELOW_EXISTING", slots: [startsAt] }, when)).toBe(
-    "Są już większe zespoły, w slotach: poniedziałek 5 października, slot 2.",
+    "Są już większe zespoły, w slotach: poniedziałek 5 października, 10:00.",
   )
   const endsAt = new Date("2026-10-05T08:20:00Z")
   expect(errorMessage({ code: "SLOT_OVERLAP", startsAt, endsAt }, when)).toContain("10:00–10:20")
