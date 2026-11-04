@@ -58,14 +58,17 @@ test("prowadzący wyłącza godziny: student widzi numery slotów, tablica dalej
   await expect(board).toContainText("Slot 1")
   await expect(board).not.toContainText(/\d{1,2}:\d{2}/)
 
-  await page.getByRole("button", { name: "slot 2, wolny" }).click()
+  // Filtr listy nie przenumerowuje: 8:40 z g2 dalej liczy się jako slot 1.
+  await page.getByRole("group", { name: "Lista" }).getByRole("button", { name: "g1" }).click()
+  await expect(board).not.toContainText("Slot 1")
+  await page.getByRole("button", { name: "slot 3, wolny" }).click()
   const dialog = page.getByRole("dialog")
-  await expect(dialog).toContainText(/Wybrany slot: .*, slot 2/)
+  await expect(dialog).toContainText(/Wybrany slot: .*, slot 3/)
   await dialog.getByLabel("Numer indeksu").fill("990003")
   await dialog.getByRole("button", { name: /^Zapisz się na/ }).click()
 
   await expect(dialog).toContainText("Celina Cis")
-  await expect(dialog).toContainText(/slot\s*2/)
+  await expect(dialog).toContainText(/slot\s*3/)
   await expect(dialog).not.toContainText(/\d{1,2}:\d{2}/)
 
   await openBoard(admin, exams().noTimes)

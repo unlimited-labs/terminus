@@ -46,7 +46,7 @@ test("ponowny import: skreślony z zapisem widoczny w podglądzie ze slotem, pot
   await page.goto(`/zaliczenia/${exams().withdrawn}?tab=lista`)
   await page.getByLabel(/Import listy z pliku CSV/).setInputFiles(FIXTURE)
   await expect(page.getByText("Ponowny import do istniejącej listy.")).toBeVisible()
-  await expect(page.getByText(/^400003 Zając Ewa — slot .*10:00/)).toBeVisible()
+  await expect(page.getByText(/^400003 Zając Ewa — \S+ \d+ \S+, 10:00/)).toBeVisible()
 
   await page.getByRole("button", { name: "Zapisz listę" }).click()
   await expect(page.getByText("Zaimportowano listę.")).toBeVisible()

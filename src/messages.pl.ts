@@ -6,7 +6,7 @@ import type { AssignmentMode, EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import type { ExamPhase } from "./domain/schedule.ts"
-import { formatDay, formatDayTime, formatSlotTime } from "./domain/time.ts"
+import { formatDay, formatDayTime, formatSlotTime, type SlotWhen } from "./domain/time.ts"
 
 type Failure<T> = T extends { ok: false } ? Omit<T, "ok"> : never
 
@@ -47,8 +47,6 @@ export type Result<T = object> = ({ ok: true } & T) | ({ ok: false } & AppError)
 export const EMAIL_LOGIN_UNCONFIGURED = "Brak konfiguracji poczty (SMTP) na serwerze."
 
 const list = (items: string[]) => items.join(", ")
-
-export type SlotWhen = (at: Date) => string
 
 /** `when`: jak pokazać chwilę slotu (godzina albo numer slotu); kolizja slotów zawsze z godzinami. */
 export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): string {

@@ -1,17 +1,16 @@
-import { formatDay, slotNumber, warsawTime } from "@/domain/time"
+import { formatDay, slotNumber, warsawTime, type SlotNumbering } from "@/domain/time"
 import { fullName } from "@/domain/schedule"
 import { SLOT_IS_FINAL } from "@/messages.pl"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 
-/** `numberedSlots`: wszystkie sloty zaliczenia, gdy zamiast godzin pokazuje się numer slotu. */
 export function Ticket({
   ticket,
   place,
-  numberedSlots,
+  numbering,
 }: {
   ticket: TicketData
   place: string
-  numberedSlots: { startsAt: Date }[] | null
+  numbering: SlotNumbering
 }) {
   return (
     <div className="relative overflow-hidden rounded-xl bg-linear-160 from-[#4b3fd6] to-[#6d5bff] p-5 text-white">
@@ -19,10 +18,10 @@ export function Ticket({
         {formatDay(ticket.startsAt)}
       </p>
       <p className="my-1 text-5xl leading-none font-extrabold tracking-tight tabular-nums">
-        {numberedSlots ? (
+        {numbering ? (
           <>
             <span className="text-2xl opacity-80">slot</span>{" "}
-            {slotNumber(numberedSlots, ticket.startsAt)}
+            {slotNumber(numbering, ticket.startsAt)}
           </>
         ) : (
           <>

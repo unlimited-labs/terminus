@@ -2,13 +2,8 @@ import { useMutation, useQueryClient, type QueryKey } from "@tanstack/react-quer
 import { useRef } from "react"
 import { toast } from "sonner"
 
-import {
-  errorMessage,
-  UNEXPECTED_ERROR,
-  type AppError,
-  type Result,
-  type SlotWhen,
-} from "@/messages.pl"
+import type { SlotWhen } from "@/domain/time"
+import { errorMessage, UNEXPECTED_ERROR, type AppError, type Result } from "@/messages.pl"
 import { examChangeKeys } from "@/server/exams"
 
 export const toastFailure = (failure: AppError, when?: SlotWhen) =>

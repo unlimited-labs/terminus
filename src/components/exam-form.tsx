@@ -89,7 +89,7 @@ export function ExamForm({
           {(field) => (
             <field.CheckboxField
               label="Pokazuj godziny zaliczenia"
-              hint="Wyłączone: studenci widzą numer slotu w danym dniu zamiast godziny."
+              hint="Wyłączone: zamiast godzin widać numer slotu w danym dniu (godziny zostają w sekcji slotów, na tablicy i w eksporcie)."
             />
           )}
         </form.AppField>

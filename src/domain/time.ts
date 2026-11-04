@@ -39,9 +39,20 @@ export function slotNumber(slots: { startsAt: Date }[], at: Date): number {
   return slots.filter((s) => s.startsAt <= at && warsawDay(s.startsAt) === day).length
 }
 
-/** Kiedy slot: `null` = godziny widoczne ("wtorek 6 października, 9:00"), lista slotów = "wtorek 6 października, slot 3". */
-export function formatSlotWhen(at: Date, slots: { startsAt: Date }[] | null): string {
-  return slots ? `${formatDay(at)}, slot ${slotNumber(slots, at)}` : formatDayTime(at)
+/** Numerowanie slotów: wszystkie sloty zaliczenia, gdy zamiast godzin widać numer slotu; `null` = godziny widoczne. */
+export type SlotNumbering = { startsAt: Date }[] | null
+
+export const slotNumbering = (exam: {
+  showSlotTimes: boolean
+  slots: { startsAt: Date }[]
+}): SlotNumbering => (exam.showSlotTimes ? null : exam.slots)
+
+/** Jak pokazać chwilę slotu w komunikacie (godzina albo numer slotu). */
+export type SlotWhen = (at: Date) => string
+
+/** Kiedy slot: "wtorek 6 października, 9:00" albo przy numerowaniu "wtorek 6 października, slot 3". */
+export function formatSlotWhen(at: Date, numbering: SlotNumbering): string {
+  return numbering ? `${formatDay(at)}, slot ${slotNumber(numbering, at)}` : formatDayTime(at)
 }
 
 /** "09:00–09:20" w strefie Europe/Warsaw. */
