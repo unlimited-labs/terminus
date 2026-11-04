@@ -1,6 +1,7 @@
 import { expect, test } from "vitest"
 
-import { failureNotice, ownSlotMessage } from "./messages.pl"
+import { formatSlotWhen } from "./domain/time"
+import { errorMessage, failureNotice, ownSlotMessage } from "./messages.pl"
 
 const startsAt = new Date("2026-10-05T08:00:00Z")
 
@@ -31,4 +32,24 @@ test("indeks spoza listy: błąd, podświetlone wskazane indeksy", () => {
 
 test("inny błąd: bez podświetlenia", () => {
   expect(failureNotice({ code: "NO_FREE_SLOTS" }, ["111"]).flagged).toEqual([])
+})
+
+test("bez godzin: komunikaty o slocie podają numer slotu, kolizja slotów dalej godziny", () => {
+  const slots = [{ startsAt: new Date("2026-10-05T07:40:00Z") }, { startsAt }]
+  const when = (at: Date) => formatSlotWhen(at, slots)
+  const enrolled = {
+    code: "ALREADY_ENROLLED" as const,
+    enrolled: [{ studentNumber: "111", startsAt }],
+  }
+  expect(failureNotice(enrolled, ["111"], when).text).toBe(
+    "Masz już zapis: poniedziałek 5 października, slot 2. Slot jest przydzielony na stałe.",
+  )
+  expect(failureNotice(enrolled, ["111", "222"], when).text).toContain(
+    "Indeks 111 ma już slot: poniedziałek 5 października, slot 2.",
+  )
+  expect(errorMessage({ code: "TEAM_SIZE_BELOW_EXISTING", slots: [startsAt] }, when)).toBe(
+    "Są już większe zespoły, w slotach: poniedziałek 5 października, slot 2.",
+  )
+  const endsAt = new Date("2026-10-05T08:20:00Z")
+  expect(errorMessage({ code: "SLOT_OVERLAP", startsAt, endsAt }, when)).toContain("10:00–10:20")
 })

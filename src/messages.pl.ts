@@ -48,7 +48,10 @@ export const EMAIL_LOGIN_UNCONFIGURED = "Brak konfiguracji poczty (SMTP) na serw
 
 const list = (items: string[]) => items.join(", ")
 
-export function errorMessage(e: AppError): string {
+export type SlotWhen = (at: Date) => string
+
+/** `when`: jak pokazać chwilę slotu (godzina albo numer slotu); kolizja slotów zawsze z godzinami. */
+export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): string {
   switch (e.code) {
     case "NO_INPUT":
       return "Wpisz numer indeksu."
@@ -64,7 +67,7 @@ export function errorMessage(e: AppError): string {
       return `Tego indeksu nie ma na liście zaliczenia: ${list(e.studentNumbers)}. Sprawdź numer.`
     case "ALREADY_ENROLLED":
       return e.enrolled
-        .map((x) => `Indeks ${x.studentNumber} ma już slot: ${formatDayTime(x.startsAt)}.`)
+        .map((x) => `Indeks ${x.studentNumber} ma już slot: ${when(x.startsAt)}.`)
         .join(" ")
     case "DIFFERENT_ROSTER":
       return `Indeks z innej listy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
@@ -111,7 +114,7 @@ export function errorMessage(e: AppError): string {
     case "MISSING_COLUMNS":
       return `W pliku brakuje kolumn: ${list(e.columns)}. Plik odrzucony.`
     case "TEAM_SIZE_BELOW_EXISTING":
-      return `Są już większe zespoły, w slotach: ${list(e.slots.map(formatDayTime))}.`
+      return `Są już większe zespoły, w slotach: ${list(e.slots.map(when))}.`
     case "NAME_MISMATCH":
       return "Wpisana nazwa nie zgadza się z nazwą zaliczenia."
     case "EMAIL_TAKEN":
@@ -150,27 +153,28 @@ export const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? UNE
 export const SLOT_IS_FINAL = "Slot jest przydzielony na stałe."
 
 /** `ALREADY_ENROLLED` dla jednej osoby: to nie błąd, tylko jej slot. */
-export const ownSlotMessage = (startsAt: Date) =>
-  `Masz już zapis: ${formatDayTime(startsAt)}. ${SLOT_IS_FINAL}`
+export const ownSlotMessage = (startsAt: Date, when: SlotWhen = formatDayTime) =>
+  `Masz już zapis: ${when(startsAt)}. ${SLOT_IS_FINAL}`
 
 /** Komunikat odmowy zapisu i indeksy do podświetlenia w formularzu. */
 export function failureNotice(
   failure: AppError,
   studentNumbers: string[],
+  when: SlotWhen = formatDayTime,
 ): { tone: "info" | "error"; text: string; flagged: string[] } {
   if (failure.code === "MODE_CHANGED") {
     return { tone: "info", text: errorMessage(failure), flagged: [] }
   }
   if (failure.code !== "ALREADY_ENROLLED") {
     const flagged = "studentNumbers" in failure ? failure.studentNumbers : []
-    return { tone: "error", text: errorMessage(failure), flagged }
+    return { tone: "error", text: errorMessage(failure, when), flagged }
   }
   const [own] = failure.enrolled
   if (studentNumbers.length === 1 && own)
-    return { tone: "info", text: ownSlotMessage(own.startsAt), flagged: [] }
+    return { tone: "info", text: ownSlotMessage(own.startsAt, when), flagged: [] }
   return {
     tone: "error",
-    text: `${errorMessage(failure)} Nikogo nie zapisano.`,
+    text: `${errorMessage(failure, when)} Nikogo nie zapisano.`,
     flagged: studentNumbers.length > 1 ? failure.enrolled.map((e) => e.studentNumber) : [],
   }
 }

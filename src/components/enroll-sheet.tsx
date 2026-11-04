@@ -6,7 +6,8 @@ import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { failureNotice, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
+import { formatSlotWhen } from "@/domain/time"
+import { failureNotice, UNEXPECTED_ERROR, type Result, type SlotWhen } from "@/messages.pl"
 import { enrollmentFormSchema } from "@/schemas/enrollment"
 import type { AssignmentMode } from "@/domain/draw"
 import type { Answers, ExamField } from "@/domain/fields"
@@ -16,9 +17,11 @@ import { scheduleQuery } from "@/server/schedule"
 
 export type PickedSlot = { id: string; label: string }
 
+/** `numberedSlots`: wszystkie sloty zaliczenia, gdy zamiast godzin pokazuje się numer slotu. */
 export function EnrollSheet({
   examId,
   place,
+  numberedSlots,
   title,
   submitLabel,
   assignmentMode,
@@ -35,6 +38,7 @@ export function EnrollSheet({
 }: {
   examId: string
   place: string
+  numberedSlots: { startsAt: Date }[] | null
   title: string
   submitLabel: string
   assignmentMode: AssignmentMode
@@ -56,7 +60,7 @@ export function EnrollSheet({
           <DialogTitle className="text-xl font-extrabold">{title}</DialogTitle>
           {ticket ? (
             <>
-              <Ticket ticket={ticket} place={place} />
+              <Ticket ticket={ticket} place={place} numberedSlots={numberedSlots} />
               <Button size="lg" onClick={onShowOnBoard}>
                 Pokaż na planszy
               </Button>
@@ -71,6 +75,7 @@ export function EnrollSheet({
               maxTeamSize={maxTeamSize}
               fields={fields}
               submitLabel={submitLabel}
+              slotWhen={(at) => formatSlotWhen(at, numberedSlots)}
               onEnrolled={onEnrolled}
             />
           )}
@@ -134,8 +139,8 @@ function useDraw(
 
 const PENDING_TEXT = { RANDOM: "Losowanie slotu…", MANUAL: "Zapisywanie…" }
 
-function outcomeNotice(outcome: Result | undefined, studentNumbers: string[] = []) {
-  return outcome && !outcome.ok ? failureNotice(outcome, studentNumbers) : null
+function outcomeNotice(outcome: Result | undefined, studentNumbers: string[], when: SlotWhen) {
+  return outcome && !outcome.ok ? failureNotice(outcome, studentNumbers, when) : null
 }
 
 function PendingStatus({ text }: { text: string }) {
@@ -158,6 +163,7 @@ function EnrollForm({
   maxTeamSize,
   fields,
   submitLabel,
+  slotWhen,
   onEnrolled,
 }: {
   examId: string
@@ -168,6 +174,7 @@ function EnrollForm({
   maxTeamSize: number
   fields: ExamField[]
   submitLabel: string
+  slotWhen: SlotWhen
   onEnrolled: (slotId: string, ticket: TicketData) => void
 }) {
   const team = maxTeamSize > 1
@@ -181,7 +188,7 @@ function EnrollForm({
     ...schemaSubmit(enrollmentFormSchema, draw.mutateAsync),
     onSubmitInvalid: () => draw.reset(),
   })
-  const notice = outcomeNotice(draw.data, draw.variables?.studentNumbers)
+  const notice = outcomeNotice(draw.data, draw.variables?.studentNumbers ?? [], slotWhen)
   const flagged = new Set(notice?.flagged)
   // Po odpowiedzi serwera formularz rysuje się od nowa — fokus na pierwszy wskazany indeks.
   const firstFlagged = draw.variables?.studentNumbers.findIndex((n) => flagged.has(n)) ?? -1
