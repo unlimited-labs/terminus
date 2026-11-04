@@ -33,6 +33,17 @@ export function formatDayTime(date: Date): string {
   return `${formatDay(date)}, ${formatWarsaw(date, "H:mm")}`
 }
 
+/** Numer slotu: ile slotów dnia `at` (Europe/Warsaw) zaczyna się nie później niż `at`. Zawsze z pełnej listy slotów zaliczenia. */
+export function slotNumber(slots: { startsAt: Date }[], at: Date): number {
+  const day = warsawDay(at)
+  return slots.filter((s) => s.startsAt <= at && warsawDay(s.startsAt) === day).length
+}
+
+/** Kiedy slot: `null` = godziny widoczne ("wtorek 6 października, 9:00"), lista slotów = "wtorek 6 października, slot 3". */
+export function formatSlotWhen(at: Date, slots: { startsAt: Date }[] | null): string {
+  return slots ? `${formatDay(at)}, slot ${slotNumber(slots, at)}` : formatDayTime(at)
+}
+
 /** "09:00–09:20" w strefie Europe/Warsaw. */
 export function formatSlotTime({ startsAt, endsAt }: Interval): string {
   return `${warsawTime(startsAt)}–${warsawTime(endsAt)}`
