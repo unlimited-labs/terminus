@@ -12,6 +12,14 @@ _Avoid_: Egzamin, przedmiot, termin
 Przedział czasu w konkretnym dniu w ramach zaliczenia, należący do jednej listy indeksów i zajmowany przez jeden zespół.
 _Avoid_: Termin, okienko, godzina
 
+**Numer slotu**:
+Pozycja slotu wśród slotów jego dnia w zaliczeniu (od 1, po kolei w czasie, wszystkie listy indeksów razem); pokazywany zamiast godzin, gdy zaliczenie ma wyłączone pokazywanie godzin. Nie jest przechowywany: dodanie lub usunięcie wcześniejszego slotu tego dnia przesuwa numery dalszych.
+_Avoid_: Kolejka, pozycja w kolejce
+
+**Pokazywanie godzin**:
+Ustawienie zaliczenia („Pokazuj godziny zaliczenia”, domyślnie włączone). Wyłączone chowa godziny slotów przed studentami i w widokach prowadzącego poza sekcją slotów, tablicą i eksportem; dzień zostaje widoczny, a godziny nie są tajemnicą (ukrywa je tylko interfejs).
+_Avoid_: Tryb bez godzin
+
 **Okno**:
 Ciągły przedział czasu w konkretnym dniu podany przez prowadzącego, jednorazowo dzielony na sloty równej długości; po ich utworzeniu nie istnieje jako osobny byt.
 _Avoid_: Zakres, blok
