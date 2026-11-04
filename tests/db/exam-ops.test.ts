@@ -16,7 +16,10 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
     },
   })
   await enroll(examId, ["1"])
-  await db.exam.update({ where: { id: examId }, data: { assignmentMode: "MANUAL" } })
+  await db.exam.update({
+    where: { id: examId },
+    data: { assignmentMode: "MANUAL", showSlotTimes: false },
+  })
 
   const copied = await copyExam(examId, teacherId, true)
   if (!copied.ok) throw new Error(copied.code)
@@ -30,6 +33,7 @@ test("duplikat kopiuje ustawienia i listy, bez slotów i zapisów; bez list na �
     description: "Sala 1",
     maxTeamSize: 3,
     assignmentMode: "MANUAL",
+    showSlotTimes: false,
     fields: [{ id: "t", label: "Temat", required: true }],
   })
   expect(
@@ -63,6 +67,7 @@ test("edycja po starcie: zespół nie mniejszy niż największy istniejący; res
     defaultSlotMinutes: 45,
     assignmentMode: "MANUAL" as const,
     requireEmailLogin: false,
+    showSlotTimes: true,
     fields: [],
   }
   const opens = { opensDate: "2030-01-07", opensTime: "08:30" }

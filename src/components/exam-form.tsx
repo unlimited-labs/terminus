@@ -85,6 +85,14 @@ export function ExamForm({
             )}
           </form.Subscribe>
         )}
+        <form.AppField name="showSlotTimes">
+          {(field) => (
+            <field.CheckboxField
+              label="Pokazuj godziny zaliczenia"
+              hint="Wyłączone: studenci widzą numer slotu w danym dniu zamiast godziny."
+            />
+          )}
+        </form.AppField>
         <fieldset className="grid gap-2">
           <legend className="mb-1 text-sm font-semibold">
             Start zapisów (puste = od razu po utworzeniu)

@@ -16,6 +16,7 @@ export function examFormValues(
     | "maxTeamSize"
     | "assignmentMode"
     | "requireEmailLogin"
+    | "showSlotTimes"
     | "fields"
     | "enrollmentOpensAt"
   >,
@@ -28,6 +29,7 @@ export function examFormValues(
       maxTeamSize: 1,
       assignmentMode: "RANDOM",
       requireEmailLogin: false,
+      showSlotTimes: true,
       fields: [],
       opensDate: "",
       opensTime: "",
@@ -41,6 +43,7 @@ export function examFormValues(
     maxTeamSize: exam.maxTeamSize,
     assignmentMode: exam.assignmentMode,
     requireEmailLogin: exam.requireEmailLogin,
+    showSlotTimes: exam.showSlotTimes,
     fields: exam.fields,
     opensDate: opensAt ? warsawDay(opensAt) : "",
     opensTime: opensAt ? warsawTime(opensAt) : "",

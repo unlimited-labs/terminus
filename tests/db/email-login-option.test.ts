@@ -18,6 +18,7 @@ const settings = {
   defaultSlotMinutes: 20,
   maxTeamSize: 1,
   assignmentMode: "RANDOM" as const,
+  showSlotTimes: true,
   fields: [],
   opensDate: "",
   opensTime: "",
