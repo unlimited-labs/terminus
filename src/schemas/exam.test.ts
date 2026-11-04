@@ -16,6 +16,7 @@ test("start zapisów 2026-10-06 09:00 przechodzi przez schemat zaliczenia", () =
     maxTeamSize: 1,
     assignmentMode: "MANUAL",
     requireEmailLogin: false,
+    showSlotTimes: true,
     fields: [],
     opensDate: "2026-10-06",
   }

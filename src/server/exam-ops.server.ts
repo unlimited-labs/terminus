@@ -113,6 +113,7 @@ export function copyExam(
           fields: true,
           enrollmentOpensAt: true,
           requireEmailLogin: true,
+          showSlotTimes: true,
           rosters: {
             select: {
               name: true,
@@ -134,6 +135,7 @@ export function copyExam(
           fields: parseFields(source.fields),
           enrollmentOpensAt: source.enrollmentOpensAt,
           requireEmailLogin: source.requireEmailLogin && emailLoginAvailable,
+          showSlotTimes: source.showSlotTimes,
         },
       })
       if (!copyRosters) return { ok: true, examId: copy.id }

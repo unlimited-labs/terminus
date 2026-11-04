@@ -10,6 +10,7 @@ const exam = {
   maxTeamSize: 3,
   assignmentMode: "MANUAL" as const,
   requireEmailLogin: true,
+  showSlotTimes: false,
   fields: [],
   enrollmentOpensAt: null,
 }
@@ -22,6 +23,7 @@ test("nowe zaliczenie: wartości domyślne", () => {
     maxTeamSize: 1,
     assignmentMode: "RANDOM",
     requireEmailLogin: false,
+    showSlotTimes: true,
     fields: [],
     opensDate: "",
     opensTime: "",
@@ -47,6 +49,7 @@ test("zaliczenie bez daty otwarcia: puste pola daty i godziny", () => {
     maxTeamSize: 3,
     assignmentMode: "MANUAL",
     requireEmailLogin: true,
+    showSlotTimes: false,
     fields: [],
     opensDate: "",
     opensTime: "",
