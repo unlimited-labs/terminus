@@ -260,6 +260,15 @@ function SlotBody({
 /** Położenie kafelka na osi godzin; `null` = zwykły wiersz listy (bez godzin). */
 type Box = { top: number; height: number }
 
+/** Klasy położenia i styl kafelka: na osi godzin (rozwinięty rośnie w dół) albo wiersz listy. */
+function blockLayout(box: Box | null, open: boolean) {
+  if (!box) return { at: "relative min-h-12 w-full py-2", style: undefined }
+  return {
+    at: "absolute right-0 left-14",
+    style: open ? { top: box.top, minHeight: box.height } : box,
+  }
+}
+
 function SlotBlock({
   slot,
   number,
@@ -283,7 +292,7 @@ function SlotBlock({
   const names = slot.team.map(fullName).join(", ")
   const label = KINDS[kind].text(names)
   const tone = picked ? PICKED_TONE : KINDS[kind].tone
-  const at = box ? "absolute right-0 left-14" : "relative min-h-12 w-full py-2"
+  const { at, style } = blockLayout(box, open)
   const className = `${at} flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
@@ -291,7 +300,6 @@ function SlotBlock({
   const body = (
     <SlotBody slot={slot} number={number} label={label} open={open} rosterName={rosterName} />
   )
-  const style = box ? (open ? { top: box.top, minHeight: box.height } : box) : undefined
   const action =
     kind === "free" && onPick
       ? {
