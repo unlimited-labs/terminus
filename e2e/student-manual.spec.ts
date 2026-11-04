@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { exams, login } from "./helpers.ts"
+import { exams, login, openBoard } from "./helpers.ts"
 
 test("ręczny przydział: klik w wolny slot, zapis, bilet z wybraną godziną", async ({ page }) => {
   await page.goto(`/z/${exams().manual}`)
@@ -39,4 +39,35 @@ test("prowadzący zmienia sposób przy otwartej stronie: dane zostają, strona p
   await expect(dialog.getByLabel("Numer indeksu")).toHaveValue("990002")
   await expect(dialog).toContainText("Nie wybrano slotu")
   await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeDisabled()
+})
+
+test("prowadzący wyłącza godziny: student widzi numery slotów, tablica dalej godziny", async ({
+  page,
+  browser,
+}) => {
+  const admin = await browser.newPage()
+  await login(admin)
+  await admin.goto(`/zaliczenia/${exams().noTimes}`)
+  await admin.getByRole("tab", { name: "Ustawienia" }).click()
+  await admin.getByRole("checkbox", { name: "Pokazuj godziny zaliczenia" }).uncheck()
+  await admin.getByRole("button", { name: "Zapisz", exact: true }).click()
+  await expect(admin.getByText("Zapisano zmiany.")).toBeVisible()
+
+  await page.goto(`/z/${exams().noTimes}`)
+  const board = page.getByRole("region", { name: "Harmonogram" })
+  await expect(board).toContainText("Slot 1")
+  await expect(board).not.toContainText(/\d{1,2}:\d{2}/)
+
+  await page.getByRole("button", { name: "slot 2, wolny" }).click()
+  const dialog = page.getByRole("dialog")
+  await expect(dialog).toContainText(/Wybrany slot: .*, slot 2/)
+  await dialog.getByLabel("Numer indeksu").fill("990003")
+  await dialog.getByRole("button", { name: /^Zapisz się na/ }).click()
+
+  await expect(dialog).toContainText("Celina Cis")
+  await expect(dialog).toContainText(/slot\s*2/)
+  await expect(dialog).not.toContainText(/\d{1,2}:\d{2}/)
+
+  await openBoard(admin, exams().noTimes)
+  await expect(admin.getByText("09:20–09:40")).toBeVisible()
 })

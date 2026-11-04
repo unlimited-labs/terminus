@@ -252,6 +252,7 @@ export async function seed(): Promise<E2EState> {
     slotsEdit: await createExam("Edycja slotów E2E", 1, [], [at(19, 9), at(19, 9, 20)], []),
     manual: await manualExam("Ręczny E2E", "MANUAL", [["990001", "Alicja", "Arbuz"]]),
     modeSwitch: await manualExam("Zmiana sposobu E2E", "RANDOM", [["990002", "Bogdan", "Burak"]]),
+    noTimes: await manualExam("Bez godzin E2E", "MANUAL", [["990003", "Celina", "Cis"]]),
     emailLogin: await emailLoginExam("Logowanie mailem E2E", true),
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
   }

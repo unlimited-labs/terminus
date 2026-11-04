@@ -1,17 +1,35 @@
-import { formatDay, warsawTime } from "@/domain/time"
+import { formatDay, slotNumber, warsawTime } from "@/domain/time"
 import { fullName } from "@/domain/schedule"
 import { SLOT_IS_FINAL } from "@/messages.pl"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 
-export function Ticket({ ticket, place }: { ticket: TicketData; place: string }) {
+/** `numberedSlots`: wszystkie sloty zaliczenia, gdy zamiast godzin pokazuje się numer slotu. */
+export function Ticket({
+  ticket,
+  place,
+  numberedSlots,
+}: {
+  ticket: TicketData
+  place: string
+  numberedSlots: { startsAt: Date }[] | null
+}) {
   return (
     <div className="relative overflow-hidden rounded-xl bg-linear-160 from-[#4b3fd6] to-[#6d5bff] p-5 text-white">
       <p className="font-semibold opacity-90 first-letter:uppercase">
         {formatDay(ticket.startsAt)}
       </p>
       <p className="my-1 text-5xl leading-none font-extrabold tracking-tight tabular-nums">
-        {warsawTime(ticket.startsAt)}
-        <span className="text-2xl opacity-80">–{warsawTime(ticket.endsAt)}</span>
+        {numberedSlots ? (
+          <>
+            <span className="text-2xl opacity-80">slot</span>{" "}
+            {slotNumber(numberedSlots, ticket.startsAt)}
+          </>
+        ) : (
+          <>
+            {warsawTime(ticket.startsAt)}
+            <span className="text-2xl opacity-80">–{warsawTime(ticket.endsAt)}</span>
+          </>
+        )}
       </p>
       {place && <p className="whitespace-pre-line opacity-90">{place}</p>}
       {ticket.answers.length > 0 && (

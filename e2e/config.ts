@@ -37,6 +37,7 @@ const EXAMS = [
   "slotsEdit",
   "manual",
   "modeSwitch",
+  "noTimes",
   "emailLogin",
   "emailLoginSetup",
 ] as const

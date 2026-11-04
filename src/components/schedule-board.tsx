@@ -5,7 +5,14 @@ import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 import { fullName, isFreeSlot } from "@/domain/schedule"
-import { formatDay, formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
+import {
+  formatDay,
+  formatDayShort,
+  formatSlotTime,
+  slotNumber,
+  warsawDay,
+  warsawTime,
+} from "@/domain/time"
 import type { Schedule } from "@/server/schedule"
 
 type Slot = Schedule["slots"][number]
@@ -106,6 +113,8 @@ export function ScheduleBoard({
       {day[0] && (
         <DayTimeline
           slots={day}
+          // Numer z pełnej listy slotów, nie z przefiltrowanej listą indeksów.
+          allSlots={schedule.showSlotTimes ? null : schedule.slots}
           now={schedule.now}
           mySlotId={mySlotId}
           pulse={pulse}
@@ -134,8 +143,10 @@ function Legend() {
   )
 }
 
+/** `allSlots`: bez godzin — zwykła lista z numerami slotów zamiast osi godzin. */
 function DayTimeline({
   slots,
+  allSlots,
   now,
   mySlotId,
   pulse,
@@ -144,6 +155,7 @@ function DayTimeline({
   rosterName,
 }: {
   slots: Slot[]
+  allSlots: Slot[] | null
   now: Date
   mySlotId: string | null
   pulse: boolean
@@ -151,6 +163,32 @@ function DayTimeline({
   onPick?: (slot: Slot) => void
   rosterName: Map<string, string> | null
 }) {
+  const block = (slot: Slot, place: Place | null) => (
+    <SlotBlock
+      key={slot.id}
+      slot={slot}
+      number={allSlots && slotNumber(allSlots, slot.startsAt)}
+      kind={slotKind(slot, now, slot.id === mySlotId)}
+      pulse={pulse && slot.id === mySlotId}
+      picked={slot.id === pickedSlotId}
+      onPick={onPick}
+      rosterName={rosterName?.get(slot.rosterId)}
+      place={place}
+    />
+  )
+  const heading = (
+    <h2 className="text-lg font-extrabold first-letter:uppercase">
+      {formatDay(slots[0]!.startsAt)}
+    </h2>
+  )
+  if (allSlots) {
+    return (
+      <div className="grid gap-2">
+        {heading}
+        <ul className="grid gap-1.5">{slots.map((slot) => block(slot, null))}</ul>
+      </div>
+    )
+  }
   const start = Math.floor(slots[0]!.startsAt.getTime() / HOUR) * HOUR
   const end = Math.ceil(slots.at(-1)!.endsAt.getTime() / HOUR) * HOUR
   const shortest = Math.min(...slots.map((s) => s.endsAt.getTime() - s.startsAt.getTime())) / 60_000
@@ -160,9 +198,7 @@ function DayTimeline({
 
   return (
     <div className="grid gap-2">
-      <h2 className="text-lg font-extrabold first-letter:uppercase">
-        {formatDay(slots[0]!.startsAt)}
-      </h2>
+      {heading}
       <div className="relative" style={{ height: y(end) }}>
         {hours.map((h) => (
           <div key={h} aria-hidden className="absolute inset-x-0 flex gap-2" style={{ top: y(h) }}>
@@ -173,19 +209,12 @@ function DayTimeline({
           </div>
         ))}
         <ul>
-          {slots.map((slot) => (
-            <SlotBlock
-              key={slot.id}
-              slot={slot}
-              kind={slotKind(slot, now, slot.id === mySlotId)}
-              pulse={pulse && slot.id === mySlotId}
-              picked={slot.id === pickedSlotId}
-              onPick={onPick}
-              rosterName={rosterName?.get(slot.rosterId)}
-              top={y(slot.startsAt.getTime()) + 1}
-              height={y(slot.endsAt.getTime()) - y(slot.startsAt.getTime()) - 2}
-            />
-          ))}
+          {slots.map((slot) =>
+            block(slot, {
+              top: y(slot.startsAt.getTime()) + 1,
+              height: y(slot.endsAt.getTime()) - y(slot.startsAt.getTime()) - 2,
+            }),
+          )}
         </ul>
       </div>
     </div>
@@ -193,64 +222,70 @@ function DayTimeline({
 }
 
 function SlotBody({
-  slot,
+  when,
   label,
   open,
   rosterName,
 }: {
-  slot: Slot
+  when: string
   label: string
   open: boolean
   rosterName?: string
 }) {
   return (
     <>
-      <span className="font-extrabold tabular-nums">{warsawTime(slot.startsAt)}</span>
+      <span className="shrink-0 font-extrabold tabular-nums">{when}</span>
       <span className={open ? "min-w-0" : "min-w-0 truncate"}>{label}</span>
       {rosterName && <span className="ml-auto shrink-0 text-xs opacity-75">{rosterName}</span>}
     </>
   )
 }
 
+/** Miejsce kafelka na osi godzin; `null` = zwykły wiersz listy (bez godzin). */
+type Place = { top: number; height: number }
+
 function SlotBlock({
   slot,
+  number,
   kind,
   pulse,
   picked,
   onPick,
   rosterName,
-  top,
-  height,
+  place,
 }: {
   slot: Slot
+  number: number | null
   kind: Kind
   pulse: boolean
   picked: boolean
   onPick?: (slot: Slot) => void
   rosterName?: string
-  top: number
-  height: number
+  place: Place | null
 }) {
   const [open, setOpen] = useState(false)
   const names = slot.team.map(fullName).join(", ")
   const label = KINDS[kind].text(names)
   const tone = picked ? PICKED_TONE : KINDS[kind].tone
-  const className = `absolute right-0 left-14 flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
+  const at = place ? "absolute right-0 left-14" : "relative min-h-12 w-full py-2"
+  const className = `${at} flex gap-3 rounded-lg px-3 text-left text-sm ${tone} ${
     open ? "z-10 items-start py-2 shadow-lg" : "items-center overflow-hidden"
   } ${pulse ? "animate-slot-pulse" : ""}`
-  const body = <SlotBody slot={slot} label={label} open={open} rosterName={rosterName} />
-  const style = open ? { top, minHeight: height } : { top, height }
+  const when = number === null ? warsawTime(slot.startsAt) : `Slot ${number}`
+  const a11yWhen = number === null ? formatSlotTime(slot) : `slot ${number}`
+  const body = <SlotBody when={when} label={label} open={open} rosterName={rosterName} />
+  const style = place ? (open ? { top: place.top, minHeight: place.height } : place) : undefined
   const action =
     kind === "free" && onPick
       ? {
           "aria-pressed": picked,
-          "aria-label": `${formatSlotTime(slot)}, wolny`,
+          "aria-label": `${a11yWhen}, wolny`,
           onClick: () => onPick(slot),
         }
       : slot.team.length > 0
         ? {
             "aria-expanded": open,
-            "aria-label": `${formatSlotTime(slot)}, ${KINDS[kind].a11y}: ${names}`,
+            "aria-label": `${a11yWhen}, ${KINDS[kind].a11y}: ${names}`,
             onClick: () => setOpen(!open),
           }
         : undefined
