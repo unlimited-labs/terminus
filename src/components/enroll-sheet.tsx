@@ -6,8 +6,8 @@ import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { formatSlotWhen } from "@/domain/time"
-import { failureNotice, UNEXPECTED_ERROR, type Result, type SlotWhen } from "@/messages.pl"
+import { formatSlotWhen, type SlotNumbering, type SlotWhen } from "@/domain/time"
+import { failureNotice, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
 import { enrollmentFormSchema } from "@/schemas/enrollment"
 import type { AssignmentMode } from "@/domain/draw"
 import type { Answers, ExamField } from "@/domain/fields"
@@ -17,11 +17,10 @@ import { scheduleQuery } from "@/server/schedule"
 
 export type PickedSlot = { id: string; label: string }
 
-/** `numberedSlots`: wszystkie sloty zaliczenia, gdy zamiast godzin pokazuje się numer slotu. */
 export function EnrollSheet({
   examId,
   place,
-  numberedSlots,
+  numbering,
   title,
   submitLabel,
   assignmentMode,
@@ -38,7 +37,7 @@ export function EnrollSheet({
 }: {
   examId: string
   place: string
-  numberedSlots: { startsAt: Date }[] | null
+  numbering: SlotNumbering
   title: string
   submitLabel: string
   assignmentMode: AssignmentMode
@@ -60,7 +59,7 @@ export function EnrollSheet({
           <DialogTitle className="text-xl font-extrabold">{title}</DialogTitle>
           {ticket ? (
             <>
-              <Ticket ticket={ticket} place={place} numberedSlots={numberedSlots} />
+              <Ticket ticket={ticket} place={place} numbering={numbering} />
               <Button size="lg" onClick={onShowOnBoard}>
                 Pokaż na planszy
               </Button>
@@ -75,7 +74,7 @@ export function EnrollSheet({
               maxTeamSize={maxTeamSize}
               fields={fields}
               submitLabel={submitLabel}
-              slotWhen={(at) => formatSlotWhen(at, numberedSlots)}
+              slotWhen={(at) => formatSlotWhen(at, numbering)}
               onEnrolled={onEnrolled}
             />
           )}

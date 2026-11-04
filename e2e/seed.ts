@@ -133,6 +133,22 @@ async function manualExam(name: string, mode: "RANDOM" | "MANUAL", students: Stu
   return id
 }
 
+/** Ręczny przydział i druga lista g2 z wcześniejszym slotem tego dnia (8:40): numery slotów g1 to 2 i 3. */
+async function noTimesExam() {
+  const id = await manualExam("Bez godzin E2E", "MANUAL", [["990003", "Celina", "Cis"]])
+  const g2 = await db.roster.create({ data: { examId: id, name: "g2" } })
+  const startsAt = at(20, 8, 40)
+  await db.slot.create({
+    data: {
+      examId: id,
+      rosterId: g2.id,
+      startsAt,
+      endsAt: new Date(startsAt.getTime() + 20 * 60_000),
+    },
+  })
+  return id
+}
+
 /** Zaliczenie z adresami na liście; `requireEmailLogin` włączone, gdy `emailLogin`. */
 async function emailLoginExam(name: string, emailLogin: boolean) {
   const id = await createExam(
@@ -252,7 +268,7 @@ export async function seed(): Promise<E2EState> {
     slotsEdit: await createExam("Edycja slotów E2E", 1, [], [at(19, 9), at(19, 9, 20)], []),
     manual: await manualExam("Ręczny E2E", "MANUAL", [["990001", "Alicja", "Arbuz"]]),
     modeSwitch: await manualExam("Zmiana sposobu E2E", "RANDOM", [["990002", "Bogdan", "Burak"]]),
-    noTimes: await manualExam("Bez godzin E2E", "MANUAL", [["990003", "Celina", "Cis"]]),
+    noTimes: await noTimesExam(),
     emailLogin: await emailLoginExam("Logowanie mailem E2E", true),
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
   }

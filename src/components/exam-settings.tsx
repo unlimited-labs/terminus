@@ -10,7 +10,7 @@ import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useLeaveExam } from "@/components/use-leave-exam"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { examCounts } from "@/domain/schedule"
-import { formatSlotWhen } from "@/domain/time"
+import { formatSlotWhen, slotNumbering } from "@/domain/time"
 import { phaseStatus } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
 import { deleteExam, examsQuery, updateExam } from "@/server/exams"
@@ -89,7 +89,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
       toast.success("Zapisano zmiany.")
       void router.invalidate() // tytuł karty z loadera
     },
-    (at) => formatSlotWhen(at, exam.showSlotTimes ? null : exam.slots),
+    (at) => formatSlotWhen(at, slotNumbering(exam)),
   )
   return (
     <SectionCard title="Ustawienia">

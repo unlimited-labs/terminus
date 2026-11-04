@@ -11,7 +11,7 @@ import { ScheduleBoard } from "@/components/schedule-board"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
-import { formatSlotWhen } from "@/domain/time"
+import { formatSlotWhen, slotNumbering } from "@/domain/time"
 import { signOutWithToast } from "@/lib/auth-client"
 import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
@@ -49,9 +49,6 @@ function EntryNotice({
   )
 }
 
-/** Sloty do numerowania, gdy zaliczenie nie pokazuje godzin; `null` = godziny widoczne. */
-const numberedSlots = (schedule: Schedule) => (schedule.showSlotTimes ? null : schedule.slots)
-
 const isFree = (schedule: Schedule, s: Schedule["slots"][number]) =>
   isFreeSlot(s, s.team.length > 0, schedule.now)
 
@@ -85,7 +82,7 @@ function usePickedSlot(schedule: Schedule | null | undefined) {
   const slot = schedule?.slots.find((s) => s.id === pickedId && isFree(schedule, s))
   const picked =
     schedule && slot
-      ? { id: slot.id, label: formatSlotWhen(slot.startsAt, numberedSlots(schedule)) }
+      ? { id: slot.id, label: formatSlotWhen(slot.startsAt, slotNumbering(schedule)) }
       : null
   return [picked, setPickedId] as const
 }
@@ -207,7 +204,7 @@ function OpenSchedule({
       <EnrollSheet
         examId={examId}
         place={schedule.description}
-        numberedSlots={numberedSlots(schedule)}
+        numbering={slotNumbering(schedule)}
         title={title}
         submitLabel={mode.submitLabel}
         assignmentMode={schedule.assignmentMode}

@@ -19,7 +19,7 @@ import {
 import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { useExamMutation } from "@/components/use-result-mutation"
 import { useRosterImport, type ImportInput } from "@/components/use-roster-import"
-import { formatSlotWhen } from "@/domain/time"
+import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
 import { errorMessage, GRADE, GRADING, INVALID_ROW } from "@/messages.pl"
 import { addEntrySchema, entryEmail } from "@/schemas/roster"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -191,7 +191,7 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           importer={importer}
           input={input}
           result={result}
-          numberedSlots={exam.showSlotTimes ? null : exam.slots}
+          numbering={slotNumbering(exam)}
         />
       )}
     </div>
@@ -204,12 +204,12 @@ function ImportPreview({
   importer,
   input,
   result,
-  numberedSlots,
+  numbering,
 }: {
   importer: ReturnType<typeof useRosterImport>
   input: ImportInput
   result: PreviewResult
-  numberedSlots: { startsAt: Date }[] | null
+  numbering: SlotNumbering
 }) {
   return (
     <div className="grid gap-3 rounded-xl border p-4 text-sm">
@@ -243,7 +243,7 @@ function ImportPreview({
       <PreviewList title="Skreśleni z zapisem — znikną z listy, a ich zapis zostanie usunięty">
         {result.withdrawnEnrolled.map(
           (e) =>
-            `${entryLine(e)} — slot ${formatSlotWhen(e.slotStartsAt, numberedSlots)}${e.grade ? GRADING.previewGrade(GRADE[e.grade].name) : ""}`,
+            `${entryLine(e)} — ${formatSlotWhen(e.slotStartsAt, numbering)}${e.grade ? GRADING.previewGrade(GRADE[e.grade].name) : ""}`,
         )}
       </PreviewList>
       <PreviewList title="Na liście, ale nie ma ich w pliku — zostają">
