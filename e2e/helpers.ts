@@ -7,8 +7,7 @@ import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
 
 import { dayOf, E2E, MAIL_FILE, STATE_FILE, e2eStateSchema, type E2EState } from "./config.ts"
 
-export const state = (): E2EState =>
-  e2eStateSchema.parse(JSON.parse(readFileSync(STATE_FILE, "utf8")))
+const state = (): E2EState => e2eStateSchema.parse(JSON.parse(readFileSync(STATE_FILE, "utf8")))
 
 export const exams = () => state().exams
 
