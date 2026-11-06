@@ -29,7 +29,7 @@ Studenci nie zakładają kont; identyfikuje ich wyłącznie numer indeksu.
 
 ## Wymagania
 
-- Node.js 24
+- Node.js 26
 - pnpm 12
 - Docker (lokalna baza PostgreSQL i testy)
 

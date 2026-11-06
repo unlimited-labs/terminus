@@ -1,8 +1,9 @@
 # Obraz budowany w kontenerze Linuksa (moduły natywne muszą pasować do platformy docelowej).
-FROM node:24-slim AS build
+FROM node:26-slim AS build
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-RUN corepack enable
+# Node 26 nie ma corepacka.
+RUN npm install -g pnpm@12.8.1
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
@@ -12,11 +13,10 @@ RUN pnpm build
 # Tylko zależności produkcyjne (CLI Prismy do migracji, biblioteki skryptów seed-admin i reset-password).
 RUN pnpm prune --prod --ignore-scripts
 
-FROM node:24-slim
+FROM node:26-slim
 RUN apt-get update -y && apt-get install -y --no-install-recommends openssl && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-ENV COREPACK_HOME=/opt/corepack
-RUN mkdir -p /opt/corepack && corepack enable && corepack prepare pnpm@12.8.1 --activate && pnpm --version && chmod -R a+rX /opt/corepack
+RUN npm install -g pnpm@12.8.1 && pnpm --version
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=3000 TZ=Europe/Warsaw
 # `pnpm reset-password` w kontenerze: bez sprawdzania i doinstalowywania zależności.
 ENV pnpm_config_verify_deps_before_run=false
