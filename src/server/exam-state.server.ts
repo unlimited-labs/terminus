@@ -16,10 +16,21 @@ export const parseFields = (json: unknown): ExamField[] => storedFields.parse(js
 const parseAnswers = (json: unknown): Answers => storedAnswers.parse(json)
 
 /** Pełny stan zaliczenia: ustawienia, listy, wpisy (z zapisem) i sloty; `client` = transakcja pod blokadą. */
-export async function loadExam(examId: string, client: Tx | typeof db = db) {
+export async function loadExam(examId: string, client: Tx = db) {
   const exam = await client.exam.findUnique({
     where: { id: examId },
-    include: {
+    // Jawna lista: ExamDetail idzie do przeglądarki prowadzącego, nowa kolumna nie trafia tam sama.
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      defaultSlotMinutes: true,
+      maxTeamSize: true,
+      assignmentMode: true,
+      requireEmailLogin: true,
+      showSlotTimes: true,
+      enrollmentOpensAt: true,
+      fields: true,
       teachers: {
         orderBy: { name: "asc" },
         select: { id: true, name: true, email: true, banned: true },
@@ -39,6 +50,7 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
     },
   })
   if (!exam) return null
+  const { enrollments, fields, ...settings } = exam
   const [entries, slots] = await Promise.all([
     client.rosterEntry.findMany({
       where: { examId },
@@ -51,24 +63,14 @@ export async function loadExam(examId: string, client: Tx | typeof db = db) {
       select: { id: true, rosterId: true, startsAt: true, endsAt: true },
     }),
   ])
-  const enrollmentOf = new Map(exam.enrollments.map((e) => [e.studentNumber, e]))
+  const enrollmentOf = new Map(enrollments.map((e) => [e.studentNumber, e]))
   const now = new Date()
   // Sloty są posortowane po startsAt i nie nachodzą na siebie (findOverlap), więc ostatni kończy się najpóźniej.
   const lastSlotEnd = slots.at(-1)?.endsAt ?? null
   return {
-    id: exam.id,
-    name: exam.name,
-    description: exam.description,
-    teachers: exam.teachers,
-    defaultSlotMinutes: exam.defaultSlotMinutes,
-    maxTeamSize: exam.maxTeamSize,
-    assignmentMode: exam.assignmentMode,
-    requireEmailLogin: exam.requireEmailLogin,
-    showSlotTimes: exam.showSlotTimes,
+    ...settings,
     emailLoginAvailable,
-    enrollmentOpensAt: exam.enrollmentOpensAt,
-    fields: parseFields(exam.fields),
-    rosters: exam.rosters,
+    fields: parseFields(fields),
     slots,
     people: entries.map((e) => {
       const enrollment = enrollmentOf.get(e.studentNumber)
@@ -95,36 +97,38 @@ export type ExamDetail = NonNullable<Awaited<ReturnType<typeof loadExam>>>
 
 /** Publiczny harmonogram: sloty z imionami i nazwiskami, bez numerów indeksów. */
 export async function loadSchedule(examId: string) {
-  const exam = await db.exam.findUnique({
-    where: { id: examId },
-    select: {
-      name: true,
-      description: true,
-      maxTeamSize: true,
-      assignmentMode: true,
-      requireEmailLogin: true,
-      showSlotTimes: true,
-      fields: true,
-      enrollmentOpensAt: true,
-      teachers: { orderBy: { name: "asc" }, select: { name: true } },
-      rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
-    },
-  })
-  if (!exam) return null
-  const slots = await db.slot.findMany({
-    where: { examId },
-    orderBy: { startsAt: "asc" },
-    select: {
-      id: true,
-      rosterId: true,
-      startsAt: true,
-      endsAt: true,
-      enrollments: {
-        select: { entry: { select: { firstName: true, lastName: true } } },
-        orderBy: { entry: { lastName: "asc" } },
+  const [exam, slots] = await Promise.all([
+    db.exam.findUnique({
+      where: { id: examId },
+      select: {
+        name: true,
+        description: true,
+        maxTeamSize: true,
+        assignmentMode: true,
+        requireEmailLogin: true,
+        showSlotTimes: true,
+        fields: true,
+        enrollmentOpensAt: true,
+        teachers: { orderBy: { name: "asc" }, select: { name: true } },
+        rosters: { orderBy: { name: "asc" }, select: { id: true, name: true } },
       },
-    },
-  })
+    }),
+    db.slot.findMany({
+      where: { examId },
+      orderBy: { startsAt: "asc" },
+      select: {
+        id: true,
+        rosterId: true,
+        startsAt: true,
+        endsAt: true,
+        enrollments: {
+          select: { entry: { select: { firstName: true, lastName: true } } },
+          orderBy: { entry: { lastName: "asc" } },
+        },
+      },
+    }),
+  ])
+  if (!exam) return null
   return {
     name: exam.name,
     description: exam.description,

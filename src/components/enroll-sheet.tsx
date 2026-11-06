@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import type { z } from "zod"
 
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
@@ -6,51 +7,36 @@ import { PrivacyNotice } from "@/components/privacy-notice"
 import { Ticket } from "@/components/ticket"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
-import { formatSlotWhen, type SlotNumbering, type SlotWhen } from "@/domain/time"
+import type { SlotNumbering, SlotWhen } from "@/domain/time"
 import { failureNotice, UNEXPECTED_ERROR, type Result } from "@/messages.pl"
 import { enrollmentFormSchema } from "@/schemas/enrollment"
 import type { AssignmentMode } from "@/domain/draw"
-import type { Answers, ExamField } from "@/domain/fields"
+import type { ExamField } from "@/domain/fields"
 import type { Ticket as TicketData } from "@/server/enrollment.server"
 import { enroll } from "@/server/enroll"
 import { scheduleQuery } from "@/server/schedule"
 
 export type PickedSlot = { id: string; label: string }
 
+/** Panel zapisu: formularz (`children`) albo po zapisie bilet. */
 export function EnrollSheet({
-  examId,
   place,
   numbering,
   title,
-  submitLabel,
-  assignmentMode,
-  emailLogin,
-  choosing,
-  picked,
-  maxTeamSize,
-  fields,
   open,
   onOpenChange,
   ticket,
-  onEnrolled,
   onShowOnBoard,
+  children,
 }: {
-  examId: string
   place: string
   numbering: SlotNumbering
   title: string
-  submitLabel: string
-  assignmentMode: AssignmentMode
-  emailLogin: boolean
-  choosing: boolean
-  picked: PickedSlot | null
-  maxTeamSize: number
-  fields: ExamField[]
   open: boolean
   onOpenChange: (open: boolean) => void
   ticket: TicketData | null
-  onEnrolled: (slotId: string, ticket: TicketData) => void
   onShowOnBoard: () => void
+  children: React.ReactNode
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -65,18 +51,7 @@ export function EnrollSheet({
               </Button>
             </>
           ) : (
-            <EnrollForm
-              examId={examId}
-              assignmentMode={assignmentMode}
-              emailLogin={emailLogin}
-              choosing={choosing}
-              picked={picked}
-              maxTeamSize={maxTeamSize}
-              fields={fields}
-              submitLabel={submitLabel}
-              slotWhen={(at) => formatSlotWhen(at, numbering)}
-              onEnrolled={onEnrolled}
-            />
+            children
           )}
         </div>
       </DialogContent>
@@ -86,17 +61,6 @@ export function EnrollSheet({
 
 const MIN_DRAW_MS = 700
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-function enrollRequest(
-  examId: string,
-  input: { studentNumbers: string[]; answers: Answers },
-  assignmentMode: AssignmentMode,
-  picked: PickedSlot | null,
-) {
-  return assignmentMode === "MANUAL"
-    ? { examId, ...input, assignmentMode, slotId: picked?.id }
-    : { examId, ...input, assignmentMode }
-}
 
 function PickedNotice({ picked }: { picked: PickedSlot | null }) {
   return (
@@ -120,10 +84,10 @@ function useDraw(
 ) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (input: { studentNumbers: string[]; answers: Answers }) => {
-      const request = enrollRequest(examId, input, assignmentMode, picked)
+    mutationFn: async (input: z.infer<typeof enrollmentFormSchema>) => {
+      const slotId = assignmentMode === "MANUAL" ? picked?.id : undefined
       const [outcome] = await Promise.all([
-        enroll({ data: request }),
+        enroll({ data: { ...input, assignmentMode, slotId } }),
         assignmentMode === "RANDOM" ? wait(MIN_DRAW_MS) : undefined,
       ])
       return outcome
@@ -153,7 +117,7 @@ function PendingStatus({ text }: { text: string }) {
   )
 }
 
-function EnrollForm({
+export function EnrollForm({
   examId,
   assignmentMode,
   emailLogin,

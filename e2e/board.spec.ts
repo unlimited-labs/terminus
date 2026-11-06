@@ -1,15 +1,10 @@
 import { expect, test } from "@playwright/test"
 
-import { dragWithKeyboard, dragWithMouse, exams, login, openBoard } from "./helpers.ts"
+import { dragWithKeyboard, dragWithMouse, exams, login, openBoard, pool, row } from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
 })
-
-const row = (page: import("@playwright/test").Page, time: string) =>
-  page.locator("tr", { hasText: time })
-const pool = (page: import("@playwright/test").Page) =>
-  page.getByRole("complementary", { name: "Niezapisani" })
 
 test("myszą: ręczny zapis z Niezapisanych, Cofnij, zamiana osób", async ({ page }) => {
   await openBoard(page, exams().boardMouse)

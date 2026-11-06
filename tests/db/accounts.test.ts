@@ -12,29 +12,12 @@ import {
   editAccount,
   listBlockedAccountExams,
 } from "@/server/account-ops.server"
-import { auth, sessionUser } from "@/server/auth.server"
+import { ACCESS_DENIED } from "@/messages.pl"
+import { sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
-
-const password = "haslo-123456"
-
-const signIn = async (email: string, pass = password) => {
-  const res = await auth.api.signInEmail({ body: { email, password: pass }, returnHeaders: true })
-  return new Headers({
-    cookie: res.headers
-      .getSetCookie()
-      .map((c) => c.split(";")[0])
-      .join("; "),
-  })
-}
-
-/** Konto z otwartą sesją; zwraca jego id, e-mail i nagłówki tej sesji. */
-async function account(role: "admin" | "user" = "user") {
-  const email = `${randomUUID()}@example.com`
-  const { user } = await auth.api.createUser({ body: { email, password, name: "Osoba", role } })
-  return { id: user.id, email, headers: await signIn(email) }
-}
+import { account, signIn, TEST_PASSWORD as password } from "./sessions"
 
 const row = (id: string) =>
   db.user.findUniqueOrThrow({ where: { id }, select: { email: true, role: true, banned: true } })
@@ -45,22 +28,20 @@ test("bez roli superadmina każda operacja jest odrzucona i niczego nie zmienia"
   const users = await db.user.count()
 
   for (const headers of [(await account()).headers, new Headers()]) {
-    await expect(accountList(headers)).rejects.toThrow("Brak dostępu")
+    await expect(accountList(headers)).rejects.toThrow(ACCESS_DENIED)
     const email = `${randomUUID()}@example.com`
-    await expect(addAccount(headers, { email, name: "X", password })).rejects.toThrow(
-      "Brak dostępu",
-    )
+    await expect(addAccount(headers, { email, name: "X", password })).rejects.toThrow(ACCESS_DENIED)
     await expect(editAccount(headers, { userId: target.id, email, name: "X" })).rejects.toThrow(
-      "Brak dostępu",
+      ACCESS_DENIED,
     )
     await expect(
       setPassword(headers, { userId: target.id, password: "inne-haslo-1" }),
-    ).rejects.toThrow("Brak dostępu")
+    ).rejects.toThrow(ACCESS_DENIED)
     await expect(setBanned(headers, { userId: target.id, banned: true })).rejects.toThrow(
-      "Brak dostępu",
+      ACCESS_DENIED,
     )
     await expect(setAdmin(headers, { userId: target.id, isAdmin: true })).rejects.toThrow(
-      "Brak dostępu",
+      ACCESS_DENIED,
     )
   }
   expect(await row(target.id)).toEqual(before)
@@ -169,11 +150,11 @@ test("zaliczenia zablokowanego konta: superadmin widzi je i usuwa; aktywnego kon
     { id: examId, name: "Kolokwium", enrollments: 1 },
   ])
   await expect(listBlockedAccountExams((await account()).headers, teacherId)).rejects.toThrow(
-    "Brak dostępu",
+    ACCESS_DENIED,
   )
   await expect(
     deleteBlockedAccountExam((await account()).headers, { examId, confirmName: "Kolokwium" }),
-  ).rejects.toThrow("Brak dostępu")
+  ).rejects.toThrow(ACCESS_DENIED)
   expect(await remove("Inna nazwa")).toEqual({ ok: false, code: "NAME_MISMATCH" })
   expect(await remove()).toEqual({ ok: true })
   expect(await db.exam.count({ where: { id: examId } })).toBe(0)

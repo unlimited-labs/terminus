@@ -1,9 +1,10 @@
 import { z } from "zod"
 
+import { errorMessage } from "../messages.pl.ts"
 import { examIdSchema, hhmm, isoDate, slotMinutes } from "./exam.ts"
 
 export const windowSchema = examIdSchema.extend({
-  rosterId: z.uuid("Wybierz listę."),
+  rosterId: z.uuid(errorMessage({ code: "ROSTER_NOT_CHOSEN" })),
   date: isoDate,
   from: hhmm,
   to: hhmm,

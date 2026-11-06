@@ -11,6 +11,7 @@ import { cleanupStudents } from "@/server/student-cleanup.server"
 import { sessionEmail, studentAccess } from "@/server/student-access.server"
 
 import { createExam, enroll } from "./fixtures"
+import { account, cookiesOf, TEST_PASSWORD } from "./sessions"
 
 vi.mock("@/server/mail.server", () => ({ sendMail: vi.fn<() => Promise<void>>() }))
 
@@ -31,14 +32,6 @@ async function verify(token: string) {
     asResponse: true,
   })
 }
-
-const cookieHeader = (response: Response) =>
-  new Headers({
-    cookie: response.headers
-      .getSetCookie()
-      .map((c) => c.split(";")[0])
-      .join("; "),
-  })
 
 const email = () => `${randomUUID()}@student.example.com`
 
@@ -71,7 +64,7 @@ test("weryfikacja zakłada studenta (rola, bez hasła), sesja 24 h bez Max-Age, 
   expect(sessionCookies.at(-1)).not.toMatch(/max-age/i)
   expect(cookies.some((c) => c.includes("dont_remember=true"))).toBe(true)
 
-  const headers = cookieHeader(response)
+  const headers = cookiesOf(response.headers)
   expect(await sessionEmail(headers)).toBe(address)
   // Student nie jest prowadzącym: wszystkie guardy opierają się na sessionUser.
   expect(await sessionUser(headers)).toBeNull()
@@ -85,7 +78,7 @@ test("link na adres prowadzącego (konto powstało po wysłaniu) nie loguje", as
   const address = email()
   const token = (await requestToken(examId, address)).searchParams.get("token")!
   await auth.api.createUser({
-    body: { email: address, password: "haslo-123456", name: "Prowadzący", role: "user" },
+    body: { email: address, password: TEST_PASSWORD, name: "Prowadzący", role: "user" },
   })
   const response = await verify(token).catch(() => null)
   expect(response?.headers.getSetCookie().some((c) => c.includes("session_token="))).toBeFalsy()
@@ -109,23 +102,10 @@ test("HTTP nie obsługuje punktów linku", async () => {
 })
 
 test("konta zakładane przez panel mają zweryfikowany adres; student nie trafia na listę kont ani do prowadzących zaliczenia", async () => {
-  const adminEmail = email()
-  await auth.api.createUser({
-    body: { email: adminEmail, password: "haslo-123456", name: "Szef", role: "admin" },
-  })
-  const signed = await auth.api.signInEmail({
-    body: { email: adminEmail, password: "haslo-123456" },
-    returnHeaders: true,
-  })
-  const admin = new Headers({
-    cookie: signed.headers
-      .getSetCookie()
-      .map((c) => c.split(";")[0])
-      .join("; "),
-  })
+  const { headers: admin } = await account("admin")
   const address = email()
   expect(
-    await addAccount(admin, { email: address, name: "Nowy", password: "haslo-123456" }),
+    await addAccount(admin, { email: address, name: "Nowy", password: TEST_PASSWORD }),
   ).toEqual({ ok: true })
   expect(await db.user.findUniqueOrThrow({ where: { email: address } })).toMatchObject({
     emailVerified: true,
@@ -164,6 +144,7 @@ test("studentAccess: opcja wyłączona = otwarte; włączona = tylko adres z lis
   expect(await studentAccess(examId, "1@STUDENT.agh.edu.pl")).toEqual({
     kind: "ok",
     email: "1@STUDENT.agh.edu.pl",
+    studentNumber: "1",
   })
 
   // Adres wspólny dla kilku indeksów autoryzuje wszystkie te indeksy.

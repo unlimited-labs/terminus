@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { toast } from "sonner"
 
 import { ConfirmButton } from "@/components/confirm-button"
-import { schemaSubmit, useAppForm } from "@/components/form"
+import { parseOrToast, schemaSubmit, useAppForm } from "@/components/form"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
@@ -17,8 +17,8 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { currentRosterId, hasManyRosters, rosterNames } from "@/components/roster-choice"
-import { useExamMutation } from "@/components/use-result-mutation"
-import { useRosterImport, type ImportInput } from "@/components/use-roster-import"
+import { useExamMutation, useResultMutation } from "@/components/use-result-mutation"
+import { useRosterImport, type ImportInput, type PreviewOk } from "@/components/use-roster-import"
 import { formatDayTime } from "@/domain/time"
 import { errorMessage, GRADE, GRADING, INVALID_ROW } from "@/messages.pl"
 import { addEntrySchema, entryEmail } from "@/schemas/roster"
@@ -29,7 +29,6 @@ import {
   changeEntryEmail,
   deleteRosterEntry,
   entryEmailsQuery,
-  previewRosterImport,
 } from "@/server/rosters"
 
 export function RosterSection({ exam }: { exam: ExamDetail }) {
@@ -183,15 +182,11 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
           }}
         />
       </div>
-      {input && result && !result.ok && (
-        <p className="text-sm text-destructive">{errorMessage(result)}</p>
-      )}
+      {result && !result.ok && <p className="text-sm text-destructive">{errorMessage(result)}</p>}
       {input && result?.ok && <ImportPreview importer={importer} input={input} result={result} />}
     </div>
   )
 }
-
-type PreviewResult = Extract<Awaited<ReturnType<typeof previewRosterImport>>, { ok: true }>
 
 function ImportPreview({
   importer,
@@ -200,7 +195,7 @@ function ImportPreview({
 }: {
   importer: ReturnType<typeof useRosterImport>
   input: ImportInput
-  result: PreviewResult
+  result: PreviewOk
 }) {
   return (
     <div className="grid gap-3 rounded-xl border p-4 text-sm">
@@ -244,7 +239,7 @@ function ImportPreview({
         <Button disabled={importer.saveDisabled} onClick={importer.apply}>
           Zapisz listę
         </Button>
-        <Button variant="outline" onClick={() => importer.setInput(null)}>
+        <Button variant="outline" onClick={importer.cancel}>
           Anuluj
         </Button>
       </div>
@@ -262,7 +257,8 @@ function EmailCell({
   studentNumber: string
   email: string
 }) {
-  const change = useExamMutation(changeEntryEmail, examId)
+  // Zmienia tylko adresy: bez przeładowania całego zaliczenia.
+  const change = useResultMutation(changeEntryEmail, [entryEmailsQuery(examId).queryKey])
   return (
     <Input
       key={email}
@@ -271,14 +267,12 @@ function EmailCell({
       defaultValue={email}
       className="h-8 min-w-56"
       onBlur={(e) => {
-        const next = e.target.value.trim().toLowerCase()
-        if (next === email) return
-        if (!entryEmail.safeParse(next).success) {
-          toast.error("Podaj poprawny adres e-mail.")
+        const next = parseOrToast(entryEmail, e.target.value)
+        if (next === null) {
           e.target.value = email
           return
         }
-        change.mutate({ examId, studentNumber, email: next })
+        if (next !== email) change.mutate({ examId, studentNumber, email: next })
       }}
     />
   )

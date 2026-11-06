@@ -3,7 +3,6 @@ import { randomUUID } from "node:crypto"
 import { expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { withExamLock } from "@/server/exam-access.server"
 import { examCsv } from "@/server/exam-ops.server"
 import { loadExam } from "@/server/exam-state.server"
 import {
@@ -16,7 +15,7 @@ import {
   setEntryEmail,
 } from "@/server/roster-ops.server"
 
-import { createExam, enroll, inDays } from "./fixtures"
+import { createExam, enroll, holdLock, inDays } from "./fixtures"
 
 const csv = (...rows: string[]) => ["indeks;imie;nazwisko;skreslony", ...rows].join("\n")
 
@@ -217,20 +216,14 @@ test("cudzy prowadzący dostaje NOT_FOUND i niczego nie zmienia", async () => {
 
 test("podgląd importu nie czeka na blokadę zaliczenia (nie wstrzymuje zapisów)", async () => {
   const { examId, teacherId } = await createExam({ rosters: {} })
-  const locked = Promise.withResolvers<void>()
-  const released = Promise.withResolvers<void>()
-  const held = withExamLock(examId, "public", () => {
-    locked.resolve()
-    return released.promise
-  })
-  await locked.promise
+  const lock = await holdLock(examId)
   const timeout = new Promise((resolve) => setTimeout(() => resolve("czeka"), 1000))
   const preview = await Promise.race([
     previewImport(examId, teacherId, "g1", csv("1;A;A;0")),
     timeout,
   ])
-  released.resolve()
-  await held
+  lock.release()
+  await lock.done
   expect(preview).toMatchObject({ ok: true })
 })
 

@@ -1,3 +1,4 @@
+import { cn } from "cn"
 import type { ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -18,11 +19,10 @@ export function StudentPage({
 }) {
   return (
     <div
-      className={
-        narrow
-          ? "mx-auto grid max-w-md gap-5 px-4 pt-10 pb-28 text-[17px]"
-          : "mx-auto grid max-w-3xl gap-5 px-4 pt-6 pb-28 text-[17px]"
-      }
+      className={cn(
+        "mx-auto grid gap-5 px-4 pb-28 text-[17px]",
+        narrow ? "max-w-md pt-10" : "max-w-3xl pt-6",
+      )}
     >
       {top}
       <header className="grid gap-1">

@@ -10,7 +10,10 @@ test("schemat poleceń tablicy pokrywa BoardCommand", () => {
 })
 
 const setGrades = (grade: unknown, comment: string | null) =>
-  boardCommandSchema.safeParse({ kind: "setGrades", grades: { "123": { grade, comment } } }).success
+  boardCommandSchema.safeParse({
+    kind: "setGrades",
+    grades: { "123": { grade, gradeComment: comment } },
+  }).success
 
 test("ocena: tylko wartości enumu, komentarz do 500 znaków", () => {
   expect(setGrades("G3_5", null)).toBe(true)

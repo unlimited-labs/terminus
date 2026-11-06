@@ -1,9 +1,9 @@
 import Papa from "papaparse"
 
 import { GRADE } from "../messages.pl.ts"
-import type { Grade } from "./board.ts"
+import type { BoardPerson, Grade } from "./board.ts"
 import { normalizeEmail } from "./email.ts"
-import { PERSON_NAME_MAX, ROSTER_NAME_MAX, STUDENT_NUMBER_MAX } from "./limits.ts"
+import { PERSON_NAME_MAX, STUDENT_NUMBER_MAX, STUDENT_NUMBER_PATTERN } from "./limits.ts"
 import { warsawDay, warsawTime } from "./time.ts"
 
 export type RosterRow = {
@@ -30,12 +30,11 @@ export type ParsedRoster =
   | { ok: false; code: "MISSING_COLUMNS"; columns: string[] }
 
 const REQUIRED_COLUMNS = ["indeks", "imie", "nazwisko"]
-const DIGITS = /^\d+$/
 
 const badName = (name: string) => name === "" || name.length > PERSON_NAME_MAX
 
 function invalidReason(row: RosterRow, seen: Set<string>): InvalidRowReason | null {
-  if (!DIGITS.test(row.studentNumber)) return "NOT_DIGITS"
+  if (!STUDENT_NUMBER_PATTERN.test(row.studentNumber)) return "NOT_DIGITS"
   if (row.studentNumber.length > STUDENT_NUMBER_MAX) return "TOO_LONG"
   if (badName(row.firstName) || badName(row.lastName)) return "BAD_NAME"
   if (seen.has(row.studentNumber)) return "DUPLICATE_IN_FILE"
@@ -43,7 +42,7 @@ function invalidReason(row: RosterRow, seen: Set<string>): InvalidRowReason | nu
 }
 
 export function parseRosterCsv(text: string): ParsedRoster {
-  const { data, meta } = Papa.parse<Record<string, string | undefined>>(text.replace(/^﻿/, ""), {
+  const { data, meta } = Papa.parse<Record<string, string | undefined>>(text, {
     header: true,
     delimiter: ";",
     skipEmptyLines: true,
@@ -148,27 +147,8 @@ export function planRosterImport(
   return plan
 }
 
-/** `studenci_110-ITE-2S-027_g1_2026-09-30.csv` → `g1`; inaczej nazwa pliku bez rozszerzenia. */
-export function suggestRosterName(fileName: string): string {
-  const base = fileName.replace(/\.csv$/i, "")
-  return (/_([^_]+)_\d{4}-\d{2}-\d{2}$/.exec(base)?.[1] ?? base).slice(0, ROSTER_NAME_MAX)
-}
-
-export function exportFileName(examName: string, now: Date): string {
-  return `${examName.replace(/[\\/:*?"<>|]/g, "-")}_${warsawDay(now)}.csv`
-}
-
 type ExportSlot = { id: string; startsAt: Date; endsAt: Date }
-type ExportPerson = {
-  studentNumber: string
-  firstName: string
-  lastName: string
-  rosterName: string
-  slotId: string | null
-  answers?: Record<string, string>
-  grade?: Grade | null
-  gradeComment?: string | null
-}
+type ExportPerson = BoardPerson & { rosterName: string }
 
 /**
  * Eksport zapisów: wiersz na osobę, po początku slotu i nazwisku; niezapisani na końcu;
@@ -200,7 +180,7 @@ export function buildExportCsv(
       ]
     })
   return (
-    "﻿" +
+    Papa.BYTE_ORDER_MARK +
     Papa.unparse(
       {
         fields: [

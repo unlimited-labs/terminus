@@ -16,7 +16,7 @@ import { auth, replacePassword, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
-import { STUDENT_ROLE } from "./roles.ts"
+import { notStudent } from "./roles.ts"
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
@@ -36,7 +36,7 @@ async function assertAdmin(headers: Headers) {
 export async function accountList(headers: Headers) {
   await assertAdmin(headers)
   return db.user.findMany({
-    where: { OR: [{ role: null }, { role: { not: STUDENT_ROLE } }] },
+    where: notStudent,
     orderBy: { name: "asc" },
     select: { id: true, name: true, email: true, role: true, banned: true },
   })

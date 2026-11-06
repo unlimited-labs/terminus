@@ -10,6 +10,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { duplicateExamSchema } from "@/schemas/exam"
@@ -50,9 +51,7 @@ export function DuplicateButton({ examId }: { examId: string }) {
   })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
-        Duplikuj
-      </Button>
+      <DialogTrigger render={<Button variant="outline" size="sm" />}>Duplikuj</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Duplikuj zaliczenie</DialogTitle>

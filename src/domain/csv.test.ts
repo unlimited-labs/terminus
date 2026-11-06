@@ -2,15 +2,9 @@ import { readFileSync } from "node:fs"
 
 import { describe, expect, test } from "vitest"
 
-import {
-  buildExportCsv,
-  exportFileName,
-  parseRosterCsv,
-  planRosterImport,
-  suggestRosterName,
-  type ExistingEntry,
-} from "./csv"
+import { buildExportCsv, parseRosterCsv, planRosterImport, type ExistingEntry } from "./csv"
 import { defaultEmail } from "./email"
+import { exportFileName, suggestRosterName } from "./file-names"
 
 const fixture = readFileSync(
   new URL("./fixtures/studenci_110-ITE-2S-027_g1_2026-09-30.csv", import.meta.url),

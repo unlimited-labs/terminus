@@ -3,12 +3,7 @@ import { z } from "zod"
 
 import { OPS } from "../messages.pl.ts"
 
-import {
-  smtpConfig,
-  smtpCredentialsMessage,
-  smtpCredentialsTogether,
-  smtpShape,
-} from "./smtp-config.ts"
+import { smtpConfig, smtpCredentialsTogether, smtpShape } from "./smtp-config.ts"
 
 const isTimeZone = (tz: string) => {
   try {
@@ -28,7 +23,7 @@ export const env = createEnv({
     ...smtpShape,
   },
   createFinalSchema: (shape) =>
-    z.object(shape).refine(smtpCredentialsTogether, { message: smtpCredentialsMessage }),
+    z.object(shape).refine(smtpCredentialsTogether, { message: OPS.smtpCredentials }),
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
 })

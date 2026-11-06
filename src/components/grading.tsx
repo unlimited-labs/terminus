@@ -6,16 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  applyCommand,
-  changedPeople,
-  GRADES,
-  isGraded,
-  type BoardCommand,
-  type Grade,
-} from "@/domain/board"
+import { GRADES, gradesLostBy, type BoardCommand, type Grade } from "@/domain/board"
 import { GRADE_COMMENT_MAX } from "@/domain/limits"
-import { fullName } from "@/domain/schedule"
+import { fullName, personLabel } from "@/domain/schedule"
 import { formatDayTime } from "@/domain/time"
 import { GRADE, GRADING } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
@@ -49,11 +42,12 @@ export function GradeChip({
   const [comment, setComment] = useState("")
   // Szkic komentarza idzie też z oceną: klik oceny nie zależy od kolejności blur/klik.
   const set = (grade: Grade | null) =>
-    onCommand({ kind: "setGrades", grades: { [person.studentNumber]: { grade, comment } } })
+    onCommand({
+      kind: "setGrades",
+      grades: { [person.studentNumber]: { grade, gradeComment: comment } },
+    })
   // Zapis przy wyjściu z pola i przy zamknięciu okienka (Escape nie zawsze wywołuje blur).
-  const saveComment = () => {
-    if (comment.trim() !== (person.gradeComment ?? "")) set(person.grade)
-  }
+  const saveComment = () => set(person.grade)
   const name = fullName(person)
   return (
     <Popover
@@ -114,7 +108,7 @@ export function GradeChip({
                 grades: Object.fromEntries(
                   team.map((t) => [
                     t.studentNumber,
-                    { grade: person.grade, comment: t.gradeComment },
+                    { grade: person.grade, gradeComment: t.gradeComment },
                   ]),
                 ),
               })
@@ -128,12 +122,6 @@ export function GradeChip({
   )
 }
 
-/** Licznik nad tablicą: sam komentarz nie jest oceną. */
-export function GradedCount({ people }: { people: Person[] }) {
-  const enrolled = people.filter((p) => p.slotId !== null)
-  return <>{GRADING.counter(enrolled.filter((p) => p.grade !== null).length, enrolled.length)}</>
-}
-
 /**
  * Usunięcie zapisu osoby z oceną albo komentarzem czeka na potwierdzenie (tylko w kliencie).
  * `guard` zwraca `false` i otwiera okno; po potwierdzeniu polecenie idzie dalej.
@@ -141,12 +129,7 @@ export function GradedCount({ people }: { people: Person[] }) {
 export function useUnenrollGuard(exam: ExamDetail, run: (command: BoardCommand) => boolean) {
   const [pending, setPending] = useState<{ who: Person[]; command: BoardCommand } | null>(null)
   const guarded = (command: BoardCommand) => {
-    const applied = applyCommand(exam, command)
-    const who = applied.ok
-      ? changedPeople(exam, applied.state).flatMap(([prev, next]) =>
-          prev.slotId !== null && next.slotId === null && isGraded(prev) ? [prev] : [],
-        )
-      : []
+    const who = gradesLostBy(exam, command)
     if (who.length === 0) return run(command)
     setPending({ who, command })
     return false
@@ -161,7 +144,7 @@ export function useUnenrollGuard(exam: ExamDetail, run: (command: BoardCommand) 
         <ul className="grid gap-1 text-sm">
           {pending?.who.map((p) => (
             <li key={p.studentNumber}>
-              {fullName(p)} ({p.studentNumber}): {p.grade ? GRADE[p.grade].name : GRADING.noGrade}
+              {personLabel(p)}: {p.grade ? GRADE[p.grade].name : GRADING.noGrade}
               {p.gradeComment && `, „${p.gradeComment}”`}
             </li>
           ))}

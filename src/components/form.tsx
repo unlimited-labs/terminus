@@ -143,44 +143,6 @@ function NumberField({ label, min, max }: { label: string; min?: number; max?: n
   )
 }
 
-function SelectField({
-  label,
-  options,
-}: {
-  label: string
-  options: { value: string; label: string }[]
-}) {
-  const field = useFieldContext<string>()
-  const id = useId()
-  return (
-    <FieldShell id={id} label={label}>
-      <Select
-        name={field.name}
-        items={options}
-        value={field.state.value}
-        onValueChange={(value) => field.handleChange(value ?? "")}
-      >
-        <SelectTrigger
-          id={id}
-          onBlur={field.handleBlur}
-          aria-invalid={field.state.meta.errors.length > 0 || undefined}
-          aria-describedby={`${id}-errors`}
-          className="h-9 w-full bg-card"
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {options.map((o) => (
-            <SelectItem key={o.value} value={o.value}>
-              {o.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </FieldShell>
-  )
-}
-
 function ToggleField({
   label,
   hint,
@@ -214,9 +176,36 @@ function ToggleField({
 }
 
 function RosterField({ rosters }: { rosters: { id: string; name: string }[] }) {
+  const field = useFieldContext<string>()
+  const id = useId()
   if (!hasManyRosters(rosters)) return null
+  const options = rosters.map((r) => ({ value: r.id, label: r.name }))
   return (
-    <SelectField label="Lista" options={rosters.map((r) => ({ value: r.id, label: r.name }))} />
+    <FieldShell id={id} label="Lista">
+      <Select
+        name={field.name}
+        items={options}
+        value={field.state.value}
+        onValueChange={(value) => field.handleChange(value ?? "")}
+      >
+        <SelectTrigger
+          id={id}
+          onBlur={field.handleBlur}
+          aria-invalid={field.state.meta.errors.length > 0 || undefined}
+          aria-describedby={`${id}-errors`}
+          className="h-9 w-full bg-card"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o.value} value={o.value}>
+              {o.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </FieldShell>
   )
 }
 
@@ -308,7 +297,6 @@ export const { useAppForm } = createFormHook({
   fieldComponents: {
     TextField,
     NumberField,
-    SelectField,
     ToggleField,
     RosterField,
     CheckboxField,
@@ -321,6 +309,14 @@ export const submitThenChange = <T,>(schema: T) => ({
   validationLogic: revalidateLogic(),
   validators: { onDynamic: schema },
 })
+
+/** Dane po schemacie albo `null` i pierwszy błąd w toaście. */
+export function parseOrToast<S extends z.ZodType>(schema: S, value: unknown): z.output<S> | null {
+  const parsed = schema.safeParse(value)
+  if (parsed.success) return parsed.data
+  toast.error(firstIssue(parsed.error))
+  return null
+}
 
 /**
  * Walidacja i wysyłka formularza jednym schematem — do rozłożenia w `useAppForm({ defaultValues, ...schemaSubmit(...) })`.
@@ -335,12 +331,9 @@ export function schemaSubmit<In, Out>(
   return {
     ...submitThenChange(schema),
     onSubmit: async ({ value, formApi }: { value: In; formApi: { reset: () => void } }) => {
-      const parsed = schema.safeParse(prepare ? prepare(value) : value)
-      if (!parsed.success) {
-        toast.error(firstIssue(parsed.error))
-        return
-      }
-      const result = await submit(parsed.data)
+      const data = parseOrToast(schema, prepare ? prepare(value) : value)
+      if (data === null) return
+      const result = await submit(data)
       if (resetOnOk && resultOk(result) === true) formApi.reset()
     },
   }

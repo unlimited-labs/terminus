@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { exams, login } from "./helpers.ts"
+import { exams, login, openBoard } from "./helpers.ts"
 
 const slot = (page: Page, time: string) => page.locator("li", { hasText: time })
 
@@ -40,7 +40,7 @@ test("nieudane kopiowanie linku pokazuje toast z błędem", async ({ page }) => 
 })
 
 test("podwójne kliknięcie Zapisz przy odpowiedziach wysyła jedno żądanie", async ({ page }) => {
-  await page.goto(`/zaliczenia/${exams().slotsAnswers}/tablica`)
+  await openBoard(page, exams().slotsAnswers)
   await page.getByRole("button", { name: "Zmień odpowiedzi zespołu" }).click()
   await page.getByLabel("Temat").fill("Dron")
 

@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto"
 import { defaultEmail } from "@/domain/email"
 import { db } from "@/server/db.server"
 import { enrollTeam } from "@/server/enrollment.server"
+import { withExamLock } from "@/server/exam-access.server"
 
 type ExamFixture = {
   maxTeamSize?: number
@@ -70,3 +71,15 @@ export const enroll = (
   answers: Record<string, string> = {},
   options: Parameters<typeof enrollTeam>[3] = {},
 ) => enrollTeam(examId, studentNumbers, answers, { now: () => TEST_NOW, ...options })
+
+/** Trzyma blokadę zaliczenia, dopóki test nie wywoła `release`. */
+export async function holdLock(examId: string) {
+  const locked = Promise.withResolvers<void>()
+  const released = Promise.withResolvers<void>()
+  const done = withExamLock(examId, "public", () => {
+    locked.resolve()
+    return released.promise
+  })
+  await locked.promise
+  return { release: released.resolve, done }
+}

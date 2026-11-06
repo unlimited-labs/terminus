@@ -1,7 +1,7 @@
 import type { z } from "zod"
 
 import { parseRosterCsv, planRosterImport } from "../domain/csv.ts"
-import { defaultEmail } from "../domain/email.ts"
+import { emailOrDefault } from "../domain/email.ts"
 import type { Result } from "../messages.pl.ts"
 import type { addEntrySchema } from "../schemas/roster.ts"
 
@@ -15,19 +15,20 @@ async function planImport(tx: Tx, examId: string, rosterName: string, csv: strin
     tx.roster.findUnique({ where: { examId_name: { examId, name: rosterName } } }),
     tx.rosterEntry.findMany({
       where: { examId },
-      include: {
+      select: {
+        studentNumber: true,
+        rosterId: true,
+        firstName: true,
+        lastName: true,
+        email: true,
         enrollment: { select: { grade: true, slot: { select: { startsAt: true } } } },
       },
     }),
   ])
-  const existing = entries.map((e) => ({
-    studentNumber: e.studentNumber,
-    rosterId: e.rosterId,
-    firstName: e.firstName,
-    lastName: e.lastName,
-    email: e.email,
-    slotStartsAt: e.enrollment?.slot.startsAt ?? null,
-    grade: e.enrollment?.grade ?? null,
+  const existing = entries.map(({ enrollment, ...e }) => ({
+    ...e,
+    slotStartsAt: enrollment?.slot.startsAt ?? null,
+    grade: enrollment?.grade ?? null,
   }))
   const rosterId = roster?.id ?? null
   const plan = planRosterImport(parsed, rosterId ?? "", existing)
@@ -79,7 +80,7 @@ export async function applyImport(
         studentNumber,
         firstName,
         lastName,
-        email: email ?? defaultEmail(studentNumber),
+        email: emailOrDefault(studentNumber, email),
       })),
     })
     await Promise.all(
@@ -133,7 +134,7 @@ export async function addEntry(
         studentNumber,
         firstName,
         lastName,
-        email: email || defaultEmail(studentNumber),
+        email: emailOrDefault(studentNumber, email),
       },
     })
     return { ok: true }
@@ -159,7 +160,7 @@ export async function setEntryEmail(
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const { count } = await tx.rosterEntry.updateMany({
       where: { examId, studentNumber },
-      data: { email: email || defaultEmail(studentNumber) },
+      data: { email: emailOrDefault(studentNumber, email) },
     })
     return count > 0 ? { ok: true } : { ok: false, code: "NOT_FOUND" }
   })

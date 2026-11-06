@@ -46,9 +46,9 @@ async function savePerson(tx: Tx, examId: string, userId: string, prev: Person, 
   }
 }
 
-/** Prowadzący poprawia odpowiedzi bez sprawdzania wymaganych pól. */
+/** Prowadzący poprawia odpowiedzi bez sprawdzania wymaganych pól; dotyczy każdego polecenia z odpowiedziami. */
 function withCleanAnswers(command: BoardCommand, fields: ExamField[]): BoardCommand {
-  if (command.kind !== "setAnswers") return command
+  if (!("answers" in command) || !command.answers) return command
   return { ...command, answers: cleanAnswers(fields, command.answers) }
 }
 

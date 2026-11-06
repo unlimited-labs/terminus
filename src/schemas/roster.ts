@@ -6,6 +6,7 @@ import {
   PERSON_NAME_MAX,
   ROSTER_NAME_MAX,
   STUDENT_NUMBER_MAX,
+  STUDENT_NUMBER_PATTERN,
 } from "../domain/limits.ts"
 import { tooLong } from "../messages.pl.ts"
 import { examIdSchema } from "./exam.ts"
@@ -13,7 +14,7 @@ import { examIdSchema } from "./exam.ts"
 export const studentNumber = z
   .string()
   .trim()
-  .regex(/^\d+$/, "Numer indeksu to same cyfry.")
+  .regex(STUDENT_NUMBER_PATTERN, "Numer indeksu to same cyfry.")
   .max(STUDENT_NUMBER_MAX, "Za długi numer indeksu.")
 
 /** Pusty = adres domyślny (`defaultEmail`). */

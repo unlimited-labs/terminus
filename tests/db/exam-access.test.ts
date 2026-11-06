@@ -3,7 +3,7 @@ import { expect, test } from "vitest"
 import { db } from "@/server/db.server"
 import { getOwnedExam, withExamLock } from "@/server/exam-access.server"
 
-import { createExam } from "./fixtures"
+import { createExam, holdLock } from "./fixtures"
 
 test("withExamLock dla prowadzącego: własne zaliczenie działa, cudze wygląda jak nieistniejące", async () => {
   const { examId, teacherId } = await createExam({ rosters: {} })
@@ -27,13 +27,7 @@ test('withExamLock "blocked": tylko zaliczenie, którego wszyscy prowadzący są
 
 test("withExamLock: limit czasu w kolejce do zajętej blokady daje BUSY bez wywołania fn", async () => {
   const { examId } = await createExam({ rosters: {} })
-  const locked = Promise.withResolvers<void>()
-  const released = Promise.withResolvers<void>()
-  const holder = withExamLock(examId, "public", () => {
-    locked.resolve()
-    return released.promise
-  })
-  await locked.promise
+  const lock = await holdLock(examId)
   let called = false
   const pending = withExamLock(
     examId,
@@ -44,8 +38,8 @@ test("withExamLock: limit czasu w kolejce do zajętej blokady daje BUSY bez wywo
     300,
   )
   await new Promise((resolve) => setTimeout(resolve, 500))
-  released.resolve()
-  await holder
+  lock.release()
+  await lock.done
 
   expect(await pending).toEqual({ ok: false, code: "BUSY" })
   expect(called).toBe(false)

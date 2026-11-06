@@ -4,7 +4,7 @@ import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { Button } from "@/components/ui/button"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
-import { fullName, isFreeSlot } from "@/domain/schedule"
+import { fullName, isFreeTeamSlot } from "@/domain/schedule"
 import {
   formatDay,
   formatDayShort,
@@ -40,12 +40,10 @@ const PICKED_TONE = "border-2 border-primary bg-primary text-primary-foreground"
 const PRESSED =
   "border bg-card data-pressed:border-primary data-pressed:bg-primary data-pressed:text-primary-foreground"
 
-const isFree = (s: Slot, now: Date) => isFreeSlot(s, s.team.length > 0, now)
-
 /** „Twój” tylko gdy w slocie widać już zespół (plansza mogła się jeszcze nie odświeżyć po zapisie). */
 function slotKind(slot: Slot, now: Date, mine: boolean): Kind {
   if (slot.team.length > 0) return mine ? "mine" : "taken"
-  return slot.startsAt > now ? "free" : "past"
+  return isFreeTeamSlot(slot, now) ? "free" : "past"
 }
 
 /** `pulse`: plansza startuje na dniu „Twojego” slotu, bez filtra listy, a kafelek pulsuje. */
@@ -53,24 +51,26 @@ export function ScheduleBoard({
   schedule,
   mySlotId,
   pulse,
-  pickedSlotId = null,
+  pickedSlotId,
   onPick,
 }: {
   schedule: Schedule
   mySlotId: string | null
   pulse: boolean
-  pickedSlotId?: string | null
+  pickedSlotId: string | null
   onPick?: (slot: Slot) => void
 }) {
-  const shown = pulse ? schedule.slots.find((s) => s.id === mySlotId) : undefined
   const [rosterId, setRosterId] = useState<string | null>(null)
-  const [chosenDay, setChosenDay] = useState(shown ? warsawDay(shown.startsAt) : null)
+  const [chosenDay, setChosenDay] = useState(() => {
+    const shown = pulse ? schedule.slots.find((s) => s.id === mySlotId) : undefined
+    return shown ? warsawDay(shown.startsAt) : null
+  })
   const multi = hasManyRosters(schedule.rosters)
   const visible = schedule.slots.filter((s) => rosterId === null || s.rosterId === rosterId)
   const days = [...Map.groupBy(visible, (s) => warsawDay(s.startsAt))]
   const firstFree = Math.max(
     0,
-    days.findIndex(([, slots]) => slots.some((s) => isFree(s, schedule.now))),
+    days.findIndex(([, slots]) => slots.some((s) => isFreeTeamSlot(s, schedule.now))),
   )
   const [dayKey, day = []] = days.find(([d]) => d === chosenDay) ?? days[firstFree] ?? []
   // Numer z pełnej listy slotów, nie z przefiltrowanej listą indeksów.
@@ -117,7 +117,7 @@ export function ScheduleBoard({
             >
               <span className="font-bold capitalize">{formatDayShort(slots[0]!.startsAt)}</span>
               <span className="text-xs opacity-80 tabular-nums">
-                wolne: {slots.filter((s) => isFree(s, schedule.now)).length}
+                wolne: {slots.filter((s) => isFreeTeamSlot(s, schedule.now)).length}
               </span>
             </ToggleGroupItem>
           ))}
@@ -304,7 +304,7 @@ function SlotBlock({
     kind === "free" && onPick
       ? {
           "aria-pressed": picked,
-          "aria-label": `${a11yWhen}, wolny`,
+          "aria-label": `${a11yWhen}, ${KINDS.free.a11y}`,
           onClick: () => onPick(slot),
         }
       : slot.team.length > 0

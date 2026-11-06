@@ -29,6 +29,10 @@ export function lastMailLink(address: string): string | undefined {
 export const day = (offset: number) => dayOf(state().baseDay, offset)
 export const dayLabel = (offset: number) => formatDayShort(warsawDateTime(day(offset), "12:00"))
 
+/** Wiersz slotu na tablicy po godzinie i panel „Niezapisani”. */
+export const row = (page: Page, time: string) => page.locator("tr", { hasText: time })
+export const pool = (page: Page) => page.getByRole("complementary", { name: "Niezapisani" })
+
 /** Tablica zapisów zaliczenia (prowadzący musi być zalogowany). */
 export async function openBoard(page: Page, examId: string) {
   await page.goto(`/zaliczenia/${examId}/tablica`)

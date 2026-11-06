@@ -70,7 +70,7 @@ describe("runBoardCommand", () => {
         select: { grade: true, gradeComment: true, gradedById: true, gradedAt: true },
       })
     await run({ kind: "move", studentNumber: "1", toSlotId: s1 })
-    await run({ kind: "setGrades", grades: { "1": { grade: "G3_5", comment: " ok " } } })
+    await run({ kind: "setGrades", grades: { "1": { grade: "G3_5", gradeComment: " ok " } } })
     expect(await gradeOf("1")).toMatchObject({
       grade: "G3_5",
       gradeComment: "ok",
@@ -94,7 +94,7 @@ describe("runBoardCommand", () => {
       gradedBy: expect.any(String),
     })
 
-    await run({ kind: "setGrades", grades: { "1": { grade: null, comment: "" } } })
+    await run({ kind: "setGrades", grades: { "1": { grade: null, gradeComment: "" } } })
     expect(await gradeOf("1")).toEqual({
       grade: null,
       gradeComment: null,

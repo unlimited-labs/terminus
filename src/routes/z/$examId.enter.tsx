@@ -1,6 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
 import { z } from "zod"
 
 import { StudentGate } from "@/components/student-gate"
@@ -28,21 +27,17 @@ function EnterPage() {
   const { title } = Route.useLoaderData()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [failed, setFailed] = useState(token === undefined)
   const enter = useMutation({
     mutationFn: () => enterWithToken({ data: { examId, token: token ?? "" } }),
     onSuccess: async (result) => {
-      if (!result.ok) {
-        setFailed(true)
-        return
-      }
+      if (!result.ok) return
       await queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey })
       await navigate({ to: "/z/$examId", params: { examId } })
     },
     onError: toastUnexpected,
   })
 
-  if (failed) {
+  if (token === undefined || enter.data?.ok === false) {
     return <StudentGate examId={examId} name={title} unavailable={false} notice={T.linkExpired} />
   }
   return (

@@ -21,12 +21,17 @@ export function SlotAnswers({
   }
 
   if (draft) {
-    const onKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === "Escape") setDraft(null)
-      if (e.key === "Enter") submit(draft)
-    }
     return (
-      <div className="mt-1 flex flex-wrap gap-2">
+      <form
+        className="mt-1 flex flex-wrap gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          submit(draft)
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setDraft(null)
+        }}
+      >
         {fields.map((f) => (
           <Input
             key={f.id}
@@ -34,14 +39,13 @@ export function SlotAnswers({
             placeholder={f.label}
             value={draft[f.id] ?? ""}
             onChange={(e) => setDraft({ ...draft, [f.id]: e.target.value })}
-            onKeyDown={onKeyDown}
             className="h-7 w-48"
           />
         ))}
-        <Button size="xs" onClick={() => submit(draft)}>
+        <Button size="xs" type="submit">
           Zapisz
         </Button>
-      </div>
+      </form>
     )
   }
   return (

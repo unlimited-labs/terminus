@@ -35,8 +35,9 @@ export function formatDayTime(date: Date): string {
 
 /** Numer slotu: 1 + liczba slotów dnia `at` (Europe/Warsaw) zaczynających się przed `at`. Zawsze z pełnej listy slotów zaliczenia; sam slot nie musi na niej być (harmonogram sprzed odświeżenia). */
 export function slotNumber(slots: { startsAt: Date }[], at: Date): number {
-  const day = warsawDay(at)
-  return 1 + slots.filter((s) => s.startsAt < at && warsawDay(s.startsAt) === day).length
+  // Północ w Warszawie zawsze istnieje (zmiana czasu o 2:00/3:00).
+  const dayStart = warsawDateTime(warsawDay(at), "00:00")
+  return 1 + slots.filter((s) => s.startsAt >= dayStart && s.startsAt < at).length
 }
 
 /** Numerowanie slotów: wszystkie sloty zaliczenia, gdy zamiast godzin widać numer slotu; `null` = godziny widoczne. */

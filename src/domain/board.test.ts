@@ -6,6 +6,7 @@ import {
   dragId,
   dropCommand,
   enqueue,
+  gradesLostBy,
   parseDragId,
   settle,
   type BoardCommand,
@@ -31,17 +32,17 @@ const slotOf = (s: BoardState, n: string) => s.people.find((p) => p.studentNumbe
 const answersOf = (s: BoardState, n: string) => s.people.find((p) => p.studentNumber === n)?.answers
 const gradeOf = (s: BoardState, n: string) => {
   const p = s.people.find((q) => q.studentNumber === n)
-  return { grade: p?.grade, comment: p?.gradeComment }
+  return { grade: p?.grade, gradeComment: p?.gradeComment }
 }
 
 describe("oceny", () => {
   test("ocena jednej osoby; Cofnij przywraca brak oceny", () => {
     const next = applyOk(state, {
       kind: "setGrades",
-      grades: { "1": { grade: "G4", comment: "  dobra prezentacja " } },
+      grades: { "1": { grade: "G4", gradeComment: "  dobra prezentacja " } },
     })
-    expect(gradeOf(next, "1")).toEqual({ grade: "G4", comment: "dobra prezentacja" })
-    expect(gradeOf(next, "2")).toEqual({ grade: null, comment: null })
+    expect(gradeOf(next, "1")).toEqual({ grade: "G4", gradeComment: "dobra prezentacja" })
+    expect(gradeOf(next, "2")).toEqual({ grade: null, gradeComment: null })
   })
 
   const graded: BoardState = {
@@ -55,22 +56,22 @@ describe("oceny", () => {
     const next = applyOk(graded, {
       kind: "setGrades",
       grades: {
-        "1": { grade: "G4_5", comment: null },
-        "2": { grade: "G4_5", comment: "spóźniony" },
+        "1": { grade: "G4_5", gradeComment: null },
+        "2": { grade: "G4_5", gradeComment: "spóźniony" },
       },
     })
     expect([gradeOf(next, "1"), gradeOf(next, "2")]).toEqual([
-      { grade: "G4_5", comment: null },
-      { grade: "G4_5", comment: "spóźniony" },
+      { grade: "G4_5", gradeComment: null },
+      { grade: "G4_5", gradeComment: "spóźniony" },
     ])
   })
 
   test("bez zmiany, niezapisany, nieznany indeks", () => {
     const cases: [Record<string, GradeEntry>, string][] = [
-      [{ "2": { grade: "G3", comment: "spóźniony " } }, "NO_CHANGE"],
-      [{ "1": { grade: null, comment: "  " } }, "NO_CHANGE"],
-      [{ "4": { grade: "ABSENT", comment: null } }, "NOT_ENROLLED"],
-      [{ x: { grade: "G5", comment: null } }, "PERSON_NOT_FOUND"],
+      [{ "2": { grade: "G3", gradeComment: "spóźniony " } }, "NO_CHANGE"],
+      [{ "1": { grade: null, gradeComment: "  " } }, "NO_CHANGE"],
+      [{ "4": { grade: "ABSENT", gradeComment: null } }, "NOT_ENROLLED"],
+      [{ x: { grade: "G5", gradeComment: null } }, "PERSON_NOT_FOUND"],
     ]
     for (const [grades, code] of cases)
       expect(applyCommand(graded, { kind: "setGrades", grades })).toEqual({ ok: false, code })
@@ -81,18 +82,18 @@ describe("oceny", () => {
     const swapped = applyOk(graded, { kind: "swapPeople", a: "2", b: "3" })
     const teams = applyOk(graded, { kind: "swapSlots", a: "s1", b: "s2" })
     for (const s of [moved, swapped, teams])
-      expect(gradeOf(s, "2")).toEqual({ grade: "G3", comment: "spóźniony" })
+      expect(gradeOf(s, "2")).toEqual({ grade: "G3", gradeComment: "spóźniony" })
   })
 
   test("wypisanie osoby kasuje ocenę; Cofnij oddaje ją z zapisem", () => {
     const result = applyCommand(graded, { kind: "move", studentNumber: "2", toSlotId: null })
     if (!result.ok) throw new Error(result.code)
-    expect(gradeOf(result.state, "2")).toEqual({ grade: null, comment: null })
+    expect(gradeOf(result.state, "2")).toEqual({ grade: null, gradeComment: null })
     expect(result.inverse).toEqual({
       kind: "move",
       studentNumber: "2",
       toSlotId: "s1",
-      grade: { grade: "G3", comment: "spóźniony" },
+      grade: { grade: "G3", gradeComment: "spóźniony" },
     })
     applyOk(graded, { kind: "move", studentNumber: "2", toSlotId: null })
   })
@@ -111,8 +112,8 @@ describe("oceny", () => {
       slotId: "s1",
       studentNumbers: ["1", "2"],
       grades: {
-        "1": { grade: "ABSENT", comment: null },
-        "2": { grade: "G3", comment: "spóźniony" },
+        "1": { grade: "ABSENT", gradeComment: null },
+        "2": { grade: "G3", gradeComment: "spóźniony" },
       },
     })
     applyOk(team, { kind: "unenrollTeam", slotId: "s1" })
@@ -121,7 +122,7 @@ describe("oceny", () => {
   test("changedPeople widzi zmianę samego komentarza", () => {
     const result = applyCommand(graded, {
       kind: "setGrades",
-      grades: { "2": { grade: "G3", comment: "inny" } },
+      grades: { "2": { grade: "G3", gradeComment: "inny" } },
     })
     if (!result.ok) throw new Error(result.code)
     expect(changedPeople(graded, result.state).map(([, p]) => p.studentNumber)).toEqual(["2"])
@@ -136,6 +137,24 @@ function applyOk(s: BoardState, command: BoardCommand) {
   expect(undone.state).toEqual(s)
   return result.state
 }
+
+test("gradesLostBy: tylko wypisywani z oceną albo komentarzem", () => {
+  const s: BoardState = {
+    ...state,
+    people: state.people.map((p) =>
+      p.studentNumber === "1"
+        ? { ...p, grade: "G4" }
+        : p.studentNumber === "3"
+          ? { ...p, gradeComment: "x" }
+          : p,
+    ),
+  }
+  const who = (c: BoardCommand) => gradesLostBy(s, c).map((p) => p.studentNumber)
+  expect(who({ kind: "unenrollTeam", slotId: "s1" })).toEqual(["1"])
+  expect(who({ kind: "move", studentNumber: "3", toSlotId: null })).toEqual(["3"])
+  expect(who({ kind: "move", studentNumber: "1", toSlotId: "s3" })).toEqual([])
+  expect(who({ kind: "move", studentNumber: "9", toSlotId: null })).toEqual([])
+})
 
 describe("applyCommand", () => {
   test("wypisanie: polecenie odwrotne niesie odpowiedzi; zapis z odpowiedziami je ustawia", () => {

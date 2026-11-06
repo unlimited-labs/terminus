@@ -1,10 +1,12 @@
 import { z } from "zod"
 
+import { ASSIGNMENT_MODES } from "../domain/draw.ts"
+import { EXAM_FIELDS_MAX, SLOT_MINUTES_MAX, TEAM_SIZE_MAX } from "../domain/limits.ts"
 import { tooLong } from "../messages.pl.ts"
 import { email } from "./auth.ts"
 export const examIdSchema = z.object({ examId: z.uuid() })
 
-export const hhmm = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Podaj godzinę.")
+export const hhmm = z.iso.time({ precision: -1, error: "Podaj godzinę." })
 
 export const isoDate = z.iso.date("Podaj datę.")
 
@@ -20,9 +22,9 @@ export const slotMinutes = z
   .number({ error: "Podaj liczbę minut." })
   .int("Podaj pełne minuty.")
   .min(1, "Slot musi mieć co najmniej 1 minutę.")
-  .max(480, "Slot może mieć najwyżej 480 minut.")
+  .max(SLOT_MINUTES_MAX, `Slot może mieć najwyżej ${SLOT_MINUTES_MAX} minut.`)
 
-const assignmentMode = z.enum(["RANDOM", "MANUAL"])
+export const assignmentMode = z.enum(ASSIGNMENT_MODES)
 
 export const examSchema = z.object({
   name: z.string().trim().min(1, "Podaj nazwę zaliczenia.").max(200, tooLong(200)),
@@ -32,11 +34,13 @@ export const examSchema = z.object({
     .number({ error: "Podaj liczbę osób." })
     .int("Podaj liczbę całkowitą.")
     .min(1, "Zespół ma co najmniej 1 osobę.")
-    .max(20, "Zespół może mieć najwyżej 20 osób."),
+    .max(TEAM_SIZE_MAX, `Zespół może mieć najwyżej ${TEAM_SIZE_MAX} osób.`),
   assignmentMode,
   requireEmailLogin: z.boolean(),
   showSlotTimes: z.boolean(),
-  fields: z.array(examFieldSchema).max(5, "Najwyżej 5 dodatkowych pól."),
+  fields: z
+    .array(examFieldSchema)
+    .max(EXAM_FIELDS_MAX, `Najwyżej ${EXAM_FIELDS_MAX} dodatkowych pól.`),
   opensDate: z.union([z.literal(""), isoDate]),
   opensTime: z.union([z.literal(""), hhmm]),
 })
@@ -46,7 +50,7 @@ export const examFormSchema = examSchema.refine((v) => !v.opensDate === !v.opens
   path: ["opensTime"],
 })
 
-export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string() })
+export const deleteExamSchema = examIdSchema.extend({ confirmName: z.string().trim() })
 
 export const duplicateExamSchema = examIdSchema.extend({ copyRosters: z.boolean() })
 

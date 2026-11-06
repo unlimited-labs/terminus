@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
 import { Card, CardContent } from "@/components/ui/card"
 import { useExamMutation } from "@/components/use-result-mutation"
+import { SLOT_MINUTES_MAX } from "@/domain/limits"
 import { cutWindow } from "@/domain/slots"
 import { formatDayShort, formatSlotTime, warsawDay, warsawTime } from "@/domain/time"
 import { fullName } from "@/domain/schedule"
@@ -100,7 +101,7 @@ function WindowForm({ exam }: { exam: ExamDetail }) {
           <form.AppField name="from">{(f) => <f.TextField label="Od" type="time" />}</form.AppField>
           <form.AppField name="to">{(f) => <f.TextField label="Do" type="time" />}</form.AppField>
           <form.AppField name="minutes">
-            {(f) => <f.NumberField label="Długość slotu (min)" min={1} max={480} />}
+            {(f) => <f.NumberField label="Długość slotu (min)" min={1} max={SLOT_MINUTES_MAX} />}
           </form.AppField>
           <form.AppField name="rosterId">
             {(f) => <f.RosterField rosters={exam.rosters} />}

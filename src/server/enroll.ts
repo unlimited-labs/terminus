@@ -16,7 +16,7 @@ export const enroll = createServerFn({ method: "POST" })
     // Ślad do wyjaśniania zapisów bez wiedzy kolegi (klauzula informacyjna, pkt 12).
     const trace = (result: string) =>
       consola.info(
-        `zapis ip=${key} tryb=${data.assignmentMode} slot=${"slotId" in data ? (data.slotId ?? "-") : "-"} indeksy=${data.studentNumbers.join(",")} ${result}`,
+        `zapis ip=${key} tryb=${data.assignmentMode} slot=${data.slotId ?? "-"} indeksy=${data.studentNumbers.join(",")} ${result}`,
       )
     if (await isBlocked(key)) {
       trace("RATE_LIMITED")
@@ -24,7 +24,7 @@ export const enroll = createServerFn({ method: "POST" })
     }
     const outcome = await enrollTeam(data.examId, data.studentNumbers, data.answers, {
       shownMode: data.assignmentMode,
-      slotId: "slotId" in data ? data.slotId : undefined,
+      slotId: data.slotId,
       sessionEmail: access.kind === "ok" ? access.email : undefined,
     })
     trace(outcome.ok ? "ok" : outcome.code)

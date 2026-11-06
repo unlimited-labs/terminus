@@ -1,9 +1,8 @@
 import { describe, expect, test } from "vitest"
 
 import { db } from "@/server/db.server"
-import { withExamLock } from "@/server/exam-access.server"
 
-import { createExam, enroll, inDays, TEST_NOW } from "./fixtures"
+import { createExam, enroll, holdLock, inDays, TEST_NOW } from "./fixtures"
 
 const numbers = (from: number, count: number) =>
   Array.from({ length: count }, (_, i) => String(from + i))
@@ -90,18 +89,6 @@ test("przed startem zapisów zapis jest odrzucany, potem przechodzi", async () =
   })
 })
 
-/** Trzyma blokadę zaliczenia, dopóki test nie wywoła `release`. */
-async function holdLock(examId: string) {
-  const locked = Promise.withResolvers<void>()
-  const released = Promise.withResolvers<void>()
-  const done = withExamLock(examId, "public", () => {
-    locked.resolve()
-    return released.promise
-  })
-  await locked.promise
-  return { release: released.resolve, done }
-}
-
 test("„teraz” liczy się po uzyskaniu blokady: kto czekał przez moment otwarcia, zostaje przyjęty", async () => {
   const { examId } = await createExam({ rosters: { g1: { students: ["41"], slots: [inDays(3)] } } })
   const opensAt = new Date("2030-01-01T09:00:00Z")
@@ -178,7 +165,7 @@ describe("enrollTeam: ręczny wybór slotu", () => {
     const foreignSlot = (await db.slot.findFirstOrThrow({ where: { examId: other.examId } })).id
 
     expect(await enroll(examId, ["71"], {}, { shownMode: "MANUAL", slotId: g2Slot })).toMatchObject(
-      { ok: false, code: "SLOT_OTHER_ROSTER", teamRosterId: rosterIds.g1 },
+      { ok: false, code: "SLOT_OTHER_ROSTER" },
     )
     expect(await enroll(examId, ["71"], {}, { shownMode: "MANUAL", slotId: foreignSlot })).toEqual({
       ok: false,

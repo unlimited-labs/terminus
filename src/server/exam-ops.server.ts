@@ -1,6 +1,7 @@
 import type { z } from "zod"
 
-import { buildExportCsv, exportFileName } from "../domain/csv.ts"
+import { buildExportCsv } from "../domain/csv.ts"
+import { exportFileName } from "../domain/file-names.ts"
 import { examPhase } from "../domain/schedule.ts"
 import { warsawDateTime } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
@@ -10,7 +11,7 @@ import { db } from "./db.server.ts"
 import { getOwnedExam, taughtBy, withExamLock, type ExamAccess } from "./exam-access.server.ts"
 import { loadExam, parseFields } from "./exam-state.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
-import { STUDENT_ROLE } from "./roles.ts"
+import { teacherWithEmail } from "./roles.ts"
 
 /** Zaliczenia, których konto jest prowadzącym, od najnowszych, z etapem i terminami do listy. */
 export async function examsOf(userId: string, now = new Date()) {
@@ -124,23 +125,19 @@ export function copyExam(
           },
         },
       })
+      const { rosters, name, fields, requireEmailLogin, ...settings } = source
       const copy = await tx.exam.create({
         data: {
+          ...settings,
           teachers: { connect: { id: userId } },
-          name: `${source.name} (kopia)`,
-          description: source.description,
-          defaultSlotMinutes: source.defaultSlotMinutes,
-          maxTeamSize: source.maxTeamSize,
-          assignmentMode: source.assignmentMode,
-          fields: parseFields(source.fields),
-          enrollmentOpensAt: source.enrollmentOpensAt,
-          requireEmailLogin: source.requireEmailLogin && emailLoginAvailable,
-          showSlotTimes: source.showSlotTimes,
+          name: `${name} (kopia)`,
+          fields: parseFields(fields),
+          requireEmailLogin: requireEmailLogin && emailLoginAvailable,
         },
       })
       if (!copyRosters) return { ok: true, examId: copy.id }
       await Promise.all(
-        source.rosters.map((roster) =>
+        rosters.map((roster) =>
           tx.roster.create({
             data: {
               examId: copy.id,
@@ -201,7 +198,7 @@ export function removeExam(
 ): Promise<Result> {
   return withExamLock(examId, access, async (tx): Promise<Result> => {
     const exam = await tx.exam.findUniqueOrThrow({ where: { id: examId } })
-    if (exam.name !== confirmName.trim()) return { ok: false, code: "NAME_MISMATCH" }
+    if (exam.name !== confirmName) return { ok: false, code: "NAME_MISMATCH" }
     await tx.exam.delete({ where: { id: examId } })
     return { ok: true }
   })
@@ -211,10 +208,7 @@ export function removeExam(
 export function addTeacher(examId: string, userId: string, email: string): Promise<Result> {
   return withExamLock(examId, { teacher: userId }, async (tx): Promise<Result> => {
     const teacher = await tx.user.findFirst({
-      where: {
-        email: { equals: email, mode: "insensitive" },
-        OR: [{ role: null }, { role: { not: STUDENT_ROLE } }],
-      },
+      where: teacherWithEmail(email),
       select: {
         id: true,
         banned: true,

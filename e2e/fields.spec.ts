@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs"
 
 import { expect, test } from "@playwright/test"
 
-import { exams, login } from "./helpers.ts"
+import { exams, login, openBoard } from "./helpers.ts"
 
 test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, widać na bilecie, tablicy i w eksporcie", async ({
   page,
@@ -26,7 +26,7 @@ test("dodatkowe pole: prowadzący dodaje, zespół wypełnia przy zapisie, wida�
   await page.getByRole("button", { name: "Losuj slot" }).click()
   await expect(page.getByRole("dialog")).toContainText("Tytuł projektu: Robot sprzątający")
 
-  await page.goto(`/zaliczenia/${boardExamId}/tablica`)
+  await openBoard(page, boardExamId)
   await expect(page.getByText("Tytuł projektu: Robot sprzątający")).toBeVisible()
 
   await page.goto(`/zaliczenia/${boardExamId}`)

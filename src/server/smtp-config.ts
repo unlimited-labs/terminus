@@ -1,7 +1,5 @@
 import { z } from "zod"
 
-import { OPS } from "../messages.pl.ts"
-
 /** Puste = nieustawione (zajmuje się tym `emptyStringAsUndefined` w `env.server.ts`). */
 export const smtpShape = {
   SMTP_HOST: z.string().optional(),
@@ -16,8 +14,6 @@ type SmtpVars = { [K in keyof typeof smtpShape]?: z.infer<(typeof smtpShape)[K]>
 /** Login i hasło tylko razem: jedno bez drugiego to pomyłka w konfiguracji, aplikacja nie startuje. */
 export const smtpCredentialsTogether = (v: SmtpVars) =>
   (v.SMTP_USER === undefined) === (v.SMTP_PASSWORD === undefined)
-
-export const smtpCredentialsMessage = OPS.smtpCredentials
 
 /** Konfiguracja transportu albo `null`: bez hosta, portu i nadawcy opcja logowania mailem jest niedostępna. */
 export function smtpConfig(v: SmtpVars) {

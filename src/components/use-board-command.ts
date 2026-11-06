@@ -2,12 +2,12 @@ import { useIsMutating, useMutation, useQueryClient } from "@tanstack/react-quer
 import { useRef } from "react"
 import { toast } from "sonner"
 
+import { parseOrToast } from "@/components/form"
 import { toastFailure, toastUnexpected } from "@/components/use-result-mutation"
 import { enqueue, settle, type BoardCommand, type BoardQueue } from "@/domain/board"
-import { firstIssue } from "@/messages.pl"
 import { boardCommandSchema } from "@/schemas/board"
 import { applyBoardCommand } from "@/server/board"
-import { examChangeKeys, examQuery } from "@/server/exams"
+import { examQuery, examsQuery } from "@/server/exams"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 const DONE_MESSAGES: Record<BoardCommand["kind"], string> = {
@@ -65,19 +65,17 @@ export function useBoardCommand(exam: ExamDetail) {
       queue.current = settled.queue
       queryClient.setQueryData(key, settled.shown)
       if (settled.queue) return
-      for (const queryKey of examChangeKeys(exam.id))
-        void queryClient.invalidateQueries({ queryKey })
+      // Udane polecenie zwraca świeży stan zaliczenia, więc odświeżamy je tylko po błędzie.
+      if (!result?.ok) void queryClient.invalidateQueries({ queryKey: key })
+      void queryClient.invalidateQueries({ queryKey: examsQuery().queryKey })
     },
   })
 
   function run(command: BoardCommand) {
-    const checked = boardCommandSchema.safeParse(command)
-    if (!checked.success) {
-      toast.error(firstIssue(checked.error))
-      return false
-    }
+    const cmd = parseOrToast(boardCommandSchema, command)
+    if (!cmd) return false
     const before = queryClient.getQueryData<ExamDetail>(key) ?? exam
-    const added = enqueue(queue.current, before, command)
+    const added = enqueue(queue.current, before, cmd)
     if (!added.ok) {
       if (added.code === "NO_CHANGE") return true
       toastFailure(added)
@@ -86,7 +84,7 @@ export function useBoardCommand(exam: ExamDetail) {
     queue.current = added.queue
     void queryClient.cancelQueries({ queryKey: key })
     queryClient.setQueryData(key, added.shown)
-    mutation.mutate({ command, message: doneMessage(command, before) })
+    mutation.mutate({ command: cmd, message: doneMessage(cmd, before) })
     return true
   }
   return run

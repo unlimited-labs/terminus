@@ -3,12 +3,12 @@ import { randomUUID } from "node:crypto"
 import { expect, test } from "vitest"
 
 import { listBlockedAccountExams } from "@/server/account-ops.server"
-import { auth } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { addTeacher, copyExam, removeExam, removeTeacher } from "@/server/exam-ops.server"
 import { getOwnedExam } from "@/server/exam-access.server"
 
 import { createExam } from "./fixtures"
+import { account } from "./sessions"
 
 const user = (banned = false) =>
   db.user.create({
@@ -68,13 +68,7 @@ test("duplikat ma tylko duplikującego prowadzącego", async () => {
 })
 
 test("superadmin widzi zaliczenie zablokowanego dopiero, gdy zablokowani są wszyscy prowadzący", async () => {
-  const email = `${randomUUID()}@example.com`
-  await auth.api.createUser({ body: { email, password: "haslo-123456", name: "A", role: "admin" } })
-  const res = await auth.api.signInEmail({
-    body: { email, password: "haslo-123456" },
-    returnHeaders: true,
-  })
-  const headers = new Headers({ cookie: res.headers.getSetCookie()[0]!.split(";")[0]! })
+  const { headers } = await account("admin")
 
   const { examId, teacherId } = await createExam({ rosters: {} })
   const second = await user()

@@ -11,35 +11,45 @@ import { STUDENT_ROLE } from "./roles.ts"
  */
 export type StudentAccess =
   | { kind: "open" }
-  | { kind: "ok"; email: string }
+  | { kind: "ok"; email: string; studentNumber: string }
   | { kind: "login" }
   | { kind: "unavailable" }
 
 /** Adres z sesji studenta; sesja prowadzącego albo zablokowanego konta nie daje dostępu. */
 export async function sessionEmail(headers: Headers): Promise<string | null> {
-  const session = await auth.api.getSession({ headers })
-  const user = session?.user as
-    | { email: string; role?: string | null; banned?: boolean | null }
-    | undefined
-  return user && user.role === STUDENT_ROLE && !user.banned ? user.email : null
+  const user = (await auth.api.getSession({ headers }))?.user
+  return user?.role === STUDENT_ROLE && !user.banned ? user.email : null
+}
+
+/** Czy zaliczenie ma włączone logowanie mailem (bez sprawdzania SMTP). */
+export async function emailLoginRequired(examId: string): Promise<boolean> {
+  const exam = await db.exam.findUnique({
+    where: { id: examId },
+    select: { requireEmailLogin: true },
+  })
+  return exam?.requireEmailLogin ?? false
 }
 
 /**
  * Dostęp liczony przy każdym żądaniu z bieżącej listy: usunięcie z listy albo zmiana adresu odbiera go
  * od następnego żądania; w sesji nie ma zaliczenia ani indeksu.
  */
-export async function studentAccess(examId: string, email: string | null): Promise<StudentAccess> {
-  const exam = await db.exam.findUnique({
-    where: { id: examId },
-    select: { requireEmailLogin: true },
-  })
-  if (!exam?.requireEmailLogin) return { kind: "open" }
+export async function studentAccess(
+  examId: string,
+  email: string | null,
+  /** Już odczytane `requireEmailLogin` (bez ponownego zapytania). */
+  required?: boolean,
+): Promise<StudentAccess> {
+  if (!(required ?? (await emailLoginRequired(examId)))) return { kind: "open" }
   if (!emailLoginAvailable) return { kind: "unavailable" }
   if (!email) return { kind: "login" }
-  const onList = await db.rosterEntry.count({
+  // Przy wielu indeksach z jednym adresem pierwszy (plakietka na stronie zapisów).
+  const entry = await db.rosterEntry.findFirst({
     where: { examId, email: { equals: email, mode: "insensitive" } },
+    orderBy: { studentNumber: "asc" },
+    select: { studentNumber: true },
   })
-  return onList > 0 ? { kind: "ok", email } : { kind: "login" }
+  return entry ? { kind: "ok", email, studentNumber: entry.studentNumber } : { kind: "login" }
 }
 
 /** Dla funkcji serwerowych studenta: poza `open` i `ok` odmowa, po której strona wraca do ekranu logowania. */

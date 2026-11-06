@@ -1,9 +1,6 @@
-import { expect, test, type Page } from "@playwright/test"
+import { expect, test } from "@playwright/test"
 
-import { dayLabel, dragWithMouse, exams, login, openBoard } from "./helpers.ts"
-
-const row = (page: Page, time: string) => page.locator("tr", { hasText: time })
-const pool = (page: Page) => page.getByRole("complementary", { name: "Niezapisani" })
+import { dayLabel, dragWithMouse, exams, login, openBoard, pool, row } from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)

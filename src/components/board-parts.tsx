@@ -1,6 +1,7 @@
 import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
+import { cn } from "cn"
 import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 
 import { GradeChip } from "@/components/grading"
 import { hasManyRosters } from "@/components/roster-choice"
@@ -10,15 +11,25 @@ import { Input } from "@/components/ui/input"
 import { TableCell, TableRow } from "@/components/ui/table"
 import { dragId, parseDragId, type BoardCommand } from "@/domain/board"
 import type { ExamField } from "@/domain/fields"
-import { fullName } from "@/domain/schedule"
+import { fullName, personLabel } from "@/domain/schedule"
 import { formatDayShort, formatSlotTime, warsawTime } from "@/domain/time"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 type Person = ExamDetail["people"][number]
 type Slot = ExamDetail["slots"][number]
 
-const personLabel = (p: Person) =>
-  p.firstName ? `${fullName(p)} (${p.studentNumber})` : p.studentNumber
+type ElementRef = (el: HTMLElement | null) => void
+
+/** Stały ref z dwóch: nowa funkcja co render odpina i przypina element w dnd-kit. */
+function useJoinedRef(a: ElementRef, b: ElementRef) {
+  return useCallback(
+    (el: HTMLElement | null) => {
+      a(el)
+      b(el)
+    },
+    [a, b],
+  )
+}
 
 /** Przycisk ikony na kafelku: nie zaczyna przeciągania kafelka. */
 const TileAction = (props: React.ComponentProps<typeof Button>) => (
@@ -56,6 +67,7 @@ function PersonTile({
     collisionPriority: 3,
     disabled: unenrolled,
   })
+  const attach = useJoinedRef(drag.ref, drop.ref)
 
   if (editing) {
     return (
@@ -73,13 +85,14 @@ function PersonTile({
   }
   return (
     <div
-      ref={(el) => {
-        drag.ref(el)
-        drop.ref(el)
-      }}
-      className={`flex shrink-0 ${team ? "w-full" : ""} cursor-grab touch-none items-center gap-2 rounded-lg border bg-card px-2 py-1 text-sm ${
-        drop.isDropTarget ? "ring-2 ring-primary" : ""
-      } ${drag.isDragging ? "opacity-50" : ""} ${highlighted ? "bg-yellow-100 ring-2 ring-yellow-400" : ""}`}
+      ref={attach}
+      className={cn(
+        "flex shrink-0 cursor-grab touch-none items-center gap-2 rounded-lg border bg-card px-2 py-1 text-sm",
+        team !== undefined && "w-full",
+        drop.isDropTarget && "ring-2 ring-primary",
+        drag.isDragging && "opacity-50",
+        highlighted && "bg-yellow-100 ring-2 ring-yellow-400",
+      )}
     >
       {unenrolled ? (
         <span className="font-semibold tabular-nums">{person.studentNumber}</span>
@@ -141,7 +154,7 @@ function RenameForm({
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!firstName.trim() || !lastName.trim()) return
-    if (onSave(firstName.trim(), lastName.trim())) onDone()
+    if (onSave(firstName, lastName)) onDone()
   }
   return (
     <form onSubmit={onSubmit} className="flex shrink-0 gap-1 rounded-lg border bg-card p-1">
@@ -180,9 +193,11 @@ function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: stri
     data: { label: `zespół, ${label}` },
     disabled: team.length === 0,
   })
-  const { source } = useDragOperation()
+  // Odczyt `source` dopiero przy celu upuszczenia: tylko wtedy wiersz subskrybuje przeciąganie.
+  const operation = useDragOperation()
   const dropTone = () => {
     if (!drop.isDropTarget) return "hover:bg-transparent"
+    const { source } = operation
     const incoming = source ? parseDragId(source.id) : undefined
     const rejects =
       incoming?.kind === "person" &&
@@ -193,10 +208,7 @@ function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: stri
       : "bg-primary/10 hover:bg-primary/10"
   }
   return {
-    attach: (el: HTMLElement | null) => {
-      drop.ref(el)
-      drag.ref(el)
-    },
+    attach: useJoinedRef(drop.ref, drag.ref),
     attachHandle,
     tone: `${dropTone()} ${drag.isDragging ? "opacity-50" : ""}`,
   }
@@ -205,13 +217,13 @@ function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: stri
 function TeamCell({
   slot,
   team,
-  rosterOf,
+  rosterNames,
   highlight,
   onCommand,
 }: {
   slot: Slot
   team: Person[]
-  rosterOf: (rosterId: string) => string | undefined
+  rosterNames: Map<string, string> | null
   highlight: (p: Person) => boolean
   onCommand: (command: BoardCommand) => boolean
 }) {
@@ -224,7 +236,7 @@ function TeamCell({
           person={p}
           team={team}
           highlighted={highlight(p)}
-          foreignRoster={p.rosterId === slot.rosterId ? undefined : rosterOf(p.rosterId)}
+          foreignRoster={p.rosterId === slot.rosterId ? undefined : rosterNames?.get(p.rosterId)}
           onCommand={onCommand}
         />
       ))}
@@ -236,20 +248,19 @@ export function BoardSlotRow({
   slot,
   team,
   dayLabel,
-  rosterName,
+  rosterNames,
   maxTeamSize,
   fields,
-  rosterOf,
   highlight,
   onCommand,
 }: {
   slot: Slot
   team: Person[]
   dayLabel: string | null
-  rosterName?: string
+  /** `null` = jedna lista, bez kolumny „Lista”. */
+  rosterNames: Map<string, string> | null
   maxTeamSize: number
   fields: ExamField[]
-  rosterOf: (rosterId: string) => string | undefined
   highlight: (p: Person) => boolean
   onCommand: (command: BoardCommand) => boolean
 }) {
@@ -284,14 +295,14 @@ export function BoardSlotRow({
           </TileAction>
         </span>
       </TableCell>
-      {rosterName !== undefined && (
-        <TableCell className="px-2 py-1.5 align-top">{rosterName}</TableCell>
+      {rosterNames && (
+        <TableCell className="px-2 py-1.5 align-top">{rosterNames.get(slot.rosterId)}</TableCell>
       )}
       <TableCell className="px-2 py-1.5 whitespace-normal">
         <TeamCell
           slot={slot}
           team={team}
-          rosterOf={rosterOf}
+          rosterNames={rosterNames}
           highlight={highlight}
           onCommand={onCommand}
         />
@@ -325,7 +336,7 @@ export function UnenrolledPanel({
   })
   const unenrolled = exam.people.filter((p) => p.slotId === null)
   const shown = unenrolled.filter((p) => p.studentNumber.includes(filter.trim()))
-  const groups = hasManyRosters(exam.rosters) ? exam.rosters : [{ id: null, name: "" }]
+  const many = hasManyRosters(exam.rosters)
 
   return (
     <aside
@@ -349,11 +360,11 @@ export function UnenrolledPanel({
         value={filter}
         onChange={(e) => setFilter(e.target.value)}
       />
-      {groups.map((g) => {
-        const people = shown.filter((p) => g.id === null || p.rosterId === g.id)
+      {exam.rosters.map((g) => {
+        const people = shown.filter((p) => p.rosterId === g.id)
         return (
-          <section key={g.id ?? "all"} className="grid gap-2">
-            {g.id && <h3 className="text-sm font-bold">{g.name}</h3>}
+          <section key={g.id} className="grid gap-2">
+            {many && <h3 className="text-sm font-bold">{g.name}</h3>}
             <div className="flex flex-wrap gap-2">
               {people.map((p) => (
                 <PersonTile

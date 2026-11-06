@@ -196,8 +196,6 @@ describe("planChoice", () => {
     expect(planChoice(data(), ["100"], "g2a", now)).toEqual({
       ok: false,
       code: "SLOT_OTHER_ROSTER",
-      slotRosterId: "g2",
-      teamRosterId: "g1",
     })
   })
 })

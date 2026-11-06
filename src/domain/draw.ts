@@ -22,9 +22,10 @@ export type EnrollmentPlan =
     }
   | { ok: false; code: "ALREADY_ENROLLED"; enrolled: { studentNumber: string; startsAt: Date }[] }
   | { ok: false; code: "SLOT_UNAVAILABLE" }
-  | { ok: false; code: "SLOT_OTHER_ROSTER"; slotRosterId: string; teamRosterId: string }
+  | { ok: false; code: "SLOT_OTHER_ROSTER" }
 
-export type AssignmentMode = "RANDOM" | "MANUAL"
+export const ASSIGNMENT_MODES = ["RANDOM", "MANUAL"] as const
+export type AssignmentMode = (typeof ASSIGNMENT_MODES)[number]
 
 /** `randomInt(max)` zwraca liczbę całkowitą z [0, max). */
 export type RandomInt = (max: number) => number
@@ -96,14 +97,7 @@ export function planChoice(
 
   const slot = data.slots.find((s) => s.id === slotId)
   if (!slot) return SLOT_UNAVAILABLE
-  if (slot.rosterId !== team.rosterId) {
-    return {
-      ok: false,
-      code: "SLOT_OTHER_ROSTER",
-      slotRosterId: slot.rosterId,
-      teamRosterId: team.rosterId,
-    }
-  }
+  if (slot.rosterId !== team.rosterId) return { ok: false, code: "SLOT_OTHER_ROSTER" }
   const taken = data.enrollments.some((e) => e.slotId === slotId)
   if (!isFreeSlot(slot, taken, now)) return SLOT_UNAVAILABLE
   return { ok: true, slotId }

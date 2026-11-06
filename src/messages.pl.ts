@@ -1,9 +1,10 @@
 import type { z } from "zod"
 
 import type { BoardErrorCode, Grade } from "./domain/board.ts"
-import type { InvalidRowReason } from "./domain/csv.ts"
+import type { InvalidRowReason, ParsedRoster } from "./domain/csv.ts"
 import type { AssignmentMode, EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
+import { FAILED_ATTEMPTS_WINDOW_MINUTES, LOGIN_LINK_MINUTES } from "./domain/limits.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import type { ExamPhase } from "./domain/schedule.ts"
 import { formatDay, formatDayTime, formatSlotTime, type SlotWhen } from "./domain/time.ts"
@@ -17,7 +18,7 @@ export type AppError =
   | { code: BoardErrorCode }
   | { code: "SLOT_OVERLAP"; startsAt: Date; endsAt: Date }
   | { code: "MODE_CHANGED"; assignmentMode: AssignmentMode }
-  | { code: "MISSING_COLUMNS"; columns: string[] }
+  | Failure<ParsedRoster>
   | { code: "TEAM_SIZE_BELOW_EXISTING"; slots: Date[] }
   | { code: "ENTRY_EXISTS"; rosterName: string }
   | {
@@ -191,8 +192,7 @@ export const ACCESS_DENIED = "Brak dostępu"
 
 /** Teksty dla administratora: logi kontenera i walidacja zmiennych środowiskowych. */
 export const OPS = {
-  noRealIp:
-    "Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na 10 minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).",
+  noRealIp: `Brak nagłówka X-Real-IP: wszyscy studenci dzielą jeden licznik limitu prób — kilka odrzuconych zgłoszeń z numerem spoza listy blokuje zapisy WSZYSTKIM na ${FAILED_ATTEMPTS_WINDOW_MINUTES} minut. Reverse proxy musi ustawiać X-Real-IP adresem klienta (README, „Przed pierwszym uruchomieniem”).`,
   unknownTimeZone: "Nieznana strefa czasowa.",
   smtpCredentials: "SMTP_USER i SMTP_PASSWORD ustawia się razem albo wcale.",
 }
@@ -200,20 +200,15 @@ export const OPS = {
 /** Limit długości pola tekstowego. */
 export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 
-export function authErrorMessage(code: string | undefined): string {
-  switch (code) {
-    case "INVALID_EMAIL_OR_PASSWORD":
-      return "Nieprawidłowy e-mail lub hasło."
-    case "BANNED_USER":
-      return "To konto jest zablokowane."
-    case "INVALID_PASSWORD":
-      return "Obecne hasło jest nieprawidłowe."
-    case "PASSWORD_TOO_SHORT":
-      return "Hasło jest za krótkie."
-    default:
-      return UNEXPECTED_ERROR
-  }
+const AUTH_ERROR: Record<string, string> = {
+  INVALID_EMAIL_OR_PASSWORD: "Nieprawidłowy e-mail lub hasło.",
+  BANNED_USER: "To konto jest zablokowane.",
+  INVALID_PASSWORD: "Obecne hasło jest nieprawidłowe.",
+  PASSWORD_TOO_SHORT: "Hasło jest za krótkie.",
 }
+
+export const authErrorMessage = (code: string | undefined): string =>
+  (code && Object.hasOwn(AUTH_ERROR, code) && AUTH_ERROR[code]) || UNEXPECTED_ERROR
 
 export const PHASE_LABEL: Record<ExamPhase, string> = {
   draft: "Do przygotowania",
@@ -230,8 +225,6 @@ export function phaseStatus(phase: ExamPhase, opensAt: Date | null): string {
 }
 
 /** Mail z linkiem logowania studenta (ważny `LOGIN_LINK_MINUTES` minut). */
-export const LOGIN_LINK_MINUTES = 15
-
 export function loginMail(link: string) {
   const subject = "Link do logowania na stronę zapisów"
   const lead = `Kliknij, żeby wejść na stronę zapisów. Link jest ważny ${LOGIN_LINK_MINUTES} minut i działa jednorazowo.`

@@ -1,6 +1,7 @@
 import { consola } from "consola"
 import { RateLimiterMemory } from "rate-limiter-flexible"
 
+import { FAILED_ATTEMPTS_WINDOW_MINUTES } from "../domain/limits.ts"
 import { OPS } from "../messages.pl.ts"
 
 import type { EnrollmentOutcome } from "./enrollment.server.ts"
@@ -8,7 +9,10 @@ import type { EnrollmentOutcome } from "./enrollment.server.ts"
 const MAX_POINTS = 10
 
 // ponytail: liczniki w pamięci jednego procesu, zerowane po restarcie (SPEC §4).
-const failures = new RateLimiterMemory({ points: MAX_POINTS, duration: 10 * 60 })
+const failures = new RateLimiterMemory({
+  points: MAX_POINTS,
+  duration: FAILED_ATTEMPTS_WINDOW_MINUTES * 60,
+})
 
 const HOUR = 60 * 60
 // Prośby o link liczą się przy każdym żądaniu (także udanym): wysyłka maila to koszt i zalew skrzynki.

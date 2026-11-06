@@ -3,7 +3,7 @@ import { useState } from "react"
 
 import { boardPlugins } from "@/components/board-accessibility"
 import { BoardSlotRow, UnenrolledPanel } from "@/components/board-parts"
-import { GradedCount, useUnenrollGuard } from "@/components/grading"
+import { useUnenrollGuard } from "@/components/grading"
 import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
@@ -13,13 +13,13 @@ import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components
 import { dropCommand, parseDragId } from "@/domain/board"
 import { examCounts, fullName } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
+import { GRADING } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
 
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
   const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
-  const multi = hasManyRosters(exam.rosters)
-  const rosterName = rosterNames(exam.rosters)
+  const rosterNameOf = hasManyRosters(exam.rosters) ? rosterNames(exam.rosters) : null
   const teams = Map.groupBy(exam.people, (p) => p.slotId)
   const q = search.trim().toLowerCase()
   const highlight = (p: ExamDetail["people"][number]) =>
@@ -33,7 +33,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
     if (command) run(command)
   }
 
-  const { enrolled, freeSlots } = examCounts(exam, exam.now)
+  const { enrolled, graded, freeSlots } = examCounts(exam, exam.now)
 
   return (
     <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>
@@ -42,7 +42,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
           <PageTitle>{exam.name} — tablica zapisów</PageTitle>
           <p className="tabular-nums text-muted-foreground">
             zapisani {enrolled} / {exam.people.length} · wolne sloty {freeSlots} · miejsca{" "}
-            {exam.slots.length * exam.maxTeamSize} · <GradedCount people={exam.people} />
+            {exam.slots.length * exam.maxTeamSize} · {GRADING.counter(graded, enrolled)}
           </p>
           <CapacitySummary exam={exam} />
           <Input
@@ -61,7 +61,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                 <TableRow className="hover:bg-transparent">
                   <TableHead>Dzień</TableHead>
                   <TableHead>Godzina</TableHead>
-                  {multi && <TableHead>Lista</TableHead>}
+                  {rosterNameOf && <TableHead>Lista</TableHead>}
                   <TableHead>Zespół</TableHead>
                 </TableRow>
               </TableHeader>
@@ -77,10 +77,9 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                       slot={slot}
                       team={team}
                       dayLabel={firstOfDay ? formatDayShort(slot.startsAt) : null}
-                      rosterName={multi ? rosterName.get(slot.rosterId) : undefined}
+                      rosterNames={rosterNameOf}
                       maxTeamSize={exam.maxTeamSize}
                       fields={exam.fields}
-                      rosterOf={(id) => rosterName.get(id)}
                       highlight={highlight}
                       onCommand={run}
                     />

@@ -1,6 +1,7 @@
 import type { ExamValues } from "@/components/exam-form-values"
 import { schemaSubmit, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
+import { EXAM_FIELDS_MAX, SLOT_MINUTES_MAX, TEAM_SIZE_MAX } from "@/domain/limits"
 import { Button } from "@/components/ui/button"
 import { EMAIL_LOGIN_UNCONFIGURED } from "@/messages.pl"
 import { examFormSchema } from "@/schemas/exam"
@@ -33,7 +34,11 @@ export function ExamForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <form.AppField name="defaultSlotMinutes">
             {(field) => (
-              <field.NumberField label="Domyślna długość slotu (min)" min={1} max={480} />
+              <field.NumberField
+                label="Domyślna długość slotu (min)"
+                min={1}
+                max={SLOT_MINUTES_MAX}
+              />
             )}
           </form.AppField>
           <form.AppField name="maxTeamSize">
@@ -41,7 +46,7 @@ export function ExamForm({
               <field.NumberField
                 label="Maks. wielkość zespołu (1 = indywidualne)"
                 min={1}
-                max={20}
+                max={TEAM_SIZE_MAX}
               />
             )}
           </form.AppField>
@@ -59,31 +64,27 @@ export function ExamForm({
           )}
         </form.AppField>
         {emailLoginAvailable !== undefined && (
-          <form.Subscribe selector={(s) => s.values.requireEmailLogin}>
-            {(checked) => (
+          <form.AppField name="requireEmailLogin">
+            {(field) => (
               <div className="grid gap-2">
-                <form.AppField name="requireEmailLogin">
-                  {(field) => (
-                    <field.CheckboxField
-                      label="Wymagaj logowania mailem"
-                      hint="Student loguje się mailem przed wejściem na stronę zapisów."
-                      disabled={!emailLoginAvailable && !checked}
-                    />
-                  )}
-                </form.AppField>
-                {!emailLoginAvailable && !checked && (
-                  <Notice tone="info" role="status">
-                    {EMAIL_LOGIN_UNCONFIGURED}
-                  </Notice>
-                )}
-                {!emailLoginAvailable && checked && (
-                  <Notice tone="error">
-                    Poczta niedostępna: studenci nie wejdą. Wyłącz opcję, żeby otworzyć zapisy.
-                  </Notice>
-                )}
+                <field.CheckboxField
+                  label="Wymagaj logowania mailem"
+                  hint="Student loguje się mailem przed wejściem na stronę zapisów."
+                  disabled={!emailLoginAvailable && !field.state.value}
+                />
+                {!emailLoginAvailable &&
+                  (field.state.value ? (
+                    <Notice tone="error">
+                      Poczta niedostępna: studenci nie wejdą. Wyłącz opcję, żeby otworzyć zapisy.
+                    </Notice>
+                  ) : (
+                    <Notice tone="info" role="status">
+                      {EMAIL_LOGIN_UNCONFIGURED}
+                    </Notice>
+                  ))}
               </div>
             )}
-          </form.Subscribe>
+          </form.AppField>
         )}
         <form.AppField name="showSlotTimes">
           {(field) => (
@@ -134,7 +135,7 @@ export function ExamForm({
                   </div>
                 </div>
               ))}
-              {list.state.value.length < 5 && (
+              {list.state.value.length < EXAM_FIELDS_MAX && (
                 <div>
                   <Button
                     type="button"

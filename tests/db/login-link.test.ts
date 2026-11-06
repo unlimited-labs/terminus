@@ -77,5 +77,5 @@ test("błąd poczty nie przerywa odpowiedzi", async () => {
   const examId = await examWithLogin()
   sent.mockRejectedValueOnce(Object.assign(new Error("smtp"), { responseCode: 550 }))
   await expect(requestLoginLink({ examId, studentNumber: "1" }, ip())).resolves.toBeUndefined()
-  await settle()
+  await vi.waitFor(() => expect(sent).toHaveBeenCalledTimes(1))
 })

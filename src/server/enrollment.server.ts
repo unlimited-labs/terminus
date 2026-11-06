@@ -64,8 +64,18 @@ export async function enrollTeam(
           enrollments: { select: { studentNumber: true, slotId: true } },
           rosters: {
             select: {
-              entries: { select: { studentNumber: true, rosterId: true, email: true } },
-              slots: { select: { id: true, rosterId: true, startsAt: true } },
+              entries: {
+                where: { studentNumber: { in: studentNumbers } },
+                orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+                select: {
+                  studentNumber: true,
+                  rosterId: true,
+                  email: true,
+                  firstName: true,
+                  lastName: true,
+                },
+              },
+              slots: { select: { id: true, rosterId: true, startsAt: true, endsAt: true } },
             },
           },
         },
@@ -73,16 +83,11 @@ export async function enrollTeam(
       if (exam.assignmentMode !== shownMode) {
         return { ok: false, code: "MODE_CHANGED", assignmentMode: exam.assignmentMode }
       }
+      // Tylko wpisy zespołu: plan sprawdza wyłącznie podane numery.
       const entries = exam.rosters.flatMap((r) => r.entries)
+      const own = sessionEmail?.toLowerCase()
       // Przed planem, żeby brak własnego indeksu nie zdradzał, które numery są na liście.
-      if (
-        sessionEmail !== undefined &&
-        !studentNumbers.some(
-          (n) =>
-            entries.find((e) => e.studentNumber === n)?.email.toLowerCase() ===
-            sessionEmail.toLowerCase(),
-        )
-      ) {
+      if (own !== undefined && !entries.some((e) => e.email.toLowerCase() === own)) {
         return { ok: false, code: "NOT_YOUR_INDEX" }
       }
       const data = {
@@ -112,19 +117,15 @@ export async function enrollTeam(
           answers,
         })),
       })
-      const [slot, team] = await Promise.all([
-        tx.slot.findUniqueOrThrow({
-          where: { id: plan.slotId },
-          select: { startsAt: true, endsAt: true },
-        }),
-        tx.rosterEntry.findMany({
-          where: { examId, studentNumber: { in: studentNumbers } },
-          select: { studentNumber: true, firstName: true, lastName: true },
-          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-        }),
-      ])
+      const { startsAt, endsAt } = data.slots.find((s) => s.id === plan.slotId)!
+      // Udany plan = jedna lista, więc kolejność z zapytania (nazwisko, imię) obejmuje cały zespół.
+      const team = entries.map(({ studentNumber, firstName, lastName }) => ({
+        studentNumber,
+        firstName,
+        lastName,
+      }))
       const shown = filledAnswers(fields, answers)
-      return { ok: true, slotId: plan.slotId, ticket: { ...slot, team, answers: shown } }
+      return { ok: true, slotId: plan.slotId, ticket: { startsAt, endsAt, team, answers: shown } }
     },
     timeout,
   )

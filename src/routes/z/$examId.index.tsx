@@ -3,16 +3,15 @@ import { createFileRoute } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 
-import { EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
+import { EnrollForm, EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
 import { StudentGate } from "@/components/student-gate"
 import { StickyAction, StudentPage } from "@/components/student-page"
 import { ScheduleBoard } from "@/components/schedule-board"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { isEnrollmentOpen, isFreeSlot } from "@/domain/schedule"
-import { formatSlotWhen, slotNumbering } from "@/domain/time"
-import { signOutWithToast } from "@/lib/auth-client"
+import { isEnrollmentOpen, isFreeTeamSlot } from "@/domain/schedule"
+import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
 import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
@@ -49,16 +48,15 @@ function EntryNotice({
   )
 }
 
-const isFree = (schedule: Schedule, s: Schedule["slots"][number]) =>
-  isFreeSlot(s, s.team.length > 0, schedule.now)
-
 function entryMode(schedule: Schedule, picked: PickedSlot | null) {
-  const anyFree = schedule.slots.some((s) => isFree(schedule, s))
+  const anyFree = schedule.slots.some((s) => isFreeTeamSlot(s, schedule.now))
   const manual = schedule.assignmentMode === "MANUAL"
+  const open = isEnrollmentOpen(schedule.opensAt, schedule.now)
   return {
     anyFree,
-    open: isEnrollmentOpen(schedule.opensAt, schedule.now),
+    open,
     choosing: manual && anyFree,
+    canPick: manual && open,
     action: anyFree ? "Zapisz się" : "Sprawdź swój slot",
     submitLabel: !anyFree
       ? "Sprawdź"
@@ -72,18 +70,15 @@ function entryMode(schedule: Schedule, picked: PickedSlot | null) {
   }
 }
 
-function usePickedSlot(schedule: Schedule | null | undefined) {
+function usePickedSlot(schedule: Schedule, numbering: SlotNumbering) {
   const [pickedId, setPickedId] = useState<string | null>(null)
-  const [seenMode, setSeenMode] = useState(schedule?.assignmentMode)
-  if (schedule && schedule.assignmentMode !== seenMode) {
+  const [seenMode, setSeenMode] = useState(schedule.assignmentMode)
+  if (schedule.assignmentMode !== seenMode) {
     setSeenMode(schedule.assignmentMode)
     setPickedId(null)
   }
-  const slot = schedule?.slots.find((s) => s.id === pickedId && isFree(schedule, s))
-  const picked =
-    schedule && slot
-      ? { id: slot.id, label: formatSlotWhen(slot.startsAt, slotNumbering(schedule)) }
-      : null
+  const slot = schedule.slots.find((s) => s.id === pickedId && isFreeTeamSlot(s, schedule.now))
+  const picked = slot ? { id: slot.id, label: formatSlotWhen(slot.startsAt, numbering) } : null
   return [picked, setPickedId] as const
 }
 
@@ -99,6 +94,8 @@ function StudentBar({
 }) {
   const queryClient = useQueryClient()
   const logout = async () => {
+    // Klient better-auth dopiero przy wylogowaniu: reszta studentów go nie pobiera.
+    const { signOutWithToast } = await import("@/lib/auth-client")
     if (!(await signOutWithToast())) return
     onLoggedOut()
     await queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey })
@@ -161,7 +158,8 @@ function OpenSchedule({
 }) {
   const [open, setOpen] = useState(false)
   const [mine, setMine] = useState<{ slotId: string; ticket: Ticket } | null>(null)
-  const [picked, setPickedId] = usePickedSlot(schedule)
+  const numbering = slotNumbering(schedule)
+  const [picked, setPickedId] = usePickedSlot(schedule, numbering)
   const [showCount, setShowCount] = useState(0)
 
   const mode = entryMode(schedule, picked)
@@ -192,7 +190,7 @@ function OpenSchedule({
         pulse={showCount > 0}
         pickedSlotId={picked?.id ?? null}
         onPick={
-          schedule.assignmentMode === "MANUAL" && mode.open && !mine
+          mode.canPick && !mine
             ? (slot) => {
                 setPickedId(slot.id)
                 setOpen(true)
@@ -202,26 +200,30 @@ function OpenSchedule({
       />
       {mode.open && <StickyAction onClick={() => setOpen(true)}>{title}</StickyAction>}
       <EnrollSheet
-        examId={examId}
         place={schedule.description}
-        numbering={slotNumbering(schedule)}
+        numbering={numbering}
         title={title}
-        submitLabel={mode.submitLabel}
-        assignmentMode={schedule.assignmentMode}
-        emailLogin={schedule.requireEmailLogin}
-        choosing={mode.choosing}
-        picked={picked}
-        maxTeamSize={mode.maxTeamSize}
-        fields={mode.fields}
         open={open}
         onOpenChange={setOpen}
         ticket={mine?.ticket ?? null}
-        onEnrolled={(slotId, ticket) => setMine({ slotId, ticket })}
         onShowOnBoard={() => {
           setOpen(false)
           setShowCount(showCount + 1)
         }}
-      />
+      >
+        <EnrollForm
+          examId={examId}
+          assignmentMode={schedule.assignmentMode}
+          emailLogin={schedule.requireEmailLogin}
+          choosing={mode.choosing}
+          picked={picked}
+          maxTeamSize={mode.maxTeamSize}
+          fields={mode.fields}
+          submitLabel={mode.submitLabel}
+          slotWhen={(at) => formatSlotWhen(at, numbering)}
+          onEnrolled={(slotId, ticket) => setMine({ slotId, ticket })}
+        />
+      </EnrollSheet>
     </StudentPage>
   )
 }

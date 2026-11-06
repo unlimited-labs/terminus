@@ -6,7 +6,8 @@ import { setSessionCookie } from "better-auth/cookies"
 import { admin, magicLink } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
-import { LOGIN_LINK_MINUTES, loginMail } from "../messages.pl.ts"
+import { LOGIN_LINK_MINUTES } from "../domain/limits.ts"
+import { loginMail } from "../messages.pl.ts"
 
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"

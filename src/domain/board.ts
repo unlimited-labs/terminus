@@ -12,7 +12,7 @@ export type BoardPerson = {
 
 export const GRADES = ["G2", "G3", "G3_5", "G4", "G4_5", "G5", "ABSENT"] as const
 export type Grade = (typeof GRADES)[number]
-export type GradeEntry = { grade: Grade | null; comment: string | null }
+export type GradeEntry = { grade: Grade | null; gradeComment: string | null }
 
 export type BoardState<P extends BoardPerson = BoardPerson> = {
   maxTeamSize: number
@@ -66,15 +66,13 @@ const findPerson = <P extends BoardPerson>(s: BoardState<P>, n: string) =>
 
 const gradeOf = (p: BoardPerson): GradeEntry => ({
   grade: p.grade ?? null,
-  comment: p.gradeComment ?? null,
+  gradeComment: p.gradeComment ?? null,
 })
 /** Ma ocenę albo sam komentarz: jest co stracić przy usunięciu zapisu. */
 export const isGraded = (p: BoardPerson) => p.grade != null || p.gradeComment != null
-const withGrade = (g: GradeEntry) => ({ grade: g.grade, gradeComment: g.comment })
-type Graded = Pick<BoardPerson, "grade" | "gradeComment">
-export const sameGrade = (a: Graded, b: Graded) =>
+export const sameGrade = (a: Partial<GradeEntry>, b: Partial<GradeEntry>) =>
   (a.grade ?? null) === (b.grade ?? null) && (a.gradeComment ?? null) === (b.gradeComment ?? null)
-const NO_GRADE = withGrade({ grade: null, comment: null })
+const NO_GRADE: GradeEntry = { grade: null, gradeComment: null }
 
 function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step<P> {
   const p = findPerson(s, c.studentNumber)
@@ -90,7 +88,7 @@ function move<P extends BoardPerson>(s: BoardState<P>, c: Command<"move">): Step
             ...q,
             slotId: to,
             ...(c.answers && { answers: c.answers }),
-            ...(to === null ? NO_GRADE : c.grade && withGrade(c.grade)),
+            ...(to === null ? NO_GRADE : c.grade),
           }
         : q,
     ),
@@ -183,7 +181,7 @@ function enrollTeam<P extends BoardPerson>(s: BoardState<P>, c: Command<"enrollT
             ...q,
             slotId: c.slotId,
             ...(c.answers && { answers: c.answers }),
-            ...withGrade(c.grades?.[q.studentNumber] ?? gradeOf(q)),
+            ...(c.grades?.[q.studentNumber] ?? gradeOf(q)),
           }
         : q,
     ),
@@ -211,17 +209,20 @@ function setAnswers<P extends BoardPerson>(
 
 function setGrades<P extends BoardPerson>(s: BoardState<P>, c: Command<"setGrades">): Step<P> {
   const next = new Map(
-    Object.entries(c.grades).map(([n, g]) => [n, { ...g, comment: g.comment?.trim() || null }]),
+    Object.entries(c.grades).map(([n, g]) => [
+      n,
+      { ...g, gradeComment: g.gradeComment?.trim() || null },
+    ]),
   )
   const people = [...next.keys()].flatMap((n) => findPerson(s, n) ?? [])
   if (people.length !== next.size) return "PERSON_NOT_FOUND"
   if (people.some((p) => p.slotId === null)) return "NOT_ENROLLED"
-  const changed = people.some((p) => !sameGrade(p, withGrade(next.get(p.studentNumber)!)))
+  const changed = people.some((p) => !sameGrade(p, next.get(p.studentNumber)!))
   if (!changed) return "NO_CHANGE"
   return {
     people: s.people.map((q) => {
       const g = next.get(q.studentNumber)
-      return g ? { ...q, ...withGrade(g) } : q
+      return g ? { ...q, ...g } : q
     }),
     inverse: {
       kind: "setGrades",
@@ -290,6 +291,18 @@ export function changedPeople<P extends BoardPerson>(
         !sameGrade(o, p))
     return changed ? [[o, p]] : []
   })
+}
+
+/** Osoby, które polecenie wypisze razem z oceną albo komentarzem (stan przed poleceniem). */
+export function gradesLostBy<P extends BoardPerson>(
+  state: BoardState<P>,
+  command: BoardCommand,
+): P[] {
+  const applied = applyCommand(state, command)
+  if (!applied.ok) return []
+  return changedPeople(state, applied.state).flatMap(([prev, next]) =>
+    prev.slotId !== null && next.slotId === null && isGraded(prev) ? [prev] : [],
+  )
 }
 
 /**

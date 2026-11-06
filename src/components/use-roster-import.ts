@@ -3,14 +3,15 @@ import { useState } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
 
+import { parseOrToast } from "@/components/form"
 import { toastUnexpected, useExamMutation } from "@/components/use-result-mutation"
-import { suggestRosterName } from "@/domain/csv"
-import { firstIssue } from "@/messages.pl"
+import { suggestRosterName } from "@/domain/file-names"
 import { rosterImportSchema } from "@/schemas/roster"
 import { applyRosterImport, previewRosterImport } from "@/server/rosters"
 
 export type ImportInput = z.input<typeof rosterImportSchema>
 type Preview = Awaited<ReturnType<typeof previewRosterImport>>
+export type PreviewOk = Extract<Preview, { ok: true }>
 
 /** Import listy z CSV: plik → podgląd na serwerze → zapis tego, co pokazał podgląd. */
 export function useRosterImport(examId: string) {
@@ -22,14 +23,13 @@ export function useRosterImport(examId: string) {
     onSuccess: (result, data) => setShown({ name: data.rosterName, result }),
     onError: toastUnexpected,
   })
-  const checked = (data: ImportInput) => {
-    const parsed = rosterImportSchema.safeParse(data)
-    if (!parsed.success) toast.error(firstIssue(parsed.error))
-    return parsed.success
-  }
-  const saving = useExamMutation(applyRosterImport, examId, () => {
+  const checked = (data: ImportInput) => parseOrToast(rosterImportSchema, data) !== null
+  const cancel = () => {
     setInput(null)
     setShown(null)
+  }
+  const saving = useExamMutation(applyRosterImport, examId, () => {
+    cancel()
     toast.success("Zaimportowano listę.")
   })
 
@@ -57,5 +57,5 @@ export function useRosterImport(examId: string) {
     if (!done.ok && done.code === "IMPORT_PREVIEW_STALE") preview.mutate(input)
   }
   const saveDisabled = saving.isPending || preview.isPending
-  return { input, setInput, load, result: shown?.result, apply, saveDisabled }
+  return { input, setInput, cancel, load, result: shown?.result, apply, saveDisabled }
 }

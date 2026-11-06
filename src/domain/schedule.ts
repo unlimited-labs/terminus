@@ -3,19 +3,28 @@ export function isFreeSlot(slot: { startsAt: Date }, taken: boolean, now: Date) 
   return !taken && slot.startsAt > now
 }
 
+/** Slot harmonogramu z zespołem: zajęty = ma kogoś w zespole. */
+export const isFreeTeamSlot = (slot: { startsAt: Date; team: unknown[] }, now: Date) =>
+  isFreeSlot(slot, slot.team.length > 0, now)
+
 /** Zapisy otwarte: bez daty startu albo start już minął. */
 export function isEnrollmentOpen(opensAt: Date | null | undefined, now: Date) {
   return !opensAt || opensAt <= now
 }
 
-/** Liczniki zaliczenia: zapisane indeksy i sloty, które da się jeszcze wylosować. */
+/** Liczniki zaliczenia: zapisane indeksy, ocenieni (sam komentarz to nie ocena) i sloty do wylosowania. */
 export function examCounts(
-  exam: { people: { slotId: string | null }[]; slots: { id: string; startsAt: Date }[] },
+  exam: {
+    people: { slotId: string | null; grade?: string | null }[]
+    slots: { id: string; startsAt: Date }[]
+  },
   now: Date,
 ) {
   const taken = new Set(exam.people.map((p) => p.slotId))
+  const enrolled = exam.people.filter((p) => p.slotId !== null)
   return {
-    enrolled: exam.people.filter((p) => p.slotId !== null).length,
+    enrolled: enrolled.length,
+    graded: enrolled.filter((p) => p.grade != null).length,
     freeSlots: exam.slots.filter((s) => isFreeSlot(s, taken.has(s.id), now)).length,
   }
 }
@@ -35,3 +44,7 @@ export function examPhase(
 /** „Imię Nazwisko” osoby z listy. */
 export const fullName = (p: { firstName: string; lastName: string }) =>
   `${p.firstName} ${p.lastName}`
+
+/** „Imię Nazwisko (indeks)”, bez imienia sam indeks. */
+export const personLabel = (p: { firstName: string; lastName: string; studentNumber: string }) =>
+  p.firstName ? `${fullName(p)} (${p.studentNumber})` : p.studentNumber

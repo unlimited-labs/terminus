@@ -5,6 +5,7 @@ import { DuplicateButton, ExportButton } from "@/components/exam-actions"
 import { ExamForm } from "@/components/exam-form"
 import { examFormValues } from "@/components/exam-form-values"
 import { Button, buttonVariants } from "@/components/ui/button"
+import { PageTitle } from "@/components/page-title"
 import { SectionCard } from "@/components/section-card"
 import { DeleteExamButton } from "@/components/delete-exam-button"
 import { useLeaveExam } from "@/components/use-leave-exam"
@@ -38,7 +39,7 @@ export function ExamHeader({ exam }: { exam: ExamDetail }) {
     <header className="flex flex-wrap items-start gap-4 rounded-2xl bg-primary p-6 text-primary-foreground">
       <div className="grid gap-1">
         <p className="text-sm opacity-80">{phaseStatus(exam.phase, exam.enrollmentOpensAt)}</p>
-        <h1 className="text-3xl font-extrabold tracking-tight">{exam.name}</h1>
+        <PageTitle>{exam.name}</PageTitle>
         <p className="opacity-90 tabular-nums">
           {exam.people.length
             ? `${enrolled} z ${exam.people.length} zapisanych, wolnych slotów ${freeSlots}`

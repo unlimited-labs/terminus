@@ -4,7 +4,8 @@ import { takeLinkAllowance } from "./attempt-limit.server.ts"
 import { auth } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
-import { STUDENT_ROLE } from "./roles.ts"
+import { teacherWithEmail } from "./roles.ts"
+import { emailLoginRequired } from "./student-access.server.ts"
 
 type LinkResult =
   | "wysłano"
@@ -27,11 +28,7 @@ export async function requestLoginLink(
     consola.info(`link ip=${ip} examId=${examId} indeks=${studentNumber} ${result}`)
 
   if (!(await takeLinkAllowance(ip, examId, studentNumber))) return trace("limit")
-  const exam = await db.exam.findUnique({
-    where: { id: examId },
-    select: { requireEmailLogin: true },
-  })
-  if (!exam?.requireEmailLogin || !emailLoginAvailable) return trace("wyłączone")
+  if (!(await emailLoginRequired(examId)) || !emailLoginAvailable) return trace("wyłączone")
   const entry = await db.rosterEntry.findUnique({
     where: { examId_studentNumber: { examId, studentNumber } },
     select: { email: true },
@@ -40,10 +37,7 @@ export async function requestLoginLink(
 
   // Link potwierdza tylko własność skrzynki; przy koncie prowadzącego na ten adres nie wysyłamy nic.
   const teacher = await db.user.findFirst({
-    where: {
-      email: { equals: entry.email, mode: "insensitive" },
-      OR: [{ role: null }, { role: { not: STUDENT_ROLE } }],
-    },
+    where: teacherWithEmail(entry.email),
     select: { id: true },
   })
   if (teacher) return trace("adres konta prowadzącego")

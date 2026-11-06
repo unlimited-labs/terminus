@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { toast } from "sonner"
 
-import { submitThenChange, useAppForm } from "@/components/form"
+import { schemaSubmit, useAppForm } from "@/components/form"
 import { SectionCard } from "@/components/section-card"
-import { authClient, authFailure } from "@/lib/auth-client"
+import { authClient, authWithToast } from "@/lib/auth-client"
 import { changePasswordSchema } from "@/schemas/auth"
 
 export const Route = createFileRoute("/_authed/haslo")({
@@ -14,18 +14,17 @@ export const Route = createFileRoute("/_authed/haslo")({
 function ChangePassword() {
   const form = useAppForm({
     defaultValues: { currentPassword: "", newPassword: "" },
-    ...submitThenChange(changePasswordSchema),
-    onSubmit: async ({ value, formApi }) => {
-      const failure = await authFailure(
-        authClient.changePassword({ ...value, revokeOtherSessions: true }),
-      )
-      if (failure) {
-        toast.error(failure)
-        return
-      }
-      formApi.reset()
-      toast.success("Hasło zmienione.")
-    },
+    ...schemaSubmit(
+      changePasswordSchema,
+      async (data) => {
+        const ok = await authWithToast(
+          authClient.changePassword({ ...data, revokeOtherSessions: true }),
+        )
+        if (ok) toast.success("Hasło zmienione.")
+        return { ok }
+      },
+      { resetOnOk: true },
+    ),
   })
   return (
     <SectionCard title="Zmiana hasła" className="mx-auto max-w-md">

@@ -9,7 +9,7 @@ import { personName, studentNumber } from "./roster.ts"
 // Bez trim: pusty komentarz zamienia na null domena (setGrades), w kliencie i na serwerze tak samo.
 const gradeEntry = z.object({
   grade: z.enum(GRADES).nullable(),
-  comment: z.string().max(GRADE_COMMENT_MAX, tooLong(GRADE_COMMENT_MAX)).nullable(),
+  gradeComment: z.string().max(GRADE_COMMENT_MAX, tooLong(GRADE_COMMENT_MAX)).nullable(),
 })
 const gradesSchema = z.record(studentNumber, gradeEntry)
 
