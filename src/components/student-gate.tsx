@@ -71,13 +71,9 @@ function LoginForm({ examId }: { examId: string }) {
             {(f) => <f.TextField label={T.indexLabel} inputMode="numeric" autoComplete="off" />}
           </form.AppField>
           {send.isError && <p className="text-sm text-destructive">{UNEXPECTED_ERROR}</p>}
-          <form.Subscribe selector={(s) => s.values.studentNumber.trim() === ""}>
-            {(empty) => (
-              <form.SubmitButton size="lg" disabled={empty || send.isPending}>
-                {T.send}
-              </form.SubmitButton>
-            )}
-          </form.Subscribe>
+          <form.SubmitButton size="lg" disabled={send.isPending}>
+            {T.send}
+          </form.SubmitButton>
         </form.Form>
       </form.AppForm>
     </>
