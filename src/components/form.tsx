@@ -1,5 +1,5 @@
 import { createFormHook, createFormHookContexts, revalidateLogic } from "@tanstack/react-form"
-import { useId, useRef, type ReactNode } from "react"
+import { useId, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
 
@@ -81,6 +81,20 @@ type TextFieldProps = {
   autoFocus?: boolean
 }
 
+function ShowPassword({ shown, onToggle }: { shown: boolean; onToggle: (shown: boolean) => void }) {
+  return (
+    <Button
+      type="button"
+      variant="link"
+      size="sm"
+      aria-pressed={shown}
+      onClick={() => onToggle(!shown)}
+    >
+      Pokaż hasło
+    </Button>
+  )
+}
+
 function TextField({
   label,
   type = "text",
@@ -95,6 +109,7 @@ function TextField({
 }: TextFieldProps) {
   const field = useFieldContext<string>()
   const id = useId()
+  const [shown, setShown] = useState(false)
   const props = {
     id,
     name: field.name,
@@ -106,13 +121,17 @@ function TextField({
     autoFocus,
   }
   return (
-    <FieldShell id={id} label={label} action={action}>
+    <FieldShell
+      id={id}
+      label={label}
+      action={(type === "password" && <ShowPassword shown={shown} onToggle={setShown} />) || action}
+    >
       {multiline ? (
         <Textarea {...props} onChange={(e) => field.handleChange(e.target.value)} />
       ) : (
         <Input
           {...props}
-          type={type}
+          type={shown ? "text" : type}
           autoComplete={autoComplete}
           inputMode={inputMode}
           enterKeyHint={enterKeyHint}
