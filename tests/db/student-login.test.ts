@@ -175,6 +175,29 @@ test("zespół musi zawierać indeks z adresem sesji (NOT_YOUR_INDEX), nie zdrad
   expect(await enroll(examId, ["1"], {}, asMe)).toMatchObject({ ok: true })
 })
 
+test("zalogowany wyznacza termin zespołu z różnych list, choćby nie był wpisany pierwszy", async () => {
+  const mineSlot = new Date("2030-01-02T09:00:00Z")
+  const { examId } = await createExam({
+    maxTeamSize: 3,
+    rosters: {
+      g1: { students: ["1"], slots: [mineSlot] },
+      g2: { students: ["2"], slots: [new Date("2030-01-03T09:00:00Z")] },
+    },
+  })
+  await db.rosterEntry.update({
+    where: { examId_studentNumber: { examId, studentNumber: "1" } },
+    data: { email: "ja@example.com" },
+  })
+  const asMe = { sessionEmail: "ja@example.com" }
+  expect(await enroll(examId, ["2", "1", "1"], {}, asMe)).toMatchObject({
+    code: "DUPLICATE_NUMBER",
+  })
+  expect(await enroll(examId, ["2", "1"], {}, asMe)).toMatchObject({
+    ok: true,
+    ticket: { startsAt: mineSlot },
+  })
+})
+
 const mk = (address: string, role = "student") =>
   db.user.create({
     data: { id: randomUUID(), name: "", email: address, emailVerified: true, role },

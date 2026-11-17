@@ -54,42 +54,50 @@ export async function enrollTeam(
     examId,
     "public",
     async (tx): Promise<EnrollmentOutcome> => {
-      const exam = await tx.exam.findUniqueOrThrow({
-        where: { id: examId },
-        select: {
-          assignmentMode: true,
-          maxTeamSize: true,
-          fields: true,
-          enrollmentOpensAt: true,
-          enrollments: { select: { studentNumber: true, slotId: true } },
-          rosters: {
-            select: {
-              entries: {
-                where: { studentNumber: { in: studentNumbers } },
-                orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
-                select: {
-                  studentNumber: true,
-                  rosterId: true,
-                  email: true,
-                  firstName: true,
-                  lastName: true,
-                },
+      // Wpisy tylko zespołu (plan sprawdza wyłącznie podane numery), ze wszystkich list naraz.
+      const [exam, entries] = await Promise.all([
+        tx.exam.findUniqueOrThrow({
+          where: { id: examId },
+          select: {
+            assignmentMode: true,
+            maxTeamSize: true,
+            fields: true,
+            enrollmentOpensAt: true,
+            enrollments: { select: { studentNumber: true, slotId: true } },
+            rosters: {
+              select: {
+                slots: { select: { id: true, rosterId: true, startsAt: true, endsAt: true } },
               },
-              slots: { select: { id: true, rosterId: true, startsAt: true, endsAt: true } },
             },
           },
-        },
-      })
+        }),
+        tx.rosterEntry.findMany({
+          where: { examId, studentNumber: { in: studentNumbers } },
+          orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+          select: {
+            studentNumber: true,
+            rosterId: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+          },
+        }),
+      ])
       if (exam.assignmentMode !== shownMode) {
         return { ok: false, code: "MODE_CHANGED", assignmentMode: exam.assignmentMode }
       }
-      // Tylko wpisy zespołu: plan sprawdza wyłącznie podane numery.
-      const entries = exam.rosters.flatMap((r) => r.entries)
       const own = sessionEmail?.toLowerCase()
       // Przed planem, żeby brak własnego indeksu nie zdradzał, które numery są na liście.
-      if (own !== undefined && !entries.some((e) => e.email.toLowerCase() === own)) {
-        return { ok: false, code: "NOT_YOUR_INDEX" }
-      }
+      const mine =
+        own === undefined ? undefined : entries.find((e) => e.email.toLowerCase() === own)
+      if (own !== undefined && !mine) return { ok: false, code: "NOT_YOUR_INDEX" }
+      // Zalogowany jest zapisującym: jego lista wyznacza termin, niezależnie od kolejności w formularzu.
+      const ordered = mine
+        ? [
+            mine.studentNumber,
+            ...studentNumbers.toSpliced(studentNumbers.indexOf(mine.studentNumber), 1),
+          ]
+        : studentNumbers
       const data = {
         maxTeamSize: exam.maxTeamSize,
         opensAt: exam.enrollmentOpensAt,
@@ -99,10 +107,10 @@ export async function enrollTeam(
       }
       const plan =
         shownMode === "RANDOM"
-          ? planEnrollment(data, studentNumbers, now(), randomInt)
+          ? planEnrollment(data, ordered, now(), randomInt)
           : slotId
-            ? planChoice(data, studentNumbers, slotId, now())
-            : planLookup(data, studentNumbers, now())
+            ? planChoice(data, ordered, slotId, now())
+            : planLookup(data, ordered, now())
       if (!plan.ok) return plan
       const fields = parseFields(exam.fields)
       const checked = checkAnswers(fields, rawAnswers)
@@ -118,7 +126,6 @@ export async function enrollTeam(
         })),
       })
       const { startsAt, endsAt } = data.slots.find((s) => s.id === plan.slotId)!
-      // Udany plan = jedna lista, więc kolejność z zapytania (nazwisko, imię) obejmuje cały zespół.
       const team = entries.map(({ studentNumber, firstName, lastName }) => ({
         studentNumber,
         firstName,

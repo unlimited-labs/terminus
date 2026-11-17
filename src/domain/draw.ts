@@ -17,7 +17,7 @@ export type EnrollmentPlan =
   | { ok: false; code: "NOT_OPEN_YET"; opensAt: Date }
   | {
       ok: false
-      code: "DUPLICATE_NUMBER" | "NOT_ON_ROSTER" | "DIFFERENT_ROSTER"
+      code: "DUPLICATE_NUMBER" | "NOT_ON_ROSTER"
       studentNumbers: string[]
     }
   | { ok: false; code: "ALREADY_ENROLLED"; enrolled: { studentNumber: string; startsAt: Date }[] }
@@ -56,10 +56,8 @@ function checkTeam(data: EnrollmentData, studentNumbers: string[], now: Date): T
     .map((n) => ({ studentNumber: n, startsAt: slotById.get(slotOf.get(n)!)!.startsAt }))
   if (enrolled.length > 0) return { ok: false, code: "ALREADY_ENROLLED", enrolled }
 
-  const rosterId = rosterOf.get(studentNumbers[0]!)!
-  const foreign = studentNumbers.filter((n) => rosterOf.get(n) !== rosterId)
-  if (foreign.length > 0) return { ok: false, code: "DIFFERENT_ROSTER", studentNumbers: foreign }
-  return { ok: true, rosterId }
+  // Zespół może łączyć listy; termin wyznacza lista zapisującego (pierwszy numer).
+  return { ok: true, rosterId: rosterOf.get(studentNumbers[0]!)! }
 }
 
 export function planEnrollment(

@@ -25,7 +25,7 @@ Ciągły przedział czasu w konkretnym dniu podany przez prowadzącego, jednoraz
 _Avoid_: Zakres, blok
 
 **Lista indeksów**:
-Nazwany zbiór indeksów (z imionami i nazwiskami) uprawnionych do zapisu na dane zaliczenie, zwykle jedna grupa zajęć z systemu uczelni; zaliczenie ma jedną lub kilka list, a indeks z listy losuje tylko ze slotów tej listy.
+Nazwany zbiór indeksów (z imionami i nazwiskami) uprawnionych do zapisu na dane zaliczenie, zwykle jedna grupa zajęć z systemu uczelni; zaliczenie ma jedną lub kilka list. Zespół może łączyć indeksy z różnych list, a termin wyznacza lista zapisującego.
 _Avoid_: Lista studentów, grupa
 
 **Zapis**:
@@ -33,7 +33,7 @@ Przypisanie jednego indeksu z listy indeksów do jednego slotu w ramach zaliczen
 _Avoid_: Rezerwacja, rejestracja
 
 **Zespół**:
-Indeksy zapisane w tym samym slocie, zaliczające razem; slot mieści dokładnie jeden zespół, a zespół jednoosobowy to zaliczenie indywidualne.
+Indeksy zapisane w tym samym slocie, zaliczające razem, także z różnych list indeksów; slot mieści dokładnie jeden zespół, a zespół jednoosobowy to zaliczenie indywidualne.
 _Avoid_: Grupa, drużyna
 
 **Odpowiedzi zespołu**:
@@ -53,12 +53,16 @@ Ustawienie zaliczenia, wspólne dla wszystkich jego list indeksów: **Losowanie*
 _Avoid_: Tryb zapisów
 
 **Losowanie**:
-Sposób przydziału, w którym system sam wybiera slot z wolnych slotów listy zespołu przy zapisie.
+Sposób przydziału, w którym system sam wybiera slot z wolnych slotów listy zapisującego przy zapisie.
 _Avoid_: Wybór terminu
 
 **Wybór**:
-Sposób przydziału, w którym student sam wskazuje wolny slot; wszystkie indeksy zespołu muszą należeć do listy tego slotu, a zajęty slot jest niedostępny (nie ma dołączania do cudzego zespołu).
+Sposób przydziału, w którym student sam wskazuje wolny slot; slot musi należeć do listy zapisującego, a zajęty slot jest niedostępny (nie ma dołączania do cudzego zespołu).
 _Avoid_: Rezerwacja
+
+**Zapisujący**:
+Osoba, której lista indeksów wyznacza termin zespołu: przy logowaniu mailem zalogowany student, bez niego pierwszy numer w formularzu.
+_Avoid_: Lider, kapitan
 
 **Harmonogram**:
 Widok wszystkich slotów zaliczenia z imionami i nazwiskami zapisanych, dostępny dla każdego, kto ma link zaliczenia (przy logowaniu mailem: po zalogowaniu).

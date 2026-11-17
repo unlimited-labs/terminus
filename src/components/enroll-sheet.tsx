@@ -171,7 +171,11 @@ export function EnrollForm({
                 <form.AppField key={i} name={`studentNumbers[${i}]`}>
                   {(field) => (
                     <field.TextField
-                      label={team ? `Osoba ${i + 1} — numer indeksu` : "Numer indeksu"}
+                      label={
+                        team
+                          ? `Osoba ${i + 1} — numer indeksu${i === 0 ? " (Twój)" : ""}`
+                          : "Numer indeksu"
+                      }
                       inputMode="numeric"
                       autoComplete="off"
                       className="h-11 text-lg tabular-nums"

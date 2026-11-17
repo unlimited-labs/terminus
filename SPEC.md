@@ -101,8 +101,10 @@ interfejsu i komunikaty.
   się na "Twój slot".
 - Reguły:
   1. Cały zapis jest odrzucany (nic się nie zapisuje), gdy którykolwiek indeks:
-     nie jest na żadnej liście zaliczenia; ma już zapis; jest z innej listy niż
-     pozostali członkowie zespołu; jest wpisany dwa razy.
+     nie jest na żadnej liście zaliczenia; ma już zapis; jest wpisany dwa razy.
+     Zespół może łączyć indeksy z różnych list; slot pochodzi z listy
+     zapisującego (zalogowany student przy logowaniu mailem, inaczej pierwszy
+     wpisany numer).
   2. Indeks z istniejącym zapisem: komunikat podaje dzień i godzinę jego
      slotu; nigdy nie losuje ponownie. Przy jednej osobie komunikat
      informacyjny (zielony), przy zespole błąd (czerwony) ze zdaniem, że
@@ -122,7 +124,7 @@ interfejsu i komunikaty.
      się sam.
 - Komunikaty nad polami, pole z problematycznym indeksem podświetlone.
   Osobne komunikaty dla: indeksu nie ma na liście, indeks ma już zapis,
-  indeks z innej listy, brak wolnych slotów, limit prób, brak danych, ten sam
+  slot innej listy niż zapisującego, brak wolnych slotów, limit prób, brak danych, ten sam
   indeks dwa razy.
 
 ### Ochrona i dane osobowe
@@ -364,7 +366,7 @@ model Enrollment {
   obce z `examId`); blokady usunięcia slotu, wpisu listy i listy z zapisem
   (`NoAction`, sprawdzane na końcu polecenia, więc kaskada z `Exam` działa).
 - Kod pod blokadą zaliczenia pilnuje: pojemności slotu, nienachodzenia slotów,
-  zespołu z jednej listy, końca slotu po początku.
+  slotu z listy zapisującego, końca slotu po początku.
 
 ## 8. Architektura
 

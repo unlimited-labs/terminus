@@ -56,15 +56,32 @@ describe("enrollTeam", () => {
         g2: { students: ["22"], slots: [inDays(2)] },
       },
     })
-    expect(await enroll(examId, ["21", "22"])).toMatchObject({
+    expect(await enroll(examId, ["21", "21"])).toMatchObject({
       ok: false,
-      code: "DIFFERENT_ROSTER",
+      code: "DUPLICATE_NUMBER",
     })
     expect(await enroll(examId, ["21", "99"])).toMatchObject({
       ok: false,
       code: "NOT_ON_ROSTER",
     })
     expect(await db.enrollment.count({ where: { examId } })).toBe(0)
+  })
+
+  test("zespół z różnych list dostaje termin listy zapisującego; bilet sortuje cały skład", async () => {
+    const { examId } = await createExam({
+      maxTeamSize: 3,
+      rosters: {
+        g1: { students: ["33"], slots: [inDays(1)] },
+        g2: { students: ["31", "32"], slots: [inDays(2)] },
+      },
+    })
+    expect(await enroll(examId, ["33", "32", "31"])).toMatchObject({
+      ok: true,
+      ticket: {
+        startsAt: inDays(1),
+        team: [{ studentNumber: "31" }, { studentNumber: "32" }, { studentNumber: "33" }],
+      },
+    })
   })
 
   test("nieistniejące zaliczenie", async () => {

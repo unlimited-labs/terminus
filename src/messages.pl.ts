@@ -68,12 +68,10 @@ export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): strin
       return e.enrolled
         .map((x) => `Indeks ${x.studentNumber} ma już slot: ${when(x.startsAt)}.`)
         .join(" ")
-    case "DIFFERENT_ROSTER":
-      return `Indeks z innej listy niż reszta zespołu: ${list(e.studentNumbers)}. Zespół musi być z jednej listy.`
     case "SLOT_UNAVAILABLE":
       return "Ten slot jest już niedostępny: ktoś zapisał się chwilę przed Tobą albo slot już się zaczął. Wybierz inny."
     case "SLOT_OTHER_ROSTER":
-      return "Ten slot jest dla innej listy niż Twój zespół. Wybierz slot swojej listy."
+      return "Ten slot jest dla innej listy niż Twoja. Zespół zalicza w terminie osoby zapisującej: wybierz slot swojej listy."
     case "MODE_CHANGED":
       return e.assignmentMode === "MANUAL"
         ? "Prowadzący zmienił sposób zapisu na ręczny. Twoje dane zostały; wybierz teraz slot z planszy."

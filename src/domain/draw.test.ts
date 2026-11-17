@@ -82,12 +82,9 @@ describe("planEnrollment", () => {
     })
   })
 
-  test("członek zespołu z innej listy", () => {
-    expect(planEnrollment(data(), ["100", "200"], now, first)).toEqual({
-      ok: false,
-      code: "DIFFERENT_ROSTER",
-      studentNumbers: ["200"],
-    })
+  test("zespół z różnych list losuje ze slotów listy zapisującego (pierwszy numer)", () => {
+    expect(planEnrollment(data(), ["100", "200"], now, first)).toEqual({ ok: true, slotId: "d1a" })
+    expect(planEnrollment(data(), ["200", "100"], now, first)).toEqual({ ok: true, slotId: "g2a" })
   })
 
   test("brak wolnych slotów", () => {
@@ -161,9 +158,6 @@ describe("planChoice", () => {
       code: "NOT_ON_ROSTER",
       studentNumbers: ["999"],
     })
-    expect(planChoice(data(), ["100", "200"], "d1a", now)).toMatchObject({
-      code: "DIFFERENT_ROSTER",
-    })
     const enrollments = [{ studentNumber: "100", slotId: "d1c" }]
     expect(planChoice(data({ enrollments }), ["100"], "d1a", now)).toMatchObject({
       code: "ALREADY_ENROLLED",
@@ -192,11 +186,16 @@ describe("planChoice", () => {
     })
   })
 
-  test("slot innej listy niż zespół", () => {
+  test("slot innej listy niż zapisujący", () => {
     expect(planChoice(data(), ["100"], "g2a", now)).toEqual({
       ok: false,
       code: "SLOT_OTHER_ROSTER",
     })
+    expect(planChoice(data(), ["100", "200"], "g2a", now)).toEqual({
+      ok: false,
+      code: "SLOT_OTHER_ROSTER",
+    })
+    expect(planChoice(data(), ["200", "100"], "g2a", now)).toEqual({ ok: true, slotId: "g2a" })
   })
 })
 
