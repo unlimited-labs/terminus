@@ -2,7 +2,7 @@ import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 
 import { submitThenChange, useAppForm } from "@/components/form"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Notice } from "@/components/notice"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { authClient, authFailure } from "@/lib/auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
@@ -45,11 +45,7 @@ function Login() {
         <CardContent>
           <form.AppForm>
             <form.Form className="grid gap-4">
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
+              {error && <Notice tone="error">{error}</Notice>}
               <form.AppField name="email">
                 {(field) => <field.TextField label="E-mail" type="email" autoComplete="username" />}
               </form.AppField>

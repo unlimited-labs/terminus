@@ -58,6 +58,7 @@
   --input: #e2dff5;
   --ring: #4b3fd6;
   --free: #17a673;
+  --free-ink: #0e7a54;
   --taken: #eceafd;
   --radius: 12px;
 }
@@ -105,6 +106,74 @@
 }
 .ticket-cut::after {
   right: calc(-1.25rem - 11px);
+}
+
+/* Komunikat i tost jako odcinki biletu: perforacja i wycięcia na linii oderwania. */
+.stub {
+  --tone: var(--primary);
+  position: relative;
+  border-radius: var(--radius);
+  background: var(--card);
+  padding: 0.875rem 1rem 0.75rem;
+  color: var(--tone);
+  mask:
+    radial-gradient(circle 9px at 0 0, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 9px at 100% 0, #0000 98%, #000) right / 51% 100% no-repeat;
+}
+:is([data-slot="dialog-content"], [data-slot="card"]) .stub {
+  background: var(--background);
+}
+.stub::before {
+  content: "";
+  position: absolute;
+  inset: 0 14px auto;
+  border-top: 2px dashed var(--tone);
+  opacity: 0.55;
+}
+.stub[data-tone="error"] {
+  --tone: var(--destructive);
+}
+.stub[data-tone="info"] {
+  --tone: var(--free-ink);
+}
+
+.stub-toast {
+  --tear: 5.5rem;
+  display: flex;
+  align-items: stretch;
+  width: var(--width);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: 0 6px 18px rgb(29 27 58 / 0.12);
+}
+.stub-toast[data-type="error"] {
+  color: var(--destructive);
+}
+.stub-toast:has(.stub-toast-tear) {
+  mask:
+    radial-gradient(circle 7px at calc(100% - var(--tear)) 0, #0000 98%, #000) top / 100% 51%
+      no-repeat,
+    radial-gradient(circle 7px at calc(100% - var(--tear)) 100%, #0000 98%, #000) bottom / 100% 51%
+      no-repeat;
+}
+.stub-toast-msg {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem 1rem;
+}
+.stub-toast-tear {
+  flex: none;
+  width: var(--tear);
+  border-left: 2px dashed var(--muted-foreground);
+  font-weight: 700;
+  color: var(--primary);
+  cursor: pointer;
+}
+.stub-toast-tear:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -4px;
+  border-radius: var(--radius);
 }
 
 @media (prefers-reduced-motion: reduce) {
