@@ -47,11 +47,23 @@ function Login() {
             <form.Form className="grid gap-4">
               {error && <Notice tone="error">{error}</Notice>}
               <form.AppField name="email">
-                {(field) => <field.TextField label="E-mail" type="email" autoComplete="username" />}
+                {(field) => (
+                  <field.TextField
+                    label="E-mail"
+                    type="email"
+                    autoComplete="username"
+                    enterKeyHint="next"
+                  />
+                )}
               </form.AppField>
               <form.AppField name="password">
                 {(field) => (
-                  <field.TextField label="Hasło" type="password" autoComplete="current-password" />
+                  <field.TextField
+                    label="Hasło"
+                    type="password"
+                    autoComplete="current-password"
+                    enterKeyHint="go"
+                  />
                 )}
               </form.AppField>
               <form.SubmitButton>Zaloguj się</form.SubmitButton>

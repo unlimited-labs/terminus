@@ -68,7 +68,14 @@ function LoginForm({ examId }: { examId: string }) {
       <form.AppForm>
         <form.Form className="grid gap-2">
           <form.AppField name="studentNumber">
-            {(f) => <f.TextField label={T.indexLabel} inputMode="numeric" autoComplete="off" />}
+            {(f) => (
+              <f.TextField
+                label={T.indexLabel}
+                inputMode="numeric"
+                autoComplete="off"
+                enterKeyHint="send"
+              />
+            )}
           </form.AppField>
           {send.isError && <p className="text-sm text-destructive">{UNEXPECTED_ERROR}</p>}
           <form.SubmitButton size="lg" disabled={send.isPending}>

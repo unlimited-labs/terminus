@@ -72,6 +72,7 @@ type TextFieldProps = {
   autoComplete?: string
   multiline?: boolean
   inputMode?: "numeric"
+  enterKeyHint?: "next" | "done" | "go" | "send"
   /** Błąd spoza walidacji formularza (np. indeks wskazany przez serwer). */
   invalid?: boolean
   /** Przycisk obok etykiety (np. „Usuń” przy osobie w zespole). */
@@ -86,6 +87,7 @@ function TextField({
   autoComplete,
   multiline,
   inputMode,
+  enterKeyHint,
   invalid,
   action,
   className,
@@ -113,6 +115,7 @@ function TextField({
           type={type}
           autoComplete={autoComplete}
           inputMode={inputMode}
+          enterKeyHint={enterKeyHint}
           onChange={(e) => field.handleChange(e.target.value)}
         />
       )}
