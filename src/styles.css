@@ -176,6 +176,26 @@
   border-radius: var(--radius);
 }
 
+/* Logowanie: karta jako bilet — główka i odcinek z półkolami na linii oderwania. */
+.ticket-head {
+  mask:
+    radial-gradient(circle 11px at 0 100%, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 11px at 100% 100%, #0000 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-stub {
+  position: relative;
+  mask:
+    radial-gradient(circle 11px at 0 0, #0000 98%, #000) left / 51% 100% no-repeat,
+    radial-gradient(circle 11px at 100% 0, #0000 98%, #000) right / 51% 100% no-repeat;
+}
+.ticket-stub::before {
+  content: "";
+  position: absolute;
+  inset: 0 18px auto;
+  border-top: 2px dashed var(--primary);
+  opacity: 0.45;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-slot-pulse {
     animation: none;

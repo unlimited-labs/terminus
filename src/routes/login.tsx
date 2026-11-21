@@ -3,7 +3,6 @@ import { useState } from "react"
 
 import { submitThenChange, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { authClient, authFailure } from "@/lib/auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
 import { sessionQuery } from "@/server/session"
@@ -36,13 +35,13 @@ function Login() {
   })
 
   return (
-    <main className="mx-auto grid min-h-svh max-w-sm content-center p-4">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-extrabold">Terminus</CardTitle>
-          <p className="text-muted-foreground">Zapisy na zaliczenia</p>
-        </CardHeader>
-        <CardContent>
+    <main className="mx-auto grid min-h-svh max-w-sm content-center gap-5 p-4">
+      <div className="drop-shadow-[0_6px_14px_rgb(29_27_58/0.08)]">
+        <header className="ticket-head rounded-t-xl bg-linear-160 from-[#4b3fd6] to-[#6d5bff] px-6 pt-7 pb-6 text-white">
+          <h1 className="text-4xl leading-none font-extrabold tracking-tight">Terminus</h1>
+          <p className="mt-2 text-lg opacity-90">Zapisy na zaliczenia</p>
+        </header>
+        <div className="ticket-stub rounded-b-xl bg-card px-6 pt-7 pb-6">
           <form.AppForm>
             <form.Form className="grid gap-4">
               {error && <Notice tone="error">{error}</Notice>}
@@ -66,11 +65,16 @@ function Login() {
                   />
                 )}
               </form.AppField>
-              <form.SubmitButton>Zaloguj się</form.SubmitButton>
+              <form.SubmitButton size="lg" className="mt-1">
+                Zaloguj się
+              </form.SubmitButton>
             </form.Form>
           </form.AppForm>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      <p className="px-2 text-center text-sm text-muted-foreground">
+        Logowanie jest dla prowadzących. Studenci zapisują się przez link do zaliczenia.
+      </p>
     </main>
   )
 }
