@@ -39,7 +39,7 @@ function Login() {
       <div className="drop-shadow-[0_6px_14px_rgb(29_27_58/0.08)]">
         <header className="ticket-head rounded-t-xl bg-linear-160 from-[#4b3fd6] to-[#6d5bff] px-6 pt-7 pb-6 text-white">
           <h1 className="text-4xl leading-none font-extrabold tracking-tight">Terminus</h1>
-          <p className="mt-2 text-lg opacity-90">Zapisy na zaliczenia</p>
+          <p className="mt-2 text-lg opacity-90">Harmonogram zaliczeń</p>
         </header>
         <div className="ticket-stub rounded-b-xl bg-card px-6 pt-7 pb-6">
           <form.AppForm>
@@ -73,7 +73,7 @@ function Login() {
         </div>
       </div>
       <p className="px-2 text-center text-sm text-muted-foreground">
-        Logowanie jest dla prowadzących. Studenci zapisują się przez link do zaliczenia.
+        Logowanie dla prowadzących zajęcia
       </p>
     </main>
   )
