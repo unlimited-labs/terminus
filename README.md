@@ -23,7 +23,9 @@ wszystkich posiadaczy linku.
 - Tablica zapisów do ręcznego przenoszenia i usuwania przydziałów.
 - Wspólne zarządzanie zaliczeniem przez kilku prowadzących.
 - Eksport wyników do CSV.
-- Zarządzanie kontami prowadzących przez superadministratora.
+- Zarządzanie kontami prowadzących przez superadministratora: zaproszenia mailem, blokada,
+  link do zmiany hasła, reset 2FA.
+- Obowiązkowe 2FA prowadzących: klucz dostępu (passkey) albo hasło i kod z aplikacji (TOTP).
 
 Studenci nie zakładają kont; identyfikuje ich wyłącznie numer indeksu.
 
@@ -51,6 +53,17 @@ oraz dane pierwszego konta w `ADMIN_EMAIL`,
 `ADMIN_PASSWORD` i `ADMIN_NAME`. Aplikacja jest dostępna pod adresem
 http://localhost:3000.
 
+## Konta prowadzących i 2FA
+
+Superadmin zaprasza prowadzących mailem; prowadzący sam nadaje hasło (link ważny 72 godziny)
+i przy pierwszym logowaniu konfiguruje 2FA: klucz dostępu albo aplikację z kodami. Zaproszenia,
+„Nie pamiętam hasła” i link do zmiany hasła wymagają SMTP (niżej); bez poczty konto superadmina
+zakłada tylko `pnpm seed-admin`.
+
+Klucze dostępu są przypisane do domeny z `APP_PUBLIC_URL`. Zmiana domeny unieważnia wszystkie
+klucze, więc wtedy trzeba zresetować 2FA kont (`pnpm reset-2fa`). Lokalnie klucze działają pod
+`http://localhost:3000`, nie pod `127.0.0.1`.
+
 ## Logowanie mailem (opcjonalne)
 
 Opcja zaliczenia „Wymagaj logowania mailem” wysyła studentowi jednorazowy link na adres z listy,
@@ -69,6 +82,7 @@ w Europejskim Obszarze Gospodarczym (klauzula informacyjna, pkt 10).
 | `pnpm e2e`                    | Testy end-to-end (Playwright)                                             |
 | `pnpm db:up` / `pnpm db:down` | Uruchomienie i zatrzymanie lokalnej bazy                                  |
 | `pnpm reset-password <email>` | Nowe hasło dla konta prowadzącego                                         |
+| `pnpm reset-2fa <email>`      | Reset 2FA konta (np. superadmin bez klucza i telefonu)                    |
 
 ## Technologie
 
