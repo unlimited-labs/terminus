@@ -7,13 +7,14 @@ import { toast } from "sonner"
 import { ConfirmButton } from "@/components/confirm-button"
 import { PageTitle } from "@/components/page-title"
 import { SectionCard } from "@/components/section-card"
-import { AddPasskeyButton, BackupCodes, TotpSetup } from "@/components/two-factor"
+import { AddPasskeyButton, BackupCodes, PasswordConfirm, TotpSetup } from "@/components/two-factor"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatDay } from "@/domain/time"
-import { authWithToast } from "@/lib/auth-client"
-import { teacherAuthClient as authClient } from "@/lib/teacher-auth-client"
+import { authResult, authWithToast } from "@/lib/auth-client"
+import { teacherAuthClient } from "@/lib/teacher-auth-client"
+import { AUTH_CODE } from "@/messages.pl"
 import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/_authed/weryfikacja-dwuetapowa")({
@@ -23,10 +24,8 @@ export const Route = createFileRoute("/_authed/weryfikacja-dwuetapowa")({
 
 const passkeysQuery = {
   queryKey: ["passkeys"],
-  queryFn: async () => (await authClient.passkey.listUserPasskeys()).data ?? [],
+  queryFn: async () => (await teacherAuthClient.passkey.listUserPasskeys()).data ?? [],
 }
-
-const LAST_FACTOR_HINT = "To Twój jedyny sposób potwierdzania logowania. Najpierw dodaj inny."
 
 function TwoFactorSettings() {
   const { user } = Route.useRouteContext()
@@ -80,7 +79,7 @@ function PasskeyRow({
   const [name, setName] = useState(passkey.name ?? "")
   const rename = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (await authWithToast(authClient.passkey.updatePasskey({ id: passkey.id, name }))) {
+    if (await authWithToast(teacherAuthClient.passkey.updatePasskey({ id: passkey.id, name }))) {
       setRenaming(false)
       await onChange()
     }
@@ -103,7 +102,9 @@ function PasskeyRow({
             description={`Klucz „${passkey.name || "Klucz dostępu"}” przestanie działać przy logowaniu.`}
             confirmLabel="Usuń klucz"
             onConfirm={async () => {
-              if (await authWithToast(authClient.passkey.deletePasskey({ id: passkey.id }))) {
+              if (
+                await authWithToast(teacherAuthClient.passkey.deletePasskey({ id: passkey.id }))
+              ) {
                 await onChange()
               }
             }}
@@ -112,7 +113,7 @@ function PasskeyRow({
           </ConfirmButton>
         </span>
       </div>
-      {last && <p className="text-xs text-muted-foreground">{LAST_FACTOR_HINT}</p>}
+      {last && <p className="text-xs text-muted-foreground">{AUTH_CODE.LAST_FACTOR}</p>}
       {renaming && (
         <form className="flex flex-wrap items-end gap-2" onSubmit={rename}>
           <div className="grid gap-1.5">
@@ -133,7 +134,11 @@ function PasskeyRow({
   )
 }
 
-type TotpAction = "codes" | "disable"
+type TotpMode =
+  | { kind: "idle" }
+  | { kind: "connect" }
+  | { kind: "confirm"; action: "codes" | "disable" }
+  | { kind: "codes"; codes: string[] }
 
 function TotpSection({
   enabled,
@@ -144,15 +149,13 @@ function TotpSection({
   last: boolean
   onChange: () => Promise<void>
 }) {
-  const [connecting, setConnecting] = useState(false)
-  const [action, setAction] = useState<TotpAction | null>(null)
-  const [codes, setCodes] = useState<string[] | null>(null)
+  const [mode, setMode] = useState<TotpMode>({ kind: "idle" })
 
   if (!enabled)
-    return connecting ? (
+    return mode.kind === "connect" ? (
       <TotpSetup
         onDone={async () => {
-          setConnecting(false)
+          setMode({ kind: "idle" })
           await onChange()
         }}
       />
@@ -161,22 +164,25 @@ function TotpSection({
         variant="outline"
         size="sm"
         className="justify-self-start"
-        onClick={() => setConnecting(true)}
+        onClick={() => setMode({ kind: "connect" })}
       >
         <Smartphone /> Połącz aplikację
       </Button>
     )
 
   const confirm = async (password: string) => {
-    if (action === "codes") {
-      const res = await authClient.twoFactor.generateBackupCodes({ password }).catch(() => null)
-      if (res?.data) setCodes(res.data.backupCodes)
-      else await authWithToast(Promise.resolve({ error: res?.error ?? {} }))
-    } else if (await authWithToast(authClient.twoFactor.disable({ password }))) {
+    if (mode.kind !== "confirm") return
+    if (mode.action === "codes") {
+      const { data, failure } = await authResult(
+        teacherAuthClient.twoFactor.generateBackupCodes({ password }),
+      )
+      if (failure) toast.error(failure)
+      setMode(data ? { kind: "codes", codes: data.backupCodes } : { kind: "idle" })
+    } else if (await authWithToast(teacherAuthClient.twoFactor.disable({ password }))) {
       toast.success("Aplikacja odłączona.")
+      setMode({ kind: "idle" })
       await onChange()
     }
-    setAction(null)
   }
 
   return (
@@ -184,59 +190,32 @@ function TotpSection({
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm">Połączona</span>
         <span className="ml-auto flex gap-1">
-          <Button variant="ghost" size="xs" onClick={() => setAction("codes")}>
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => setMode({ kind: "confirm", action: "codes" })}
+          >
             Nowe kody zapasowe
           </Button>
-          <Button variant="ghost" size="xs" disabled={last} onClick={() => setAction("disable")}>
+          <Button
+            variant="ghost"
+            size="xs"
+            disabled={last}
+            onClick={() => setMode({ kind: "confirm", action: "disable" })}
+          >
             Odłącz
           </Button>
         </span>
       </div>
-      {last && <p className="text-xs text-muted-foreground">{LAST_FACTOR_HINT}</p>}
-      {action && (
+      {last && <p className="text-xs text-muted-foreground">{AUTH_CODE.LAST_FACTOR}</p>}
+      {mode.kind === "confirm" && (
         <PasswordConfirm
-          label={action === "codes" ? "Pokaż nowe kody" : "Odłącz aplikację"}
+          key={mode.action}
+          label={mode.action === "codes" ? "Pokaż nowe kody" : "Odłącz aplikację"}
           onConfirm={confirm}
         />
       )}
-      {codes && <BackupCodes codes={codes} />}
+      {mode.kind === "codes" && <BackupCodes codes={mode.codes} />}
     </div>
-  )
-}
-
-function PasswordConfirm({
-  label,
-  onConfirm,
-}: {
-  label: string
-  onConfirm: (password: string) => Promise<void>
-}) {
-  const [password, setPassword] = useState("")
-  const [busy, setBusy] = useState(false)
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    try {
-      await onConfirm(password)
-    } finally {
-      setBusy(false)
-    }
-  }
-  return (
-    <form className="flex flex-wrap items-end gap-2" onSubmit={submit}>
-      <div className="grid gap-1.5">
-        <Label htmlFor="confirm-password">Twoje hasło</Label>
-        <Input
-          id="confirm-password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-      </div>
-      <Button type="submit" size="sm" disabled={busy || !password}>
-        {label}
-      </Button>
-    </form>
   )
 }

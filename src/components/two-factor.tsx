@@ -1,38 +1,58 @@
 import { KeyRound } from "lucide-react"
 import { QRCodeSVG } from "qrcode.react"
-import { useState, type ComponentProps, type ReactNode } from "react"
+import { useState, useTransition, type ComponentProps } from "react"
 import { toast } from "sonner"
 
 import { CodeInput } from "@/components/code-input"
+import { schemaSubmit, useAppForm } from "@/components/form"
+import { Notice } from "@/components/notice"
 import { Button, buttonVariants } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { authFailure, authWithToast } from "@/lib/auth-client"
-import { teacherAuthClient as authClient } from "@/lib/teacher-auth-client"
-import { authErrorMessage } from "@/messages.pl"
+import { authFailure, authResult, authWithToast } from "@/lib/auth-client"
+import { teacherAuthClient } from "@/lib/teacher-auth-client"
+import { confirmPasswordSchema } from "@/schemas/auth"
 
 /** Rejestracja klucza dostępu (przeglądarka pyta o odcisk palca, twarz, PIN albo klucz sprzętowy). */
 export function AddPasskeyButton({
   onAdded,
   children = "Dodaj klucz dostępu",
   ...button
-}: { onAdded: () => unknown; children?: ReactNode } & Omit<
-  ComponentProps<typeof Button>,
-  "onClick" | "children"
->) {
-  const [busy, setBusy] = useState(false)
-  const add = async () => {
-    setBusy(true)
-    try {
-      if (await authWithToast(authClient.passkey.addPasskey())) await onAdded()
-    } finally {
-      setBusy(false)
-    }
-  }
+}: { onAdded?: () => unknown } & Omit<ComponentProps<typeof Button>, "onClick">) {
+  const [pending, startTransition] = useTransition()
+  const add = () =>
+    startTransition(async () => {
+      if (await authWithToast(teacherAuthClient.passkey.addPasskey())) await onAdded?.()
+    })
   return (
-    <Button {...button} disabled={busy} onClick={add}>
+    <Button {...button} disabled={pending} onClick={add}>
       <KeyRound /> {children}
     </Button>
+  )
+}
+
+/** Hasło konta jako potwierdzenie operacji na 2FA (Better Auth go wymaga). */
+export function PasswordConfirm({
+  label,
+  onConfirm,
+}: {
+  label: string
+  onConfirm: (password: string) => Promise<unknown>
+}) {
+  const form = useAppForm({
+    defaultValues: { password: "" },
+    ...schemaSubmit(confirmPasswordSchema, ({ password }) => onConfirm(password)),
+  })
+  return (
+    <form.AppForm>
+      <form.Form className="grid max-w-sm items-end gap-3 sm:grid-cols-[1fr_auto]">
+        <form.AppField name="password">
+          {(f) => (
+            <f.TextField label="Twoje hasło" type="password" autoComplete="current-password" />
+          )}
+        </form.AppField>
+        <form.SubmitButton className="self-end justify-self-start">{label}</form.SubmitButton>
+      </form.Form>
+    </form.AppForm>
   )
 }
 
@@ -75,68 +95,40 @@ export function BackupCodes({ codes }: { codes: string[] }) {
 type TotpStage =
   | { step: "password" }
   | { step: "scan"; uri: string; codes: string[] }
-  | {
-      step: "codes"
-      codes: string[]
-    }
+  | { step: "codes"; codes: string[] }
 
 /** Połączenie aplikacji z kodami: hasło → kod QR i pierwszy kod → kody zapasowe. */
 export function TotpSetup({ onDone }: { onDone: () => unknown }) {
   const [stage, setStage] = useState<TotpStage>({ step: "password" })
-  const [password, setPassword] = useState("")
   const [code, setCode] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
+  const [pending, startTransition] = useTransition()
 
-  const start = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setBusy(true)
-    let res
-    try {
-      res = await authClient.twoFactor.enable({ password, method: "totp" }).catch(() => null)
-    } finally {
-      setBusy(false)
-    }
-    if (!res?.data || res.data.method !== "totp") {
-      setError(authErrorMessage(res?.error?.code))
-      return
-    }
-    setError(null)
-    setStage({ step: "scan", uri: res.data.totpURI, codes: res.data.backupCodes })
+  const start = async (password: string) => {
+    const { data, failure } = await authResult(
+      teacherAuthClient.twoFactor.enable({ password, method: "totp" }),
+    )
+    setError(failure)
+    if (data?.method === "totp")
+      setStage({ step: "scan", uri: data.totpURI, codes: data.backupCodes })
   }
 
-  const verify = async (value: string) => {
-    if (stage.step !== "scan" || busy) return
-    setBusy(true)
-    let failure: string | null
-    try {
-      failure = await authFailure(authClient.twoFactor.verifyTotp({ code: value }))
-    } finally {
-      setBusy(false)
-    }
-    setError(failure)
-    if (failure) setCode("")
-    else setStage({ step: "codes", codes: stage.codes })
+  const verify = (value: string) => {
+    if (pending || stage.step !== "scan") return
+    startTransition(async () => {
+      const failure = await authFailure(teacherAuthClient.twoFactor.verifyTotp({ code: value }))
+      setError(failure)
+      if (failure) setCode("")
+      else setStage({ step: "codes", codes: stage.codes })
+    })
   }
 
   if (stage.step === "password")
     return (
-      <form className="grid max-w-sm gap-3" onSubmit={start}>
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="grid gap-1.5">
-          <Label htmlFor="totp-password">Twoje hasło</Label>
-          <Input
-            id="totp-password"
-            type="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </div>
-        <Button type="submit" className="justify-self-start" disabled={busy || !password}>
-          Dalej
-        </Button>
-      </form>
+      <div className="grid gap-3">
+        {error && <Notice tone="error">{error}</Notice>}
+        <PasswordConfirm label="Dalej" onConfirm={start} />
+      </div>
     )
 
   if (stage.step === "scan") {
@@ -162,7 +154,7 @@ export function TotpSetup({ onDone }: { onDone: () => unknown }) {
         </div>
         <Button
           className="justify-self-start"
-          disabled={busy || code.length < 6}
+          disabled={pending || code.length < 6}
           onClick={() => verify(code)}
         >
           Sprawdź kod

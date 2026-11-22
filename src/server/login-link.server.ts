@@ -4,6 +4,7 @@ import { takeLinkAllowance } from "./attempt-limit.server.ts"
 import { auth } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
+import { smtpCode } from "./smtp-config.ts"
 import { teacherWithEmail } from "./roles.ts"
 import { emailLoginRequired } from "./student-access.server.ts"
 
@@ -50,11 +51,3 @@ export async function requestLoginLink(
       consola.error(`link SMTP examId=${examId}`, smtpCode(e))
     })
 }
-
-/** Kod odpowiedzi SMTP albo nazwa błędu; bez adresu i treści. */
-const smtpCode = (e: unknown) =>
-  typeof e === "object" && e !== null && "responseCode" in e
-    ? `kod=${String(e.responseCode)}`
-    : e instanceof Error
-      ? e.name
-      : "nieznany"

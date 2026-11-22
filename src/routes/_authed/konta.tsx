@@ -106,7 +106,7 @@ function InviteForm({ mail }: { mail: boolean }) {
             <form.AppField name="email">
               {(f) => <f.TextField label="E-mail" type="email" />}
             </form.AppField>
-            <form.SubmitButton className="self-end justify-self-start" disabled={!mail}>
+            <form.SubmitButton className="self-end justify-self-start">
               Wyślij zaproszenie
             </form.SubmitButton>
           </fieldset>

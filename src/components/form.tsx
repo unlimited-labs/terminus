@@ -267,10 +267,15 @@ function CheckboxField({
   )
 }
 
-/** Po nieudanym wysłaniu fokus idzie do pierwszego błędnego pola (po przerysowaniu z `aria-invalid`). */
+/**
+ * Po nieudanym wysłaniu fokus idzie do pierwszego błędnego pola (po przerysowaniu z `aria-invalid`).
+ * Przed hydratacją pola są zablokowane: wpisany tekst React by wyczyścił, a wysłany formularz poszedłby
+ * natywnie GET-em, z polami (np. hasłem) w adresie.
+ */
 function Form({ className, children }: { className?: string; children: React.ReactNode }) {
   const form = useFormContext()
   const ref = useRef<HTMLFormElement>(null)
+  const hydrated = useHydrated()
   return (
     <form
       ref={ref}
@@ -286,7 +291,9 @@ function Form({ className, children }: { className?: string; children: React.Rea
         )
       }}
     >
-      {children}
+      <fieldset disabled={!hydrated} className="contents">
+        {children}
+      </fieldset>
     </form>
   )
 }
@@ -303,17 +310,10 @@ function SubmitButton({
   size?: React.ComponentProps<typeof Button>["size"]
 }) {
   const form = useFormContext()
-  // Przed hydratacją formularz wysłałby się natywnie GET-em, z polami (np. hasłem) w adresie.
-  const hydrated = useHydrated()
   return (
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
-        <Button
-          type="submit"
-          disabled={!hydrated || isSubmitting || disabled}
-          className={className}
-          size={size}
-        >
+        <Button type="submit" disabled={isSubmitting || disabled} className={className} size={size}>
           {children}
         </Button>
       )}

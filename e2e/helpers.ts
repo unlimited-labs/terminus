@@ -40,24 +40,19 @@ export async function openBoard(page: Page, examId: string) {
   await page.getByRole("heading", { name: /tablica zapisów/ }).waitFor()
 }
 
-/** E-mail, hasło i „Zaloguj się” po hydratacji (wcześniej React wyczyściłby wpisane pola). */
 export async function fillLogin(page: Page, email: string, password: string) {
-  const submit = page.getByRole("button", { name: "Zaloguj się" })
-  await expect(submit).toBeEnabled()
   await page.getByLabel("E-mail").fill(email)
   await page.getByLabel("Hasło", { exact: true }).fill(password)
-  await submit.click()
+  await page.getByRole("button", { name: "Zaloguj się" }).click()
 }
 
-/** Zaproszenie z panelu kont (superadmin zalogowany) po hydratacji formularza. */
+/** Zaproszenie z panelu kont (superadmin zalogowany). */
 export async function invite(page: Page, name: string, email: string) {
   await page.goto("/konta")
   const form = page.locator("form", { hasText: "Wyślij zaproszenie" })
-  const submit = form.getByRole("button", { name: "Wyślij zaproszenie" })
-  await expect(submit).toBeEnabled()
   await form.getByLabel("Imię i nazwisko").fill(name)
   await form.getByLabel("E-mail").fill(email)
-  await submit.click()
+  await form.getByRole("button", { name: "Wyślij zaproszenie" }).click()
   await expect(page.locator("li", { hasText: email })).toContainText("Zaproszone")
 }
 

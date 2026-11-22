@@ -24,7 +24,6 @@ test("klucz dostępu: konfiguracja z zaproszenia, logowanie kluczem, hasło już
 }) => {
   await login(page)
   await invite(page, "Ola Klucz", "klucz@e2e.test")
-  await expect(page.locator("li", { hasText: "klucz@e2e.test" })).toContainText("Zaproszone")
 
   const ola = await (await browser.newContext()).newPage()
   await virtualAuthenticator(ola)

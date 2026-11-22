@@ -9,6 +9,7 @@ export const password = z
 
 export const loginSchema = z.object({ email, password: z.string().min(1, "Podaj hasło.") })
 export const forgotPasswordSchema = z.object({ email })
+export const confirmPasswordSchema = z.object({ password: z.string().min(1, "Podaj hasło.") })
 export const newPasswordSchema = z.object({ newPassword: password })
 
 /** Tylko ścieżki wewnętrzne: "//host" i "/\host" przeglądarka traktuje jak inny serwer. */

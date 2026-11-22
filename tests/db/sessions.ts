@@ -1,9 +1,8 @@
 import { randomUUID } from "node:crypto"
 
-import { base32 } from "@better-auth/utils/base32"
-import { createOTP } from "@better-auth/utils/otp"
-
 import { auth } from "@/server/auth.server"
+
+import { totpCode } from "../../e2e/totp.ts"
 
 export const TEST_PASSWORD = "haslo-123456"
 
@@ -18,12 +17,6 @@ export const cookiesOf = (headers: Headers) =>
 
 /** Adres `otpauth://` kont testowych z TOTP, żeby `signIn` sam podał kod. */
 const totpOf = new Map<string, string>()
-
-/** Kod TOTP z adresu `otpauth://` (sekret w Base32, jak w kodzie QR). */
-async function totpCode(totpURI: string) {
-  const secret = new URL(totpURI).searchParams.get("secret")!
-  return createOTP(base32.decode(secret)).totp()
-}
 
 /** Logowanie hasłem; konto z TOTP dostaje od razu kod, jak w drugim kroku ekranu logowania. */
 export async function signIn(email: string, password = TEST_PASSWORD) {

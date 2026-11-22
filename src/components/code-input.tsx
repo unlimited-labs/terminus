@@ -1,5 +1,7 @@
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp"
 
+const SLOT = "size-11 text-lg"
+
 /** Sześć cyfr z aplikacji w polach jak PIN (3 + 3). */
 export function CodeInput({
   id,
@@ -24,19 +26,17 @@ export function CodeInput({
       onChange={onChange}
       onComplete={onComplete}
     >
-      {[
-        [0, 1, 2],
-        [3, 4, 5],
-      ].map((group, i) => (
-        <span key={group[0]} className="contents">
-          {i > 0 && <InputOTPSeparator />}
-          <InputOTPGroup>
-            {group.map((index) => (
-              <InputOTPSlot key={index} index={index} className="size-11 text-lg" />
-            ))}
-          </InputOTPGroup>
-        </span>
-      ))}
+      <InputOTPGroup>
+        <InputOTPSlot index={0} className={SLOT} />
+        <InputOTPSlot index={1} className={SLOT} />
+        <InputOTPSlot index={2} className={SLOT} />
+      </InputOTPGroup>
+      <InputOTPSeparator />
+      <InputOTPGroup>
+        <InputOTPSlot index={3} className={SLOT} />
+        <InputOTPSlot index={4} className={SLOT} />
+        <InputOTPSlot index={5} className={SLOT} />
+      </InputOTPGroup>
     </InputOTP>
   )
 }

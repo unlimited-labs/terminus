@@ -1,6 +1,6 @@
 import { Link, createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { KeyRound } from "lucide-react"
-import { useState } from "react"
+import { useState, useTransition } from "react"
 
 import { submitThenChange, useAppForm } from "@/components/form"
 import { Notice } from "@/components/notice"
@@ -10,9 +10,8 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { authFailure } from "@/lib/auth-client"
-import { teacherAuthClient as authClient } from "@/lib/teacher-auth-client"
-import { authErrorMessage } from "@/messages.pl"
+import { authFailure, authResult } from "@/lib/auth-client"
+import { teacherAuthClient } from "@/lib/teacher-auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
 import { mailAvailable } from "@/server/password-link"
 import { sessionQuery } from "@/server/session"
@@ -23,6 +22,8 @@ export const Route = createFileRoute("/login")({
     if (await context.queryClient.query(sessionQuery())) throw redirect({ to: "/" })
   },
   loader: () => mailAvailable(),
+  // Konfiguracja poczty nie zmienia się bez restartu serwera.
+  staleTime: Infinity,
   head: () => ({ meta: [{ title: "Logowanie — Terminus" }] }),
   component: Login,
 })
@@ -55,32 +56,26 @@ function PasswordStep({
 }) {
   const canResetPassword = Route.useLoaderData()
   const [error, setError] = useState<string | null>(null)
-  const [passkeyBusy, setPasskeyBusy] = useState(false)
+  const [passkeyPending, startPasskey] = useTransition()
   const form = useAppForm({
     defaultValues: { email: "", password: "" },
     ...submitThenChange(loginSchema),
     onSubmit: async ({ value }) => {
-      const res = await authClient.signIn.email(loginSchema.parse(value)).catch(() => null)
-      if (!res || res.error) {
-        setError(authErrorMessage(res?.error?.code))
-        return
-      }
-      setError(null)
-      if ("twoFactorRedirect" in res.data && res.data.twoFactorRedirect) onCode()
+      const { data, failure } = await authResult(
+        teacherAuthClient.signIn.email(loginSchema.parse(value)),
+      )
+      setError(failure)
+      if (!data) return
+      if ("twoFactorRedirect" in data && data.twoFactorRedirect) onCode()
       else await onDone()
     },
   })
-  const signInWithPasskey = async () => {
-    setPasskeyBusy(true)
-    let failure: string | null
-    try {
-      failure = await authFailure(authClient.signIn.passkey())
-    } finally {
-      setPasskeyBusy(false)
-    }
-    setError(failure)
-    if (!failure) await onDone()
-  }
+  const signInWithPasskey = () =>
+    startPasskey(async () => {
+      const failure = await authFailure(teacherAuthClient.signIn.passkey())
+      setError(failure)
+      if (!failure) await onDone()
+    })
   return (
     <TicketCard subtitle="Harmonogram zaliczeń" footer="Logowanie dla prowadzących zajęcia">
       {error ? (
@@ -88,7 +83,7 @@ function PasswordStep({
       ) : (
         notice && <Notice tone="info">Hasło ustawione. Zaloguj się.</Notice>
       )}
-      <Button size="lg" type="button" disabled={passkeyBusy} onClick={signInWithPasskey}>
+      <Button size="lg" type="button" disabled={passkeyPending} onClick={signInWithPasskey}>
         <KeyRound /> Zaloguj kluczem dostępu
       </Button>
       <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -140,23 +135,19 @@ function CodeStep({ onDone, onRestart }: { onDone: () => Promise<void>; onRestar
   const [code, setCode] = useState("")
   const [trustDevice, setTrustDevice] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [busy, setBusy] = useState(false)
-  const verify = async (value: string) => {
+  const [busy, startVerify] = useTransition()
+  const verify = (value: string) => {
     if (busy || !value) return
-    setBusy(true)
-    let failure: string | null
-    try {
-      failure = await authFailure(
+    startVerify(async () => {
+      const failure = await authFailure(
         backup
-          ? authClient.twoFactor.verifyBackupCode({ code: value.trim(), trustDevice })
-          : authClient.twoFactor.verifyTotp({ code: value, trustDevice }),
+          ? teacherAuthClient.twoFactor.verifyBackupCode({ code: value.trim(), trustDevice })
+          : teacherAuthClient.twoFactor.verifyTotp({ code: value, trustDevice }),
       )
-    } finally {
-      setBusy(false)
-    }
-    setError(failure)
-    if (failure) setCode("")
-    else await onDone()
+      setError(failure)
+      if (failure) setCode("")
+      else await onDone()
+    })
   }
   return (
     <TicketCard subtitle="Potwierdź logowanie">
@@ -165,7 +156,7 @@ function CodeStep({ onDone, onRestart }: { onDone: () => Promise<void>; onRestar
         className="grid gap-4"
         onSubmit={(e) => {
           e.preventDefault()
-          void verify(code)
+          verify(code)
         }}
       >
         {backup ? (

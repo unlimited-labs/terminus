@@ -19,21 +19,25 @@ import { db } from "./db.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
-import { sendPasswordLink } from "./password-link.server.ts"
-import { notStudent } from "./roles.ts"
+import {
+  deletePasswordLinks,
+  passwordLinkExpiry,
+  sendPasswordLink,
+} from "./password-link.server.ts"
+import { notStudent, passwordAccount } from "./roles.ts"
 
 type AccountRef = z.infer<typeof accountRefSchema>
 
 /** Ślad działań superadmina na kontach: identyfikatory, bez adresów. */
-const logAction = (adminId: string, action: string, targetId: string, result: Result) =>
+const logAction = (
+  adminId: string,
+  action: string,
+  targetId: string,
+  result: Result = { ok: true },
+) =>
   consola.info(
     `konto admin=${adminId} akcja=${action} cel=${targetId} ${result.ok ? "ok" : result.code}`,
   )
-
-const deletePasswordLinks = (userId: string) =>
-  db.verification.deleteMany({
-    where: { identifier: { startsWith: "reset-password:" }, value: userId },
-  })
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
@@ -52,35 +56,27 @@ async function assertAdmin(headers: Headers) {
 
 export async function accountList(headers: Headers) {
   await assertAdmin(headers)
-  const users = await db.user.findMany({
-    where: notStudent,
-    orderBy: { name: "asc" },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      role: true,
-      banned: true,
-      twoFactorEnabled: true,
-      accounts: { where: { providerId: "credential" }, select: { id: true } },
-      _count: { select: { passkeys: true } },
-    },
-  })
-  const links = await db.verification.groupBy({
-    by: ["value"],
-    where: {
-      identifier: { startsWith: "reset-password:" },
-      value: { in: users.map((u) => u.id) },
-      expiresAt: { gt: new Date() },
-    },
-    _max: { expiresAt: true },
-  })
-  const linkExpiry = new Map(links.map((l) => [l.value, l._max.expiresAt]))
-  return users.map(({ accounts, _count, twoFactorEnabled, ...user }) => ({
+  const [users, linkExpiry] = await Promise.all([
+    db.user.findMany({
+      where: notStudent,
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        banned: true,
+        twoFactorEnabled: true,
+        _count: { select: { passkeys: true, accounts: { where: passwordAccount } } },
+      },
+    }),
+    passwordLinkExpiry(),
+  ])
+  return users.map(({ _count, twoFactorEnabled, ...user }) => ({
     ...user,
     state: accountState({
       banned: user.banned,
-      hasPassword: accounts.length > 0,
+      hasPassword: _count.accounts > 0,
       twoFactorReady: twoFactorEnabled === true || _count.passkeys > 0,
     }),
     linkExpiresAt: linkExpiry.get(user.id) ?? null,
@@ -148,7 +144,7 @@ export async function resetAccountTwoFactor(
   const admin = await assertAdmin(headers)
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
   await resetTwoFactor(userId)
-  logAction(admin.id, "reset-2fa", userId, { ok: true })
+  logAction(admin.id, "reset-2fa", userId)
   return { ok: true }
 }
 
@@ -161,7 +157,7 @@ export async function setBanned(
   await (banned
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))
-  logAction(admin.id, banned ? "blokada" : "odblokowanie", userId, { ok: true })
+  logAction(admin.id, banned ? "blokada" : "odblokowanie", userId)
   return { ok: true }
 }
 
@@ -172,9 +168,7 @@ export async function setAdmin(
   const admin = await assertAdmin(headers)
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
   await auth.api.setRole({ body: { userId, role: isAdmin ? "admin" : "user" }, headers })
-  logAction(admin.id, isAdmin ? "nadanie-superadmina" : "odebranie-superadmina", userId, {
-    ok: true,
-  })
+  logAction(admin.id, isAdmin ? "nadanie-superadmina" : "odebranie-superadmina", userId)
   return { ok: true }
 }
 

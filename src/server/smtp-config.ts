@@ -28,3 +28,11 @@ export function smtpConfig(v: SmtpVars) {
     auth,
   }
 }
+
+/** Kod odpowiedzi SMTP albo nazwa błędu; bez adresu i treści. */
+export const smtpCode = (e: unknown) =>
+  typeof e === "object" && e !== null && "responseCode" in e
+    ? `kod=${String(e.responseCode)}`
+    : e instanceof Error
+      ? e.name
+      : "nieznany"

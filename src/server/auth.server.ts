@@ -7,8 +7,8 @@ import { setSessionCookie } from "better-auth/cookies"
 import { admin, magicLink, twoFactor } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
-import { LOGIN_LINK_MINUTES, PASSWORD_LINK_HOURS } from "../domain/limits.ts"
-import { AUTH_CODE, loginMail, passwordMail } from "../messages.pl.ts"
+import { LOGIN_LINK_MINUTES } from "../domain/limits.ts"
+import { AUTH_CODE, loginMail } from "../messages.pl.ts"
 
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"
@@ -46,24 +46,16 @@ const studentSession = {
   },
 }
 
-/**
- * Konta, którym ostatni mail z linkiem do hasła nie wyszedł: Better Auth połyka błąd `sendResetPassword`,
- * a panel kont musi go pokazać. shortcut: jeden proces, równoległe wysyłki do tego samego konta mogą się pomylić.
- */
-export const failedPasswordMail = new Set<string>()
-
 const refuse = (code: keyof typeof AUTH_CODE) =>
   new APIError("FORBIDDEN", { code, message: AUTH_CODE[code] })
 
-/** Klucze dostępu i TOTP konta; „skonfigurowane 2FA” = TOTP włączone albo co najmniej jeden klucz. */
-async function factorsOf(userId: string) {
-  const [user, passkeys] = await Promise.all([
-    db.user.findUnique({ where: { id: userId }, select: { twoFactorEnabled: true } }),
-    db.passkey.count({ where: { userId } }),
-  ])
-  const totp = user?.twoFactorEnabled === true
-  return { totp, passkeys, ready: totp || passkeys > 0 }
-}
+/** TOTP włączone (pole wtyczki `twoFactor` na wierszu `user`, typy hooków go nie znają). */
+const totpOn = (user: object | null | undefined) =>
+  !!user && "twoFactorEnabled" in user && user.twoFactorEnabled === true
+
+const passkeyCount = (userId: string) => db.passkey.count({ where: { userId } })
+const hasPasskey = async (userId: string) =>
+  !!(await db.passkey.findFirst({ where: { userId }, select: { id: true } }))
 
 /** Zaufane przeglądarki konta (pomijanie kodu TOTP przez 30 dni). */
 const deleteTrustedDevices = (userId: string) =>
@@ -89,8 +81,11 @@ const teacherFactors = {
           const removing =
             ctx.path === "/passkey/delete-passkey" || ctx.path === "/two-factor/disable"
           if (!removing) return
-          const { totp, passkeys } = await factorsOf(session.user.id)
-          const left = ctx.path === "/two-factor/disable" ? passkeys : passkeys - 1 + Number(totp)
+          const passkeys = await passkeyCount(session.user.id)
+          const left =
+            ctx.path === "/two-factor/disable"
+              ? passkeys
+              : passkeys - 1 + Number(totpOn(session.user))
           if (left < 1) throw refuse("LAST_FACTOR")
         }),
       },
@@ -106,30 +101,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    resetPasswordTokenExpiresIn: PASSWORD_LINK_HOURS * 3600,
     revokeSessionsOnPasswordReset: true,
-    // Zaproszenie i reset to ten sam link; ważny jest tylko ostatni. Student i zablokowany nie dostają nic.
-    sendResetPassword: async ({ user, token }) => {
-      if (roleOf(user) === STUDENT_ROLE || ("banned" in user && user.banned)) return
-      await db.verification.deleteMany({
-        where: {
-          identifier: { startsWith: "reset-password:", not: `reset-password:${token}` },
-          value: user.id,
-        },
-      })
-      const invited = !(await db.account.count({
-        where: { userId: user.id, providerId: "credential" },
-      }))
-      const link = new URL("/nowe-haslo", env.APP_PUBLIC_URL)
-      link.searchParams.set("token", token)
-      failedPasswordMail.delete(user.id)
-      try {
-        await sendMail({ to: user.email, ...passwordMail(link.toString(), invited) })
-      } catch (e) {
-        failedPasswordMail.add(user.id)
-        throw e
-      }
-    },
     onPasswordReset: async ({ user }) => {
       await deleteTrustedDevices(user.id)
     },
@@ -138,7 +110,7 @@ export const auth = betterAuth({
   advanced: { ipAddress: { ipAddressHeaders: ["x-real-ip"] } },
   // Panel kont woła auth.api po stronie serwera; przez HTTP nikt nie podszyje się ani nie usunie konta.
   // Link wysyła wyłącznie `requestLink` (ograniczenia i jednakowa odpowiedź), a weryfikuje strona wejścia.
-  // Link do hasła wysyła wyłącznie `password-link.server.ts` (limity, jednakowa odpowiedź); OTP mailem wyłączone.
+  // Link do hasła zakłada i wysyła `password-link.server.ts` (limity, jednakowa odpowiedź); OTP mailem wyłączone.
   disabledPaths: [
     ...Object.values(adminPlugin.endpoints).map((e) => e.path),
     "/sign-in/magic-link",
@@ -165,8 +137,7 @@ export const auth = betterAuth({
             if (ctx?.path === MAGIC_LINK_PATH) return false
             // Hasło konta z samym kluczem dostępu nie wpuszcza (dopiero po poprawnym haśle, więc nic nie zdradza).
             if (ctx?.path === "/sign-in/email") {
-              const { totp, passkeys } = await factorsOf(session.userId)
-              if (!totp && passkeys > 0) throw refuse("PASSKEY_ONLY")
+              if (!totpOn(user) && (await hasPasskey(session.userId))) throw refuse("PASSKEY_ONLY")
             }
             return undefined
           }
@@ -207,8 +178,15 @@ export async function signedInTeacher(headers: Headers) {
   const session = await auth.api.getSession({ headers })
   if (!session || session.user.banned || session.user.role === STUDENT_ROLE) return null
   const { id, name, email, role } = session.user
-  const { totp, ready } = await factorsOf(id)
-  return { id, name, email, isAdmin: role === "admin", totp, twoFactorReady: ready }
+  const totp = totpOn(session.user)
+  return {
+    id,
+    name,
+    email,
+    isAdmin: role === "admin",
+    totp,
+    twoFactorReady: totp || (await hasPasskey(id)),
+  }
 }
 
 /** Zalogowany prowadzący z gotowym 2FA; tylko on dostaje dane i operacje (bramka 2FA). */

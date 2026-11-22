@@ -1,6 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { ChevronDown } from "lucide-react"
 import { useState } from "react"
 
 import { Notice } from "@/components/notice"
@@ -11,7 +10,7 @@ import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/konfiguracja-2fa")({
   beforeLoad: async ({ context }) => {
-    const user = await context.queryClient.fetchQuery({ ...sessionQuery(), staleTime: 0 })
+    const user = await context.queryClient.query(sessionQuery())
     if (!user) throw redirect({ to: "/login" })
     if (user.twoFactorReady) throw redirect({ to: "/" })
   },
@@ -24,7 +23,6 @@ function SetupTwoFactor() {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const [passkeyAdded, setPasskeyAdded] = useState(false)
-  const [totpOpen, setTotpOpen] = useState(false)
   const finish = async () => {
     await queryClient.invalidateQueries({ queryKey: sessionQuery().queryKey })
     await navigate({ to: "/" })
@@ -54,9 +52,7 @@ function SetupTwoFactor() {
             </p>
             <div className="flex flex-wrap gap-2">
               <Button onClick={finish}>Przejdź do zaliczeń</Button>
-              <AddPasskeyButton variant="outline" onAdded={() => undefined}>
-                Dodaj drugi klucz
-              </AddPasskeyButton>
+              <AddPasskeyButton variant="outline">Dodaj drugi klucz</AddPasskeyButton>
             </div>
           </>
         ) : (
@@ -71,26 +67,16 @@ function SetupTwoFactor() {
             />
           </>
         )}
-        <div className="border-t pt-4">
-          <button
-            type="button"
-            className="flex items-center gap-1 text-sm font-medium"
-            aria-expanded={totpOpen}
-            onClick={() => setTotpOpen(!totpOpen)}
-          >
-            <ChevronDown
-              className={`size-4 transition-transform ${totpOpen ? "rotate-180" : ""}`}
-            />
+        <details className="border-t pt-4">
+          <summary className="cursor-pointer text-sm font-medium">
             {passkeyAdded
               ? "Dodaj też aplikację z kodami"
               : "Nie masz klucza ani telefonu z biometrią? Użyj aplikacji z kodami"}
-          </button>
-          {totpOpen && (
-            <div className="pt-4">
-              <TotpSetup onDone={finish} />
-            </div>
-          )}
-        </div>
+          </summary>
+          <div className="pt-4">
+            <TotpSetup onDone={finish} />
+          </div>
+        </details>
       </section>
     </main>
   )

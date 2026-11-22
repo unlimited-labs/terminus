@@ -10,6 +10,8 @@ import { PASSWORD_LINK_HOURS } from "@/domain/limits"
 
 export const Route = createFileRoute("/nie-pamietam-hasla")({
   loader: () => mailAvailable(),
+  // Konfiguracja poczty nie zmienia się bez restartu serwera.
+  staleTime: Infinity,
   head: () => ({ meta: [{ title: "Nie pamiętam hasła — Terminus" }] }),
   component: ForgotPassword,
 })
