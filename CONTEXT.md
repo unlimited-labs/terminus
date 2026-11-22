@@ -80,7 +80,23 @@ Każde z kont przypiętych do zaliczenia; wszyscy mają równe uprawnienia (tak�
 _Avoid_: Właściciel, współprowadzący (w interfejsie dopuszczalne potocznie)
 
 **Superadmin**:
-Prowadzący, który dodatkowo zarządza kontami prowadzących (zakłada, blokuje, resetuje hasła); cudzych zaliczeń nie widzi.
+Prowadzący, który dodatkowo zarządza kontami prowadzących (zaprasza, blokuje, wysyła link do zmiany hasła, resetuje 2FA); cudzych zaliczeń nie widzi i nigdy nie zna cudzego hasła.
+
+**Zaproszenie**:
+Link wysłany mailem przez superadmina, którym nowy prowadzący sam nadaje sobie hasło i konfiguruje 2FA; do tego czasu konto jest „zaproszone”. Bez skonfigurowanej poczty zaproszeń nie ma.
+_Avoid_: Rejestracja, założenie konta z hasłem
+
+**2FA**:
+Obowiązkowe dla każdego prowadzącego potwierdzenie logowania czymś poza hasłem: kluczem dostępu albo kodem z aplikacji (TOTP). Studentów nie dotyczy.
+_Avoid_: MFA, weryfikacja dwuetapowa (w interfejsie dopuszczalne)
+
+**Stan konta**:
+Położenie konta prowadzącego na drodze do pracy w aplikacji: zaproszone (bez hasła), bez 2FA (z hasłem, bez drugiego składnika — widzi tylko konfigurację 2FA), aktywne albo zablokowane (blokada ma pierwszeństwo). Wynika z danych konta, nikt go nie ustawia ręcznie.
+_Avoid_: Status konta
+
+**Klucz dostępu**:
+Passkey (FIDO2) prowadzącego — telefon, komputer albo klucz sprzętowy; logowanie nim nie wymaga hasła i samo spełnia wymóg 2FA.
+_Avoid_: Passkey (w interfejsie), token sprzętowy
 
 **Blokada konta**:
 Wyłączenie logowania prowadzącego bez usuwania jego zaliczeń; kont się nie usuwa.
