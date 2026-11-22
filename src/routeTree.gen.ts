@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as NiePamietamHaslaRouteImport } from './routes/nie-pamietam-hasla'
+import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
 import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
@@ -27,6 +29,16 @@ const AuthedRoute = AuthedRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NiePamietamHaslaRoute = NiePamietamHaslaRouteImport.update({
+  id: '/nie-pamietam-hasla',
+  path: '/nie-pamietam-hasla',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoweHasloRoute = NoweHasloRouteImport.update({
+  id: '/nowe-haslo',
+  path: '/nowe-haslo',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -75,6 +87,8 @@ const AuthedZaliczeniaExamIdTablicaRoute =
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
+  '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
+  '/nowe-haslo': typeof NoweHasloRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -85,6 +99,8 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
+  '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
+  '/nowe-haslo': typeof NoweHasloRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/': typeof AuthedIndexRoute
@@ -98,6 +114,8 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
+  '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
+  '/nowe-haslo': typeof NoweHasloRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
   '/_authed/': typeof AuthedIndexRoute
@@ -112,6 +130,8 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/nie-pamietam-hasla'
+    | '/nowe-haslo'
     | '/haslo'
     | '/konta'
     | '/api/auth/$'
@@ -122,6 +142,8 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
+    | '/nie-pamietam-hasla'
+    | '/nowe-haslo'
     | '/haslo'
     | '/konta'
     | '/'
@@ -134,6 +156,8 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_authed'
     | '/login'
+    | '/nie-pamietam-hasla'
+    | '/nowe-haslo'
     | '/_authed/haslo'
     | '/_authed/konta'
     | '/_authed/'
@@ -147,6 +171,8 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  NiePamietamHaslaRoute: typeof NiePamietamHaslaRoute
+  NoweHasloRoute: typeof NoweHasloRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ZExamIdEnterRoute: typeof ZExamIdEnterRoute
   ZExamIdIndexRoute: typeof ZExamIdIndexRoute
@@ -166,6 +192,20 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nie-pamietam-hasla': {
+      id: '/nie-pamietam-hasla'
+      path: '/nie-pamietam-hasla'
+      fullPath: '/nie-pamietam-hasla'
+      preLoaderRoute: typeof NiePamietamHaslaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/nowe-haslo': {
+      id: '/nowe-haslo'
+      path: '/nowe-haslo'
+      fullPath: '/nowe-haslo'
+      preLoaderRoute: typeof NoweHasloRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -249,6 +289,8 @@ const AuthedRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
+  NiePamietamHaslaRoute: NiePamietamHaslaRoute,
+  NoweHasloRoute: NoweHasloRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ZExamIdEnterRoute: ZExamIdEnterRoute,
   ZExamIdIndexRoute: ZExamIdIndexRoute,

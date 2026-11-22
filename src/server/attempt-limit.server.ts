@@ -60,3 +60,15 @@ export async function takeLinkAllowance(ip: string, examId: string, studentNumbe
   ])
   return results.every((r) => r.status === "fulfilled")
 }
+
+const passwordLinksPerEmail = new RateLimiterMemory({ points: 3, duration: HOUR })
+const passwordLinksPerIp = new RateLimiterMemory({ points: 10, duration: HOUR })
+
+/** „Nie pamiętam hasła”: 3 na godzinę na adres i 10 na godzinę z jednego IP; `false` = limit. */
+export async function takePasswordLinkAllowance(ip: string, email: string) {
+  const results = await Promise.allSettled([
+    passwordLinksPerEmail.consume(email),
+    passwordLinksPerIp.consume(ip),
+  ])
+  return results.every((r) => r.status === "fulfilled")
+}

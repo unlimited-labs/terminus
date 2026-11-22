@@ -46,6 +46,12 @@ const studentSession = {
   },
 }
 
+/**
+ * Konta, którym ostatni mail z linkiem do hasła nie wyszedł: Better Auth połyka błąd `sendResetPassword`,
+ * a panel kont musi go pokazać. shortcut: jeden proces, równoległe wysyłki do tego samego konta mogą się pomylić.
+ */
+export const failedPasswordMail = new Set<string>()
+
 const refuse = (code: keyof typeof AUTH_CODE) =>
   new APIError("FORBIDDEN", { code, message: AUTH_CODE[code] })
 
@@ -116,7 +122,13 @@ export const auth = betterAuth({
       }))
       const link = new URL("/nowe-haslo", env.APP_PUBLIC_URL)
       link.searchParams.set("token", token)
-      await sendMail({ to: user.email, ...passwordMail(link.toString(), invited) })
+      failedPasswordMail.delete(user.id)
+      try {
+        await sendMail({ to: user.email, ...passwordMail(link.toString(), invited) })
+      } catch (e) {
+        failedPasswordMail.add(user.id)
+        throw e
+      }
     },
     onPasswordReset: async ({ user }) => {
       await deleteTrustedDevices(user.id)

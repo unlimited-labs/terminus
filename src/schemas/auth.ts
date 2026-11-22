@@ -8,6 +8,8 @@ export const password = z
   .max(128, tooLong(128))
 
 export const loginSchema = z.object({ email, password: z.string().min(1, "Podaj hasło.") })
+export const forgotPasswordSchema = z.object({ email })
+export const newPasswordSchema = z.object({ newPassword: password })
 
 /** Tylko ścieżki wewnętrzne: "//host" i "/\host" przeglądarka traktuje jak inny serwer. */
 export const loginSearchSchema = z.object({
@@ -16,6 +18,7 @@ export const loginSearchSchema = z.object({
     .regex(/^\/(?![/\\])/)
     .optional()
     .catch(undefined),
+  haslo: z.literal("ustawione").optional().catch(undefined),
 })
 
 export const changePasswordSchema = z.object({
