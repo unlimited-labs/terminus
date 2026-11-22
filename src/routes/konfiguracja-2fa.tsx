@@ -38,8 +38,7 @@ function SetupTwoFactor() {
       <div className="grid gap-1">
         <h1 className="text-2xl font-extrabold tracking-tight">Zabezpiecz konto</h1>
         <p className="text-muted-foreground">
-          Każdy prowadzący potwierdza logowanie czymś poza hasłem. Bez tego zaliczenia pozostaną
-          zamknięte.
+          Dodaj drugi sposób logowania: klucz dostępu albo aplikację z kodami.
         </p>
       </div>
       <section className="grid max-w-lg gap-4">
@@ -58,8 +57,7 @@ function SetupTwoFactor() {
         ) : (
           <>
             <p className="text-sm">
-              Przeglądarka zapyta o odcisk palca, twarz, PIN urządzenia albo klucz sprzętowy. Potem
-              logujesz się bez hasła.
+              Przeglądarka poprosi o odcisk palca, twarz, PIN urządzenia albo klucz sprzętowy.
             </p>
             <AddPasskeyButton
               className="justify-self-start"
