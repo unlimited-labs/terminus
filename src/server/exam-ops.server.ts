@@ -1,9 +1,11 @@
 import type { z } from "zod"
 
 import { buildExportCsv } from "../domain/csv.ts"
+import { defaultEmail } from "../domain/email.ts"
 import { exportFileName } from "../domain/file-names.ts"
 import { examPhase } from "../domain/schedule.ts"
-import { warsawDateTime } from "../domain/time.ts"
+import { cutWindow } from "../domain/slots.ts"
+import { warsawDateTime, warsawDay } from "../domain/time.ts"
 import type { Result } from "../messages.pl.ts"
 import type { examSchema } from "../schemas/exam.ts"
 
@@ -74,6 +76,75 @@ export async function insertExam(
     data: { ...examRecord(data), teachers: { connect: { id: userId } } },
   })
   return { ok: true, examId: exam.id }
+}
+
+const SAMPLE_EXAM_NAME = "Przykładowe zaliczenie"
+
+const SAMPLE_PEOPLE = [
+  ["100001", "Anna", "Nowak"],
+  ["100002", "Jan", "Kowalski"],
+  ["100003", "Ewa", "Wiśniewska"],
+  ["100004", "Piotr", "Wójcik"],
+  ["100005", "Maria", "Kamińska"],
+  ["100006", "Tomasz", "Lewandowski"],
+] as const
+
+/** Zaliczenie do przewodnika: lista, sloty za tydzień i dwa zapisy; drugi raz zwraca to samo. */
+export async function insertSampleExam(
+  userId: string,
+  now = new Date(),
+): Promise<Result<{ examId: string }>> {
+  const existing = await db.exam.findFirst({
+    where: { name: SAMPLE_EXAM_NAME, teachers: { some: { id: userId } } },
+    select: { id: true },
+  })
+  if (existing) return { ok: true, examId: existing.id }
+  const cut = cutWindow({
+    date: warsawDay(new Date(now.getTime() + 7 * 86_400_000)),
+    from: "09:00",
+    to: "11:00",
+    minutes: 20,
+  })
+  if (!cut.ok) return cut
+  return db.$transaction(async (tx) => {
+    const exam = await tx.exam.create({
+      data: {
+        name: SAMPLE_EXAM_NAME,
+        description: "Do ćwiczeń: zmieniaj śmiało, a gdy niepotrzebne, usuń je przyciskiem Usuń.",
+        defaultSlotMinutes: 20,
+        maxTeamSize: 1,
+        teachers: { connect: { id: userId } },
+      },
+    })
+    const roster = await tx.roster.create({
+      data: {
+        examId: exam.id,
+        name: "Grupa przykładowa",
+        entries: {
+          createMany: {
+            data: SAMPLE_PEOPLE.map(([studentNumber, firstName, lastName]) => ({
+              studentNumber,
+              firstName,
+              lastName,
+              email: defaultEmail(studentNumber),
+            })),
+          },
+        },
+      },
+    })
+    const slots = await tx.slot.createManyAndReturn({
+      data: cut.slots.map((s) => ({ ...s, examId: exam.id, rosterId: roster.id })),
+      select: { id: true },
+    })
+    await tx.enrollment.createMany({
+      data: [0, 2].map((i) => ({
+        examId: exam.id,
+        studentNumber: SAMPLE_PEOPLE[i]![0],
+        slotId: slots[i]!.id,
+      })),
+    })
+    return { ok: true, examId: exam.id }
+  })
 }
 
 /** Eksport CSV dla prowadzącego; cudze = `NOT_FOUND`. */

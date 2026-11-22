@@ -27,7 +27,7 @@ function ExamLink({ examId }: { examId: string }) {
     }
   }
   return (
-    <Button variant="secondary" onClick={copy} title={path}>
+    <Button data-tour="student-link" variant="secondary" onClick={copy} title={path}>
       Kopiuj link dla studentów
     </Button>
   )
@@ -53,6 +53,7 @@ export function ExamHeader({ exam }: { exam: ExamDetail }) {
         <Link
           to="/zaliczenia/$examId/tablica"
           params={{ examId: exam.id }}
+          data-tour="board"
           className={buttonVariants({ variant: "secondary" })}
         >
           Tablica zapisów
@@ -66,7 +67,7 @@ export function ExamHeader({ exam }: { exam: ExamDetail }) {
 export function ExamActions({ exam }: { exam: ExamDetail }) {
   const leaveExam = useLeaveExam(exam.id)
   return (
-    <div className="flex flex-wrap gap-2">
+    <div data-tour="exam-actions" className="flex flex-wrap gap-2">
       <ExportButton examId={exam.id} />
       <DuplicateButton examId={exam.id} />
       <DeleteExamButton

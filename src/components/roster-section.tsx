@@ -164,11 +164,10 @@ function RosterImport({ exam }: { exam: ExamDetail }) {
   const importer = useRosterImport(exam.id)
   const { input, result } = importer
   return (
-    <div className="grid gap-3">
+    <div data-tour="roster-import" className="grid gap-3">
       <div className="grid gap-1.5">
         <Label htmlFor="roster-csv">
-          Import listy z pliku CSV (eksport z systemu uczelni) — wybierz plik albo przeciągnij go na
-          pole
+          Import listy z pliku CSV (eksport z USOS) — wybierz plik albo przeciągnij go na pole
         </Label>
         <Input
           id="roster-csv"

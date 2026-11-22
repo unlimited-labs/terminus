@@ -7,6 +7,7 @@ import { ExamForm } from "@/components/exam-form"
 import { examFormValues } from "@/components/exam-form-values"
 import { Button } from "@/components/ui/button"
 import { SectionCard } from "@/components/section-card"
+import { TeacherTour } from "@/components/teacher-tour"
 import { useResultMutation } from "@/components/use-result-mutation"
 import { PageTitle } from "@/components/page-title"
 import type { ExamPhase } from "@/domain/schedule"
@@ -35,10 +36,11 @@ function ExamList() {
 
   return (
     <div className="grid max-w-3xl gap-8">
+      <TeacherTour />
       <div className="flex items-end gap-4">
         <PageTitle>Moje zaliczenia</PageTitle>
         {!creating && (
-          <Button className="ml-auto" onClick={() => setCreating(true)}>
+          <Button data-tour="new-exam" className="ml-auto" onClick={() => setCreating(true)}>
             Nowe zaliczenie
           </Button>
         )}

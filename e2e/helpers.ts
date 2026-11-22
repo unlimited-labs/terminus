@@ -41,6 +41,8 @@ export async function openBoard(page: Page, examId: string) {
 }
 
 export async function fillLogin(page: Page, email: string, password: string) {
+  // Przewodnik prowadzącego zasłaniałby stronę po zalogowaniu; sprawdza go tylko tour.spec.ts.
+  await page.evaluate(() => localStorage.setItem("terminus:tour-done", "1"))
   await page.getByLabel("E-mail").fill(email)
   await page.getByLabel("Hasło", { exact: true }).fill(password)
   await page.getByRole("button", { name: "Zaloguj się" }).click()

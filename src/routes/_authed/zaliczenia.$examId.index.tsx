@@ -42,7 +42,7 @@ function ExamPage() {
         className="gap-6"
       >
         <div className="flex flex-wrap items-center gap-4 border-b pb-2">
-          <TabsList variant="line" className="flex-wrap">
+          <TabsList data-tour="exam-tabs" variant="line" className="flex-wrap">
             <TabsTrigger value="sloty">Sloty ({exam.slots.length})</TabsTrigger>
             <TabsTrigger value="lista">Lista indeksów ({exam.people.length})</TabsTrigger>
             <TabsTrigger value="ustawienia">Ustawienia</TabsTrigger>
@@ -52,7 +52,7 @@ function ExamPage() {
             <ExamActions exam={exam} />
           </div>
         </div>
-        <TabsContent value="sloty">
+        <TabsContent data-tour="exam-slots" value="sloty">
           <SlotSection exam={exam} />
         </TabsContent>
         <TabsContent value="lista">

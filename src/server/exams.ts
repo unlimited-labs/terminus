@@ -15,6 +15,7 @@ import {
   examCsv,
   examsOf,
   insertExam,
+  insertSampleExam,
   readExam,
   removeExam,
   removeTeacher,
@@ -46,6 +47,10 @@ export const createExam = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(examFormSchema)
   .handler(({ data, context }) => insertExam(context.user.id, data))
+
+export const createSampleExam = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .handler(({ context }) => insertSampleExam(context.user.id))
 
 export const updateExam = createServerFn({ method: "POST" })
   .middleware([requireUser])

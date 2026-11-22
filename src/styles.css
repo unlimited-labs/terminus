@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/figtree";
+@import "driver.js/dist/driver.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -200,4 +201,32 @@
   .animate-slot-pulse {
     animation: none;
   }
+}
+
+.driver-popover.terminus-tour {
+  font-family: inherit;
+  color: var(--popover-foreground);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+}
+.terminus-tour .driver-popover-title {
+  font: inherit;
+  font-weight: 800;
+}
+.terminus-tour .driver-popover-description {
+  font: inherit;
+  font-size: 0.875rem;
+}
+.terminus-tour .driver-popover-footer button {
+  font: inherit;
+  font-size: 0.8rem;
+  text-shadow: none;
+  border-radius: var(--radius-md);
+  border-color: var(--border);
+  padding: 4px 10px;
+}
+.terminus-tour .driver-popover-footer .driver-popover-next-btn {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
 }

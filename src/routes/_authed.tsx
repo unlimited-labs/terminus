@@ -47,7 +47,10 @@ function AuthedLayout() {
             </Link>
           )}
           <DropdownMenu>
-            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="ml-auto" />}>
+            <DropdownMenuTrigger
+              data-tour="account"
+              render={<Button variant="ghost" size="sm" className="ml-auto" />}
+            >
               {user.name} <ChevronDown />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-auto min-w-56">
