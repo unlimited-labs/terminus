@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest"
 
 import { auth, sessionUser, signedInTeacher } from "@/server/auth.server"
 import { db } from "@/server/db.server"
+import { disableTotp, removePasskey } from "@/server/factor-ops.server"
 import { sendMail } from "@/server/mail.server"
 
 import { account, cookiesOf, enableTotp, signIn, TEST_PASSWORD } from "./sessions"
@@ -56,24 +57,29 @@ test("konto z samym kluczem dostępu nie loguje się hasłem; złe hasło nie zd
 })
 
 test("ostatniego sposobu potwierdzania nie da się usunąć", async () => {
-  const { id, headers: session } = await account()
+  const { id, headers } = await account()
   const key = await addPasskey(id)
 
-  await auth.api.deletePasskey({ body: { id: key.id }, headers: session })
-  expect(await db.passkey.count({ where: { userId: id } })).toBe(0)
-  await expect(
-    auth.api.disableTwoFactor({ body: { password: TEST_PASSWORD }, headers: session }),
-  ).rejects.toMatchObject({ body: { code: "LAST_FACTOR" } })
+  expect(await removePasskey(id, key.id)).toEqual({ ok: true })
+  expect(await disableTotp(headers, id, TEST_PASSWORD)).toEqual({ ok: false, code: "LAST_FACTOR" })
 
   const only = await addPasskey(id)
-  const disabled = await auth.api.disableTwoFactor({
-    body: { password: TEST_PASSWORD },
-    headers: session,
-    returnHeaders: true,
+  expect(await disableTotp(headers, id, "zle-haslo-123")).toEqual({
+    ok: false,
+    code: "INVALID_PASSWORD",
   })
-  await expect(
-    auth.api.deletePasskey({ body: { id: only.id }, headers: cookiesOf(disabled.headers) }),
-  ).rejects.toMatchObject({ body: { code: "LAST_FACTOR" } })
+  expect(await disableTotp(headers, id, TEST_PASSWORD)).toEqual({ ok: true })
+  expect(await db.twoFactor.count({ where: { userId: id } })).toBe(0)
+  expect(await removePasskey(id, only.id)).toEqual({ ok: false, code: "LAST_FACTOR" })
+})
+
+test("dwa równoczesne usunięcia kluczy nie zostawiają konta bez 2FA", async () => {
+  const { id } = await account("user", { twoFactor: false })
+  const keys = await Promise.all([addPasskey(id), addPasskey(id)])
+  const results = await Promise.all(keys.map((k) => removePasskey(id, k.id)))
+  expect(results).toContainEqual({ ok: true })
+  expect(results).toContainEqual({ ok: false, code: "LAST_FACTOR" })
+  expect(await db.passkey.count({ where: { userId: id } })).toBe(1)
 })
 
 test("student nie rejestruje klucza dostępu ani TOTP", async () => {

@@ -40,6 +40,8 @@ export type AppError =
         | "EMAIL_TAKEN"
         | "MAIL_UNAVAILABLE"
         | "MAIL_FAILED"
+        | "LAST_FACTOR"
+        | "INVALID_PASSWORD"
         | "CANNOT_CHANGE_SELF"
         | "TEACHER_NOT_FOUND"
         | "TEACHER_BANNED"
@@ -50,6 +52,9 @@ export type AppError =
     }
 
 export type Result<T = object> = ({ ok: true } & T) | ({ ok: false } & AppError)
+
+export const LAST_FACTOR =
+  "To Twój jedyny sposób potwierdzania logowania. Najpierw dodaj inny albo poproś superadmina o reset."
 
 export const EMAIL_LOGIN_UNCONFIGURED = "Brak konfiguracji poczty (SMTP) na serwerze."
 
@@ -124,6 +129,10 @@ export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): strin
       return "Ten e-mail ma już inne konto."
     case "CANNOT_CHANGE_SELF":
       return "Nie możesz zablokować siebie, odebrać sobie roli superadmina ani zresetować sobie 2FA."
+    case "LAST_FACTOR":
+      return LAST_FACTOR
+    case "INVALID_PASSWORD":
+      return "Hasło jest nieprawidłowe."
     case "MAIL_UNAVAILABLE":
       return "Zapraszanie wymaga poczty (SMTP) na serwerze."
     case "MAIL_FAILED":
@@ -211,8 +220,6 @@ export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 /** Odmowy z naszych strażników Better Auth (`auth.server.ts`); klient dostaje kod. */
 export const AUTH_CODE = {
   PASSKEY_ONLY: "To konto loguje się kluczem dostępu. Użyj przycisku „Zaloguj kluczem dostępu”.",
-  LAST_FACTOR:
-    "To Twój jedyny sposób potwierdzania logowania. Najpierw dodaj inny albo poproś superadmina o reset.",
   TEACHERS_ONLY: "Ta funkcja jest tylko dla prowadzących.",
 }
 

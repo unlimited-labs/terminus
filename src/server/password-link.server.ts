@@ -29,10 +29,11 @@ export async function passwordLinkExpiry() {
 }
 
 /**
- * Nowy link do nadania hasła (zaproszenie albo reset) i mail z nim; ważny jest tylko ostatni link konta.
- * Studentowi i zablokowanemu nie wysyła nic. Błąd poczty leci do wywołującego.
+ * Mail z linkiem do nadania hasła (zaproszenie albo reset); ważny jest tylko ostatni link konta.
+ * `reuse`: zamiast nowego linku wysyła ponownie ważny, który konto już ma — publiczna prośba nie
+ * unieważnia czyjegoś zaproszenia. Studentowi i zablokowanemu nie wysyła nic. Błąd poczty leci dalej.
  */
-async function issuePasswordLink(userId: string) {
+async function issuePasswordLink(userId: string, { reuse = false } = {}) {
   const user = await db.user.findUniqueOrThrow({
     where: { id: userId },
     select: {
@@ -42,18 +43,33 @@ async function issuePasswordLink(userId: string) {
       accounts: { where: passwordAccount, select: { id: true } },
     },
   })
-  if (user.role === STUDENT_ROLE || user.banned) return
-  const token = randomBytes(18).toString("base64url")
-  await deletePasswordLinks(userId)
-  const ctx = await auth.$context
-  await ctx.internalAdapter.createVerificationValue({
-    identifier: `${LINK_PREFIX}${token}`,
-    value: userId,
-    expiresAt: new Date(Date.now() + PASSWORD_LINK_HOURS * 3_600_000),
-  })
+  if (user.role === STUDENT_ROLE) return "student"
+  if (user.banned) return "banned"
+  const live = reuse
+    ? await db.verification.findFirst({
+        where: {
+          identifier: { startsWith: LINK_PREFIX },
+          value: userId,
+          expiresAt: { gt: new Date() },
+        },
+        select: { identifier: true },
+      })
+    : null
+  let token = live?.identifier.slice(LINK_PREFIX.length)
+  if (!token) {
+    token = randomBytes(18).toString("base64url")
+    await deletePasswordLinks(userId)
+    const ctx = await auth.$context
+    await ctx.internalAdapter.createVerificationValue({
+      identifier: `${LINK_PREFIX}${token}`,
+      value: userId,
+      expiresAt: new Date(Date.now() + PASSWORD_LINK_HOURS * 3_600_000),
+    })
+  }
   const link = new URL("/nowe-haslo", env.APP_PUBLIC_URL)
   link.searchParams.set("token", token)
   await sendMail({ to: user.email, ...passwordMail(link.toString(), user.accounts.length === 0) })
+  return "sent"
 }
 
 /**
@@ -66,8 +82,8 @@ export async function requestPasswordLink(email: string, ip: string): Promise<vo
   if (!(await takePasswordLinkAllowance(ip, email))) return trace("limit")
   const teacher = await db.user.findFirst({ where: teacherWithEmail(email), select: { id: true } })
   if (!teacher) return trace("nieznany")
-  issuePasswordLink(teacher.id)
-    .then(() => trace("wysłano"))
+  issuePasswordLink(teacher.id, { reuse: true })
+    .then((result) => trace(result === "sent" ? "wysłano" : "pominięto"))
     .catch((e: unknown) => {
       trace("błąd")
       consola.error("haslo SMTP", smtpCode(e))
@@ -78,7 +94,9 @@ export async function requestPasswordLink(email: string, ip: string): Promise<vo
 export async function sendPasswordLink(userId: string) {
   if (!emailLoginAvailable) return { ok: false as const, code: "MAIL_UNAVAILABLE" as const }
   try {
-    await issuePasswordLink(userId)
+    const result = await issuePasswordLink(userId)
+    if (result === "banned") return { ok: false as const, code: "TEACHER_BANNED" as const }
+    if (result === "student") return { ok: false as const, code: "NOT_FOUND" as const }
     return { ok: true as const }
   } catch (e) {
     consola.error(`konto SMTP cel=${userId}`, smtpCode(e))

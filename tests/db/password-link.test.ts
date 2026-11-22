@@ -74,10 +74,10 @@ test("student i konto zablokowane nie dostają linku; błąd poczty widać tylko
   const student = await db.user.create({
     data: { id: randomUUID(), name: "", email: `${randomUUID()}@s.example.com`, role: "student" },
   })
-  expect(await sendPasswordLink(student.id)).toEqual({ ok: true })
+  expect(await sendPasswordLink(student.id)).toEqual({ ok: false, code: "NOT_FOUND" })
   const banned = await invited()
   await db.user.update({ where: { id: banned.id }, data: { banned: true } })
-  await sendPasswordLink(banned.id)
+  expect(await sendPasswordLink(banned.id)).toEqual({ ok: false, code: "TEACHER_BANNED" })
   expect(sent).not.toHaveBeenCalled()
 
   const other = await invited()
@@ -94,4 +94,15 @@ test("„Nie pamiętam hasła”: trzy linki na godzinę na adres, nieznany adre
   await requestPasswordLink(`${randomUUID()}@example.com`, randomUUID())
   await new Promise((r) => setTimeout(r, 200))
   expect(sent).toHaveBeenCalledTimes(3)
+})
+
+test("„Nie pamiętam hasła” wysyła ponownie ważny link zamiast unieważniać zaproszenie", async () => {
+  const { id, email } = await invited()
+  await sendPasswordLink(id)
+  const invitation = tokenOf(0)
+
+  await requestPasswordLink(email, randomUUID())
+  await vi.waitFor(() => expect(sent).toHaveBeenCalledTimes(2))
+  expect(tokenOf(1)).toBe(invitation)
+  expect(await passwordLinkInfo(invitation)).toMatchObject({ invited: true })
 })

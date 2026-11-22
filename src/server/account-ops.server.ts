@@ -112,10 +112,11 @@ export async function editAccount(
 ): Promise<Result> {
   await assertAdmin(headers)
   try {
-    const before = await db.user.findUniqueOrThrow({
-      where: { id: userId },
+    const before = await db.user.findFirst({
+      where: { id: userId, ...notStudent },
       select: { email: true },
     })
+    if (!before) return { ok: false, code: "NOT_FOUND" }
     await db.user.update({ where: { id: userId }, data: { email, name } })
     // Link wysłany na stary adres mógł trafić pod zły adres.
     if (before.email !== email) await deletePasswordLinks(userId)
@@ -157,6 +158,8 @@ export async function setBanned(
   await (banned
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))
+  // Ważny link do hasła pozwoliłby ustawić hasło w czasie blokady.
+  if (banned) await deletePasswordLinks(userId)
   logAction(admin.id, banned ? "blokada" : "odblokowanie", userId)
   return { ok: true }
 }

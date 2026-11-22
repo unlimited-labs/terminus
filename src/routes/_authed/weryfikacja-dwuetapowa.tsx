@@ -14,7 +14,9 @@ import { Label } from "@/components/ui/label"
 import { formatDay } from "@/domain/time"
 import { authResult, authWithToast } from "@/lib/auth-client"
 import { teacherAuthClient } from "@/lib/teacher-auth-client"
-import { AUTH_CODE } from "@/messages.pl"
+import { toastFailure } from "@/components/use-result-mutation"
+import { LAST_FACTOR } from "@/messages.pl"
+import { deletePasskey, disconnectAuthenticator } from "@/server/factors"
 import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/_authed/weryfikacja-dwuetapowa")({
@@ -102,18 +104,17 @@ function PasskeyRow({
             description={`Klucz „${passkey.name || "Klucz dostępu"}” przestanie działać przy logowaniu.`}
             confirmLabel="Usuń klucz"
             onConfirm={async () => {
-              if (
-                await authWithToast(teacherAuthClient.passkey.deletePasskey({ id: passkey.id }))
-              ) {
-                await onChange()
-              }
+              const result = await deletePasskey({ data: { passkeyId: passkey.id } })
+              if (result.ok) await onChange()
+              else toastFailure(result)
+              return result
             }}
           >
             Usuń
           </ConfirmButton>
         </span>
       </div>
-      {last && <p className="text-xs text-muted-foreground">{AUTH_CODE.LAST_FACTOR}</p>}
+      {last && <p className="text-xs text-muted-foreground">{LAST_FACTOR}</p>}
       {renaming && (
         <form className="flex flex-wrap items-end gap-2" onSubmit={rename}>
           <div className="grid gap-1.5">
@@ -178,7 +179,9 @@ function TotpSection({
       )
       if (failure) toast.error(failure)
       setMode(data ? { kind: "codes", codes: data.backupCodes } : { kind: "idle" })
-    } else if (await authWithToast(teacherAuthClient.twoFactor.disable({ password }))) {
+    } else {
+      const result = await disconnectAuthenticator({ data: { password } })
+      if (!result.ok) return toastFailure(result)
       toast.success("Aplikacja odłączona.")
       setMode({ kind: "idle" })
       await onChange()
@@ -207,7 +210,7 @@ function TotpSection({
           </Button>
         </span>
       </div>
-      {last && <p className="text-xs text-muted-foreground">{AUTH_CODE.LAST_FACTOR}</p>}
+      {last && <p className="text-xs text-muted-foreground">{LAST_FACTOR}</p>}
       {mode.kind === "confirm" && (
         <PasswordConfirm
           key={mode.action}

@@ -184,11 +184,13 @@ function AccountRow({
             <DropdownMenuItem onClick={() => setEditing(!editing)}>
               Edytuj imię i adres
             </DropdownMenuItem>
-            <DropdownMenuItem disabled={!mail} onClick={() => link.mutate({ userId: a.id })}>
-              {a.state === "invited"
-                ? "Wyślij zaproszenie ponownie"
-                : "Wyślij link do zmiany hasła"}
-            </DropdownMenuItem>
+            {!a.banned && (
+              <DropdownMenuItem disabled={!mail} onClick={() => link.mutate({ userId: a.id })}>
+                {a.state === "invited"
+                  ? "Wyślij zaproszenie ponownie"
+                  : "Wyślij link do zmiany hasła"}
+              </DropdownMenuItem>
+            )}
             {!isSelf && (
               <>
                 <DropdownMenuItem onClick={() => admin.mutate({ userId: a.id, isAdmin: !isAdmin })}>

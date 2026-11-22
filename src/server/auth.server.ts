@@ -53,22 +53,18 @@ const refuse = (code: keyof typeof AUTH_CODE) =>
 const totpOn = (user: object | null | undefined) =>
   !!user && "twoFactorEnabled" in user && user.twoFactorEnabled === true
 
-const passkeyCount = (userId: string) => db.passkey.count({ where: { userId } })
 const hasPasskey = async (userId: string) =>
   !!(await db.passkey.findFirst({ where: { userId }, select: { id: true } }))
 
 /** Zaufane przeglądarki konta (pomijanie kodu TOTP przez 30 dni). */
-const deleteTrustedDevices = (userId: string) =>
-  db.verification.deleteMany({
+export const deleteTrustedDevices = (userId: string, tx: Pick<typeof db, "verification"> = db) =>
+  tx.verification.deleteMany({
     where: { identifier: { startsWith: "trust-device-" }, value: userId },
   })
 
-/**
- * Strażnicy 2FA, których Better Auth nie ma: student nie rejestruje klucza ani TOTP, a ostatniego
- * sposobu potwierdzania nie da się usunąć (powrót do „bez 2FA” tylko przez superadmina).
- */
-const teacherFactors = {
-  id: "teacher-factors",
+/** Student nie rejestruje klucza dostępu ani TOTP (2FA jest dla prowadzących). */
+const teachersOnlyFactors = {
+  id: "teachers-only-factors",
   hooks: {
     before: [
       {
@@ -76,17 +72,7 @@ const teacherFactors = {
           !!ctx.path && (ctx.path.startsWith("/passkey/") || ctx.path.startsWith("/two-factor/")),
         handler: createAuthMiddleware(async (ctx) => {
           const session = await getSessionFromCtx(ctx)
-          if (!session) return
-          if (roleOf(session.user) === STUDENT_ROLE) throw refuse("TEACHERS_ONLY")
-          const removing =
-            ctx.path === "/passkey/delete-passkey" || ctx.path === "/two-factor/disable"
-          if (!removing) return
-          const passkeys = await passkeyCount(session.user.id)
-          const left =
-            ctx.path === "/two-factor/disable"
-              ? passkeys
-              : passkeys - 1 + Number(totpOn(session.user))
-          if (left < 1) throw refuse("LAST_FACTOR")
+          if (roleOf(session?.user) === STUDENT_ROLE) throw refuse("TEACHERS_ONLY")
         }),
       },
     ],
@@ -119,6 +105,9 @@ export const auth = betterAuth({
     "/reset-password/:token",
     "/two-factor/send-otp",
     "/two-factor/verify-otp",
+    // Usuwanie sposobów robi `factor-ops.server.ts` (blokada wiersza: nie da się usunąć ostatniego).
+    "/passkey/delete-passkey",
+    "/two-factor/disable",
   ],
   databaseHooks: {
     user: {
@@ -167,7 +156,7 @@ export const auth = betterAuth({
       // Logowanie przyciskiem bez e-maila wymaga klucza zapisanego na urządzeniu; sam klucz bez PIN-u nie wystarcza.
       authenticatorSelection: { residentKey: "required", userVerification: "required" },
     }),
-    teacherFactors,
+    teachersOnlyFactors,
     studentSession,
     tanstackStartCookies(),
   ],

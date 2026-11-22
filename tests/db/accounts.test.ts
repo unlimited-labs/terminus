@@ -26,6 +26,11 @@ vi.mock("@/server/mail.server", () => ({ sendMail: vi.fn<() => Promise<void>>() 
 const sent = vi.mocked(sendMail)
 beforeEach(() => sent.mockReset())
 
+const studentRow = () =>
+  db.user.create({
+    data: { id: randomUUID(), name: "", email: `${randomUUID()}@s.example.com`, role: "student" },
+  })
+
 const row = (id: string) =>
   db.user.findUniqueOrThrow({ where: { id }, select: { email: true, role: true, banned: true } })
 
@@ -125,7 +130,18 @@ test("superadmin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", a
   expect(await setAdmin(admin.headers, { userId: other.id, isAdmin: false })).toEqual({ ok: true })
   expect(await row(other.id)).toMatchObject({ role: "user" })
 
+  await sendAccountPasswordLink(admin.headers, { userId: other.id })
   expect(await setBanned(admin.headers, { userId: other.id, banned: true })).toEqual({ ok: true })
+  expect((await accountList(admin.headers)).find((a) => a.id === other.id)).toMatchObject({
+    linkExpiresAt: null,
+  })
+  expect(
+    await editAccount(admin.headers, {
+      userId: (await studentRow()).id,
+      email: `${randomUUID()}@example.com`,
+      name: "S",
+    }),
+  ).toEqual({ ok: false, code: "NOT_FOUND" })
   expect(await row(other.id)).toMatchObject({ banned: true })
   expect(await sessionUser(other.headers)).toBeNull()
   await expect(signIn(other.email)).rejects.toThrow("You have been banned")
