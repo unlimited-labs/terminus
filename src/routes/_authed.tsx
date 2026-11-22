@@ -1,7 +1,17 @@
-import { Link, Outlet, createFileRoute, redirect, useRouter } from "@tanstack/react-router"
+import { Link, Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { ChevronDown } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { signOutWithToast } from "@/lib/auth-client"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useLogout } from "@/components/use-logout"
 import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/_authed")({
@@ -14,14 +24,8 @@ export const Route = createFileRoute("/_authed")({
 })
 
 function AuthedLayout() {
-  const { user, queryClient } = Route.useRouteContext()
-  const router = useRouter()
-  const logout = async () => {
-    if (!(await signOutWithToast())) return
-    queryClient.removeQueries({ queryKey: sessionQuery().queryKey })
-    await router.navigate({ to: "/login" })
-    queryClient.clear()
-  }
+  const { user } = Route.useRouteContext()
+  const logout = useLogout()
   return (
     <div className="min-h-svh">
       <header className="border-b bg-card">
@@ -41,13 +45,22 @@ function AuthedLayout() {
               Konta
             </Link>
           )}
-          <span className="ml-auto text-muted-foreground">{user.name}</span>
-          <Link to="/haslo" className="data-[status=active]:text-primary">
-            Zmień hasło
-          </Link>
-          <Button variant="outline" size="sm" onClick={logout}>
-            Wyloguj
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="ghost" size="sm" className="ml-auto" />}>
+              {user.name} <ChevronDown />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-auto min-w-56">
+              <DropdownMenuGroup>
+                <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                <DropdownMenuItem render={<Link to="/haslo" />}>Zmień hasło</DropdownMenuItem>
+                <DropdownMenuItem render={<Link to="/weryfikacja-dwuetapowa" />}>
+                  Weryfikacja dwuetapowa
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={logout}>Wyloguj</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </nav>
       </header>
       <main className="mx-auto max-w-6xl p-4">

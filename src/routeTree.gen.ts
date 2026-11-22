@@ -10,12 +10,14 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as Konfiguracja2faRouteImport } from './routes/konfiguracja-2fa'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NiePamietamHaslaRouteImport } from './routes/nie-pamietam-hasla'
 import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
 import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
+import { Route as AuthedWeryfikacjaDwuetapowaRouteImport } from './routes/_authed/weryfikacja-dwuetapowa'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ZExamIdIndexRouteImport } from './routes/z/$examId.index'
 import { Route as ZExamIdEnterRouteImport } from './routes/z/$examId.enter'
@@ -24,6 +26,11 @@ import { Route as AuthedZaliczeniaExamIdTablicaRouteImport } from './routes/_aut
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const Konfiguracja2faRoute = Konfiguracja2faRouteImport.update({
+  id: '/konfiguracja-2fa',
+  path: '/konfiguracja-2fa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -56,6 +63,12 @@ const AuthedKontaRoute = AuthedKontaRouteImport.update({
   path: '/konta',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedWeryfikacjaDwuetapowaRoute =
+  AuthedWeryfikacjaDwuetapowaRouteImport.update({
+    id: '/weryfikacja-dwuetapowa',
+    path: '/weryfikacja-dwuetapowa',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -86,11 +99,13 @@ const AuthedZaliczeniaExamIdTablicaRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
+  '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/z/$examId/enter': typeof ZExamIdEnterRoute
   '/z/$examId/': typeof ZExamIdIndexRoute
@@ -98,11 +113,13 @@ export interface FileRoutesByFullPath {
   '/zaliczenia/$examId/': typeof AuthedZaliczeniaExamIdIndexRoute
 }
 export interface FileRoutesByTo {
+  '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
+  '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
   '/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/z/$examId/enter': typeof ZExamIdEnterRoute
@@ -113,11 +130,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
+  '/_authed/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
   '/_authed/': typeof AuthedIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/z/$examId/enter': typeof ZExamIdEnterRoute
@@ -129,11 +148,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/konfiguracja-2fa'
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/haslo'
     | '/konta'
+    | '/weryfikacja-dwuetapowa'
     | '/api/auth/$'
     | '/z/$examId/enter'
     | '/z/$examId/'
@@ -141,11 +162,13 @@ export interface FileRouteTypes {
     | '/zaliczenia/$examId/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/konfiguracja-2fa'
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/haslo'
     | '/konta'
+    | '/weryfikacja-dwuetapowa'
     | '/'
     | '/api/auth/$'
     | '/z/$examId/enter'
@@ -155,11 +178,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authed'
+    | '/konfiguracja-2fa'
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/_authed/haslo'
     | '/_authed/konta'
+    | '/_authed/weryfikacja-dwuetapowa'
     | '/_authed/'
     | '/api/auth/$'
     | '/z/$examId/enter'
@@ -170,6 +195,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  Konfiguracja2faRoute: typeof Konfiguracja2faRoute
   LoginRoute: typeof LoginRoute
   NiePamietamHaslaRoute: typeof NiePamietamHaslaRoute
   NoweHasloRoute: typeof NoweHasloRoute
@@ -185,6 +211,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/konfiguracja-2fa': {
+      id: '/konfiguracja-2fa'
+      path: '/konfiguracja-2fa'
+      fullPath: '/konfiguracja-2fa'
+      preLoaderRoute: typeof Konfiguracja2faRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -229,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedKontaRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/weryfikacja-dwuetapowa': {
+      id: '/_authed/weryfikacja-dwuetapowa'
+      path: '/weryfikacja-dwuetapowa'
+      fullPath: '/weryfikacja-dwuetapowa'
+      preLoaderRoute: typeof AuthedWeryfikacjaDwuetapowaRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -270,6 +310,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedHasloRoute: typeof AuthedHasloRoute
   AuthedKontaRoute: typeof AuthedKontaRoute
+  AuthedWeryfikacjaDwuetapowaRoute: typeof AuthedWeryfikacjaDwuetapowaRoute
   AuthedIndexRoute: typeof AuthedIndexRoute
   AuthedZaliczeniaExamIdTablicaRoute: typeof AuthedZaliczeniaExamIdTablicaRoute
   AuthedZaliczeniaExamIdIndexRoute: typeof AuthedZaliczeniaExamIdIndexRoute
@@ -278,6 +319,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedHasloRoute: AuthedHasloRoute,
   AuthedKontaRoute: AuthedKontaRoute,
+  AuthedWeryfikacjaDwuetapowaRoute: AuthedWeryfikacjaDwuetapowaRoute,
   AuthedIndexRoute: AuthedIndexRoute,
   AuthedZaliczeniaExamIdTablicaRoute: AuthedZaliczeniaExamIdTablicaRoute,
   AuthedZaliczeniaExamIdIndexRoute: AuthedZaliczeniaExamIdIndexRoute,
@@ -288,6 +330,7 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  Konfiguracja2faRoute: Konfiguracja2faRoute,
   LoginRoute: LoginRoute,
   NiePamietamHaslaRoute: NiePamietamHaslaRoute,
   NoweHasloRoute: NoweHasloRoute,

@@ -8,15 +8,16 @@ import { authErrorMessage } from "@/messages.pl"
 export const authClient = createAuthClient({ plugins: [twoFactorClient(), passkeyClient()] })
 
 /** Wywołanie klienta better-auth → komunikat błędu (także gdy zawiedzie sieć) albo `null` po sukcesie. */
-export async function authFailure(
-  call: Promise<{ error: { code?: string } | null }>,
-): Promise<string | null> {
-  const { error } = await call.catch(() => ({ error: { code: undefined } }))
-  return error ? authErrorMessage(error.code) : null
+export async function authFailure(call: Promise<{ error: object | null }>): Promise<string | null> {
+  const { error } = await call.catch(() => ({ error: {} }))
+  if (!error) return null
+  return authErrorMessage(
+    "code" in error && typeof error.code === "string" ? error.code : undefined,
+  )
 }
 
 /** Wywołanie klienta better-auth; przy błędzie toast i `false`. */
-export async function authWithToast(call: Promise<{ error: { code?: string } | null }>) {
+export async function authWithToast(call: Promise<{ error: object | null }>) {
   const failure = await authFailure(call)
   if (failure) toast.error(failure)
   return failure === null

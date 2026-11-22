@@ -207,7 +207,8 @@ export async function sessionUser(headers: Headers) {
   const session = await auth.api.getSession({ headers })
   if (!session || session.user.banned || session.user.role === STUDENT_ROLE) return null
   const { id, name, email, role } = session.user
-  return { id, name, email, isAdmin: role === "admin" }
+  const { totp, ready } = await factorsOf(id)
+  return { id, name, email, isAdmin: role === "admin", totp, twoFactorReady: ready }
 }
 
 /** Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje wylogowane. */
