@@ -10,5 +10,7 @@ export const EMAIL_MAX = 254
 export const GRADE_COMMENT_MAX = 500
 /** Ważność linku logowania studenta. */
 export const LOGIN_LINK_MINUTES = 15
+/** Ważność linku do nadania hasła (zaproszenie i reset). */
+export const PASSWORD_LINK_HOURS = 72
 /** Okno licznika nieudanych prób zapisu (blokada IP). */
 export const FAILED_ATTEMPTS_WINDOW_MINUTES = 10

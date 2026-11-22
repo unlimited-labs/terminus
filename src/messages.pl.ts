@@ -4,7 +4,11 @@ import type { BoardErrorCode, Grade } from "./domain/board.ts"
 import type { InvalidRowReason, ParsedRoster } from "./domain/csv.ts"
 import type { AssignmentMode, EnrollmentPlan } from "./domain/draw.ts"
 import type { AnswersCheck } from "./domain/fields.ts"
-import { FAILED_ATTEMPTS_WINDOW_MINUTES, LOGIN_LINK_MINUTES } from "./domain/limits.ts"
+import {
+  FAILED_ATTEMPTS_WINDOW_MINUTES,
+  LOGIN_LINK_MINUTES,
+  PASSWORD_LINK_HOURS,
+} from "./domain/limits.ts"
 import type { WindowCut } from "./domain/slots.ts"
 import type { ExamPhase } from "./domain/schedule.ts"
 import { formatDay, formatDayTime, formatSlotTime, type SlotWhen } from "./domain/time.ts"
@@ -198,11 +202,34 @@ export const OPS = {
 /** Limit długości pola tekstowego. */
 export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 
+/** Odmowy z naszych strażników Better Auth (`auth.server.ts`); klient dostaje kod. */
+export const AUTH_CODE = {
+  PASSKEY_ONLY: "To konto loguje się kluczem dostępu. Użyj przycisku „Zaloguj kluczem dostępu”.",
+  LAST_FACTOR:
+    "To Twój jedyny sposób potwierdzania logowania. Najpierw dodaj inny albo poproś superadmina o reset.",
+  TEACHERS_ONLY: "Ta funkcja jest tylko dla prowadzących.",
+}
+
 const AUTH_ERROR: Record<string, string> = {
+  ...AUTH_CODE,
   INVALID_EMAIL_OR_PASSWORD: "Nieprawidłowy e-mail lub hasło.",
   BANNED_USER: "To konto jest zablokowane.",
-  INVALID_PASSWORD: "Obecne hasło jest nieprawidłowe.",
+  INVALID_PASSWORD: "Hasło jest nieprawidłowe.",
   PASSWORD_TOO_SHORT: "Hasło jest za krótkie.",
+  PASSWORD_TOO_LONG: "Hasło jest za długie.",
+  INVALID_TOKEN: "Link wygasł albo został już użyty.",
+  INVALID_CODE: "Nieprawidłowy kod. Sprawdź, czy zegar telefonu jest ustawiony automatycznie.",
+  INVALID_BACKUP_CODE: "Nieprawidłowy kod zapasowy.",
+  INVALID_TWO_FACTOR_COOKIE: "Minęło za dużo czasu. Zaloguj się ponownie.",
+  ACCOUNT_TEMPORARILY_LOCKED: "Za dużo błędnych kodów. Spróbuj ponownie za kilka minut.",
+  TOO_MANY_ATTEMPTS_REQUEST_NEW_CODE: "Za dużo błędnych kodów. Zaloguj się ponownie.",
+  SESSION_NOT_FRESH: "Zaloguj się ponownie, żeby zmienić klucze dostępu.",
+  AUTH_CANCELLED: "Logowanie kluczem przerwane.",
+  REGISTRATION_CANCELLED: "Dodawanie klucza przerwane.",
+  PREVIOUSLY_REGISTERED: "Ten klucz jest już dodany.",
+  AUTHENTICATION_FAILED: "Nie udało się zalogować tym kluczem.",
+  PASSKEY_NOT_FOUND: "Ten klucz nie jest przypisany do żadnego konta.",
+  FAILED_TO_VERIFY_REGISTRATION: "Nie udało się dodać klucza.",
 }
 
 export const authErrorMessage = (code: string | undefined): string =>
@@ -235,6 +262,29 @@ ${link}
 
 ${ignore}`,
     html: `<p>${lead}</p><p><a href="${link}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none">Przejdź do zapisów</a></p><p style="color:#555">${ignore}</p>`,
+  }
+}
+
+/** Mail z linkiem do nadania hasła: zaproszenie (konto bez hasła) albo reset. */
+export function passwordMail(link: string, invited: boolean) {
+  const validity = `Link jest ważny ${PASSWORD_LINK_HOURS} godziny i działa raz.`
+  const [subject, lead, button, ignore] = invited
+    ? [
+        "Zaproszenie do Terminusa",
+        `Masz konto prowadzącego w Terminusie (harmonogram zaliczeń). Ustaw hasło, a potem zabezpiecz logowanie kluczem dostępu albo aplikacją z kodami. ${validity}`,
+        "Ustaw hasło",
+        "",
+      ]
+    : [
+        "Zmiana hasła w Terminusie",
+        `Ktoś poprosił o link do zmiany hasła do Twojego konta. ${validity}`,
+        "Ustaw nowe hasło",
+        "Jeśli to nie Ty, zignoruj tę wiadomość — hasło się nie zmieni.",
+      ]
+  return {
+    subject,
+    text: [lead, link, ignore].filter(Boolean).join("\n\n"),
+    html: `<p>${lead}</p><p><a href="${link}" style="display:inline-block;padding:10px 20px;background:#1d4ed8;color:#fff;border-radius:6px;text-decoration:none">${button}</a></p>${ignore ? `<p style="color:#555">${ignore}</p>` : ""}`,
   }
 }
 

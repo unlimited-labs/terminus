@@ -1,9 +1,11 @@
+import { passkeyClient } from "@better-auth/passkey/client"
+import { twoFactorClient } from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 import { toast } from "sonner"
 
 import { authErrorMessage } from "@/messages.pl"
 
-export const authClient = createAuthClient()
+export const authClient = createAuthClient({ plugins: [twoFactorClient(), passkeyClient()] })
 
 /** Wywołanie klienta better-auth → komunikat błędu (także gdy zawiedzie sieć) albo `null` po sukcesie. */
 export async function authFailure(

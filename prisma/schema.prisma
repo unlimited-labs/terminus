@@ -118,21 +118,24 @@ model Enrollment {
 }
 
 model User {
-  id            String    @id
-  name          String
-  email         String
-  emailVerified Boolean   @default(false)
-  image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          String?
-  banned        Boolean?  @default(false)
-  banReason     String?
-  banExpires    DateTime?
-  sessions      Session[]
-  accounts      Account[]
-  taughtExams   Exam[]    @relation("ExamTeachers")
-  grades        Enrollment[]
+  id               String       @id
+  name             String
+  email            String
+  emailVerified    Boolean      @default(false)
+  image            String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  role             String?
+  banned           Boolean?     @default(false)
+  banReason        String?
+  banExpires       DateTime?
+  twoFactorEnabled Boolean?     @default(false)
+  sessions         Session[]
+  accounts         Account[]
+  twoFactors       TwoFactor[]
+  passkeys         Passkey[]
+  taughtExams      Exam[]       @relation("ExamTeachers")
+  grades           Enrollment[]
 
   @@unique([email])
   @@map("user")
@@ -185,4 +188,38 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+model TwoFactor {
+  id                      String    @id
+  secret                  String
+  backupCodes             String
+  userId                  String
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime?
+
+  @@index([secret])
+  @@index([userId])
+  @@map("twoFactor")
+}
+
+model Passkey {
+  id           String    @id
+  name         String?
+  publicKey    String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialID String
+  counter      Int
+  deviceType   String
+  backedUp     Boolean
+  transports   String?
+  createdAt    DateTime?
+  aaguid       String?
+
+  @@index([userId])
+  @@index([credentialID])
+  @@map("passkey")
 }
