@@ -1,4 +1,5 @@
 import { createFormHook, createFormHookContexts, revalidateLogic } from "@tanstack/react-form"
+import { useHydrated } from "@tanstack/react-router"
 import { useId, useRef, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 import type { z } from "zod"
@@ -302,10 +303,17 @@ function SubmitButton({
   size?: React.ComponentProps<typeof Button>["size"]
 }) {
   const form = useFormContext()
+  // Przed hydratacją formularz wysłałby się natywnie GET-em, z polami (np. hasłem) w adresie.
+  const hydrated = useHydrated()
   return (
     <form.Subscribe selector={(s) => s.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting || disabled} className={className} size={size}>
+        <Button
+          type="submit"
+          disabled={!hydrated || isSubmitting || disabled}
+          className={className}
+          size={size}
+        >
           {children}
         </Button>
       )}
