@@ -1,4 +1,5 @@
 import { createAccountSchema } from "../src/schemas/account.ts"
+import { password } from "../src/schemas/auth.ts"
 
 if (!process.env.ADMIN_PASSWORD) {
   console.log("Brak ADMIN_PASSWORD — pomijam zakładanie superadmina.")
@@ -10,7 +11,7 @@ const { auth } = await import("../src/server/auth.server.ts")
 const { db } = await import("../src/server/db.server.ts")
 
 // Te same reguły co formularz kont (adres małymi literami, długość hasła).
-const admin = createAccountSchema.parse({
+const admin = createAccountSchema.extend({ password }).parse({
   email: process.env.ADMIN_EMAIL,
   name: process.env.ADMIN_NAME,
   password: process.env.ADMIN_PASSWORD,

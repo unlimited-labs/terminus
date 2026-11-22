@@ -7,7 +7,6 @@ import {
   createAccountSchema,
   setAdminSchema,
   setBannedSchema,
-  setPasswordSchema,
   updateAccountSchema,
 } from "../schemas/account.ts"
 import { deleteExamSchema } from "../schemas/exam.ts"
@@ -18,9 +17,10 @@ import {
   deleteBlockedAccountExam,
   editAccount,
   listBlockedAccountExams,
+  resetAccountTwoFactor,
+  sendAccountPasswordLink,
   setAdmin,
   setBanned,
-  setPassword,
 } from "./account-ops.server.ts"
 import { requireAdmin } from "./session.ts"
 
@@ -57,10 +57,15 @@ export const updateAccount = createServerFn({ method: "POST" })
   .validator(updateAccountSchema)
   .handler(({ data }) => editAccount(getRequestHeaders(), data))
 
-export const setAccountPassword = createServerFn({ method: "POST" })
+export const sendPasswordLinkTo = createServerFn({ method: "POST" })
   .middleware([requireAdmin])
-  .validator(setPasswordSchema)
-  .handler(({ data }) => setPassword(getRequestHeaders(), data))
+  .validator(accountRefSchema)
+  .handler(({ data }) => sendAccountPasswordLink(getRequestHeaders(), data))
+
+export const resetTwoFactorOf = createServerFn({ method: "POST" })
+  .middleware([requireAdmin])
+  .validator(accountRefSchema)
+  .handler(({ data }) => resetAccountTwoFactor(getRequestHeaders(), data))
 
 export const setAccountBanned = createServerFn({ method: "POST" })
   .middleware([requireAdmin])

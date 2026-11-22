@@ -38,6 +38,8 @@ export type AppError =
         | "ROSTER_HAS_ENROLLMENTS"
         | "NAME_MISMATCH"
         | "EMAIL_TAKEN"
+        | "MAIL_UNAVAILABLE"
+        | "MAIL_FAILED"
         | "CANNOT_CHANGE_SELF"
         | "TEACHER_NOT_FOUND"
         | "TEACHER_BANNED"
@@ -121,7 +123,11 @@ export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): strin
     case "EMAIL_TAKEN":
       return "Ten e-mail ma już inne konto."
     case "CANNOT_CHANGE_SELF":
-      return "Nie możesz zablokować siebie ani odebrać sobie roli superadmina."
+      return "Nie możesz zablokować siebie, odebrać sobie roli superadmina ani zresetować sobie 2FA."
+    case "MAIL_UNAVAILABLE":
+      return "Zapraszanie wymaga poczty (SMTP) na serwerze."
+    case "MAIL_FAILED":
+      return "Konto jest, ale mail nie wyszedł: serwer poczty odrzucił wysyłkę. Wyślij link ponownie z menu konta."
     case "TEACHER_NOT_FOUND":
       return "Nie ma prowadzącego z tym adresem."
     case "TEACHER_BANNED":

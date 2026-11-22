@@ -104,9 +104,7 @@ test("HTTP nie obsługuje punktów linku", async () => {
 test("konta zakładane przez panel mają zweryfikowany adres; student nie trafia na listę kont ani do prowadzących zaliczenia", async () => {
   const { headers: admin } = await account("admin")
   const address = email()
-  expect(
-    await addAccount(admin, { email: address, name: "Nowy", password: TEST_PASSWORD }),
-  ).toEqual({ ok: true })
+  expect(await addAccount(admin, { email: address, name: "Nowy" })).toEqual({ ok: true })
   expect(await db.user.findUniqueOrThrow({ where: { email: address } })).toMatchObject({
     emailVerified: true,
   })

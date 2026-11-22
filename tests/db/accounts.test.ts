@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto"
 
-import { expect, test } from "vitest"
+import { beforeEach, expect, test, vi } from "vitest"
 
 import {
   accountList,
@@ -8,16 +8,23 @@ import {
   deleteBlockedAccountExam,
   setAdmin,
   setBanned,
-  setPassword,
   editAccount,
   listBlockedAccountExams,
+  resetAccountTwoFactor,
+  sendAccountPasswordLink,
 } from "@/server/account-ops.server"
 import { ACCESS_DENIED } from "@/messages.pl"
 import { sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
+import { sendMail } from "@/server/mail.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
-import { account, signIn, TEST_PASSWORD as password } from "./sessions"
+import { account, enableTotp, signIn, signInWithTotp } from "./sessions"
+
+vi.mock("@/server/mail.server", () => ({ sendMail: vi.fn<() => Promise<void>>() }))
+
+const sent = vi.mocked(sendMail)
+beforeEach(() => sent.mockReset())
 
 const row = (id: string) =>
   db.user.findUniqueOrThrow({ where: { id }, select: { email: true, role: true, banned: true } })
@@ -30,13 +37,16 @@ test("bez roli superadmina każda operacja jest odrzucona i niczego nie zmienia"
   for (const headers of [(await account()).headers, new Headers()]) {
     await expect(accountList(headers)).rejects.toThrow(ACCESS_DENIED)
     const email = `${randomUUID()}@example.com`
-    await expect(addAccount(headers, { email, name: "X", password })).rejects.toThrow(ACCESS_DENIED)
+    await expect(addAccount(headers, { email, name: "X" })).rejects.toThrow(ACCESS_DENIED)
     await expect(editAccount(headers, { userId: target.id, email, name: "X" })).rejects.toThrow(
       ACCESS_DENIED,
     )
-    await expect(
-      setPassword(headers, { userId: target.id, password: "inne-haslo-1" }),
-    ).rejects.toThrow(ACCESS_DENIED)
+    await expect(sendAccountPasswordLink(headers, { userId: target.id })).rejects.toThrow(
+      ACCESS_DENIED,
+    )
+    await expect(resetAccountTwoFactor(headers, { userId: target.id })).rejects.toThrow(
+      ACCESS_DENIED,
+    )
     await expect(setBanned(headers, { userId: target.id, banned: true })).rejects.toThrow(
       ACCESS_DENIED,
     )
@@ -48,21 +58,28 @@ test("bez roli superadmina każda operacja jest odrzucona i niczego nie zmienia"
   expect(await db.user.count()).toBe(users + 1)
   expect(await sessionUser(target.headers)).toMatchObject({ id: target.id })
   expect(await sessionUser(await signIn(target.email))).toMatchObject({ id: target.id })
+  expect(sent).not.toHaveBeenCalled()
 })
 
-test("superadmin zakłada i poprawia konta; zajęty e-mail odrzucony", async () => {
+test("superadmin zaprasza i poprawia konta; zajęty e-mail odrzucony", async () => {
   const admin = await account("admin")
   const other = await account()
   const email = `${randomUUID()}@example.com`
 
-  expect(await addAccount(admin.headers, { email, name: "Nowy", password })).toEqual({
-    ok: true,
-  })
-  expect(await addAccount(admin.headers, { email, name: "Drugi", password })).toEqual({
+  expect(await addAccount(admin.headers, { email, name: "Nowy" })).toEqual({ ok: true })
+  expect(sent).toHaveBeenCalledWith(
+    expect.objectContaining({ to: email, subject: "Zaproszenie do Terminusa" }),
+  )
+  expect(await addAccount(admin.headers, { email, name: "Drugi" })).toEqual({
     ok: false,
     code: "EMAIL_TAKEN",
   })
-  expect(await db.user.findUniqueOrThrow({ where: { email } })).toMatchObject({ role: "user" })
+  const invited = await db.user.findUniqueOrThrow({ where: { email }, include: { accounts: true } })
+  expect(invited).toMatchObject({ role: "user", emailVerified: true, accounts: [] })
+  expect((await accountList(admin.headers)).find((a) => a.email === email)).toMatchObject({
+    state: "invited",
+    linkExpiresAt: expect.any(Date),
+  })
 
   expect(await editAccount(admin.headers, { userId: other.id, email, name: "Y" })).toEqual({
     ok: false,
@@ -73,6 +90,12 @@ test("superadmin zakłada i poprawia konta; zajęty e-mail odrzucony", async () 
     await editAccount(admin.headers, { userId: other.id, email: renamed, name: "Inna" }),
   ).toEqual({ ok: true })
   expect(await row(other.id)).toMatchObject({ email: renamed })
+
+  const moved = `${randomUUID()}@example.com`
+  await editAccount(admin.headers, { userId: invited.id, email: moved, name: "Nowy" })
+  expect((await accountList(admin.headers)).find((a) => a.email === moved)).toMatchObject({
+    linkExpiresAt: null,
+  })
 })
 
 test("równoczesne konta z tym samym e-mailem: jedno powstaje, reszta EMAIL_TAKEN", async () => {
@@ -81,9 +104,7 @@ test("równoczesne konta z tym samym e-mailem: jedno powstaje, reszta EMAIL_TAKE
   const names = ["A", "B", "C", "D"]
   // Rozgrzane połączenia z puli, żeby zapytania naprawdę szły równolegle.
   await Promise.all(names.map(() => sessionUser(admin.headers)))
-  const results = await Promise.all(
-    names.map((name) => addAccount(admin.headers, { email, name, password })),
-  )
+  const results = await Promise.all(names.map((name) => addAccount(admin.headers, { email, name })))
   const taken = { ok: false, code: "EMAIL_TAKEN" }
   expect(results.filter((r) => r.ok)).toEqual([{ ok: true }])
   expect(results.filter((r) => !r.ok)).toEqual([taken, taken, taken])
@@ -112,17 +133,52 @@ test("superadmin nie zablokuje siebie ani nie odbierze sobie roli; innym tak", a
   expect(await sessionUser(await signIn(other.email))).toMatchObject({ id: other.id })
 })
 
-test("nowe hasło wylogowuje osobę i zastępuje stare", async () => {
+test("błąd poczty przy zaproszeniu: konto zostaje, panel dostaje MAIL_FAILED", async () => {
+  const admin = await account("admin")
+  const email = `${randomUUID()}@example.com`
+  sent.mockRejectedValueOnce(new Error("SMTP"))
+  expect(await addAccount(admin.headers, { email, name: "Nowy" })).toEqual({
+    ok: false,
+    code: "MAIL_FAILED",
+  })
+  const user = await db.user.findUniqueOrThrow({ where: { email } })
+  expect(await sendAccountPasswordLink(admin.headers, { userId: user.id })).toEqual({ ok: true })
+})
+
+test("link do zmiany hasła niczego nie zmienia do użycia; reset 2FA czyści składniki i sesje", async () => {
   const admin = await account("admin")
   const other = await account()
-
-  expect(await setPassword(admin.headers, { userId: other.id, password: "nowe-haslo-1" })).toEqual({
-    ok: true,
+  const session = await signInWithTotp(other.email, await enableTotp(other.headers))
+  await db.verification.create({
+    data: {
+      id: randomUUID(),
+      identifier: `trust-device-${randomUUID()}`,
+      value: other.id,
+      expiresAt: new Date(Date.now() + 60_000),
+    },
   })
-  expect(await sessionUser(other.headers)).toBeNull()
-  await expect(signIn(other.email)).rejects.toThrow("Invalid email or password")
-  expect(await sessionUser(await signIn(other.email, "nowe-haslo-1"))).toMatchObject({
-    id: other.id,
+
+  expect(await sendAccountPasswordLink(admin.headers, { userId: other.id })).toEqual({ ok: true })
+  expect(sent.mock.calls.at(-1)![0].subject).toBe("Zmiana hasła w Terminusie")
+  expect(await sessionUser(session)).toMatchObject({ id: other.id })
+
+  expect(await resetAccountTwoFactor(admin.headers, { userId: admin.id })).toEqual({
+    ok: false,
+    code: "CANNOT_CHANGE_SELF",
+  })
+  expect(await resetAccountTwoFactor(admin.headers, { userId: other.id })).toEqual({ ok: true })
+  expect(await sessionUser(session)).toBeNull()
+  expect(await db.user.findUniqueOrThrow({ where: { id: other.id } })).toMatchObject({
+    twoFactorEnabled: false,
+  })
+  expect(await db.twoFactor.count({ where: { userId: other.id } })).toBe(0)
+  expect(
+    await db.verification.count({
+      where: { value: other.id, identifier: { startsWith: "trust-device-" } },
+    }),
+  ).toBe(0)
+  expect((await accountList(admin.headers)).find((a) => a.id === other.id)).toMatchObject({
+    state: "no2fa",
   })
 })
 

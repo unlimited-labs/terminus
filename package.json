@@ -9,6 +9,7 @@
     "postinstall": "prisma generate",
     "seed-admin": "node --env-file-if-exists=.env scripts/seed-admin.ts",
     "reset-password": "node --env-file-if-exists=.env scripts/reset-password.ts",
+    "reset-2fa": "node --env-file-if-exists=.env scripts/reset-2fa.ts",
     "lint": "oxlint --type-aware",
     "format": "oxfmt",
     "typecheck": "tsc --noEmit",

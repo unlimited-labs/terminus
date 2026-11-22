@@ -210,7 +210,18 @@ export async function sessionUser(headers: Headers) {
   return { id, name, email, isAdmin: role === "admin" }
 }
 
-/** Nowe hasło i wylogowanie wszystkich sesji tej osoby (panel kont i skrypt reset-password). */
+/** Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje wylogowane. */
+export async function resetTwoFactor(userId: string) {
+  await db.$transaction([
+    db.user.update({ where: { id: userId }, data: { twoFactorEnabled: false } }),
+    db.twoFactor.deleteMany({ where: { userId } }),
+    db.passkey.deleteMany({ where: { userId } }),
+    deleteTrustedDevices(userId),
+    db.session.deleteMany({ where: { userId } }),
+  ])
+}
+
+/** Nowe hasło i wylogowanie wszystkich sesji tej osoby (skrypt reset-password). */
 export async function replacePassword(userId: string, password: string) {
   const ctx = await auth.$context
   await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password))

@@ -1,22 +1,39 @@
 import { isAPIError } from "better-auth/api"
+import { consola } from "consola"
 import type { z } from "zod"
 
 import { Prisma } from "../generated/prisma/client.ts"
 import { ACCESS_DENIED, type Result } from "../messages.pl.ts"
+import { accountState } from "../domain/account-state.ts"
 import type {
+  accountRefSchema,
   createAccountSchema,
   setAdminSchema,
   setBannedSchema,
-  setPasswordSchema,
   updateAccountSchema,
 } from "../schemas/account.ts"
 import type { deleteExamSchema } from "../schemas/exam.ts"
 
-import { auth, replacePassword, sessionUser } from "./auth.server.ts"
+import { auth, resetTwoFactor, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
+import { emailLoginAvailable } from "./env.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
+import { sendPasswordLink } from "./password-link.server.ts"
 import { notStudent } from "./roles.ts"
+
+type AccountRef = z.infer<typeof accountRefSchema>
+
+/** Ślad działań superadmina na kontach: identyfikatory, bez adresów. */
+const logAction = (adminId: string, action: string, targetId: string, result: Result) =>
+  consola.info(
+    `konto admin=${adminId} akcja=${action} cel=${targetId} ${result.ok ? "ok" : result.code}`,
+  )
+
+const deletePasswordLinks = (userId: string) =>
+  db.verification.deleteMany({
+    where: { identifier: { startsWith: "reset-password:" }, value: userId },
+  })
 
 const isUniqueViolation = (e: unknown) =>
   e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002"
@@ -35,26 +52,62 @@ async function assertAdmin(headers: Headers) {
 
 export async function accountList(headers: Headers) {
   await assertAdmin(headers)
-  return db.user.findMany({
+  const users = await db.user.findMany({
     where: notStudent,
     orderBy: { name: "asc" },
-    select: { id: true, name: true, email: true, role: true, banned: true },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      banned: true,
+      twoFactorEnabled: true,
+      accounts: { where: { providerId: "credential" }, select: { id: true } },
+      _count: { select: { passkeys: true } },
+    },
   })
+  const links = await db.verification.groupBy({
+    by: ["value"],
+    where: {
+      identifier: { startsWith: "reset-password:" },
+      value: { in: users.map((u) => u.id) },
+      expiresAt: { gt: new Date() },
+    },
+    _max: { expiresAt: true },
+  })
+  const linkExpiry = new Map(links.map((l) => [l.value, l._max.expiresAt]))
+  return users.map(({ accounts, _count, twoFactorEnabled, ...user }) => ({
+    ...user,
+    state: accountState({
+      banned: user.banned,
+      hasPassword: accounts.length > 0,
+      twoFactorReady: twoFactorEnabled === true || _count.passkeys > 0,
+    }),
+    linkExpiresAt: linkExpiry.get(user.id) ?? null,
+  }))
 }
 
+/** Zaproszenie: konto bez hasła i mail z linkiem; konto zostaje także przy błędzie wysyłki. */
 export async function addAccount(
   headers: Headers,
   data: z.infer<typeof createAccountSchema>,
 ): Promise<Result> {
-  await assertAdmin(headers)
+  if (!emailLoginAvailable) return { ok: false, code: "MAIL_UNAVAILABLE" }
+  const admin = await assertAdmin(headers)
+  let userId: string
   try {
     // Zweryfikowany adres: link logowania studenta nie może skasować konta prowadzącego.
-    await auth.api.createUser({ body: { ...data, role: "user", data: { emailVerified: true } } })
-    return { ok: true }
+    const { user } = await auth.api.createUser({
+      body: { ...data, role: "user", data: { emailVerified: true } },
+    })
+    userId = user.id
   } catch (e) {
     if (isEmailTaken(e)) return { ok: false, code: "EMAIL_TAKEN" }
     throw e
   }
+  const result = await sendPasswordLink(userId)
+  logAction(admin.id, "zaproszenie", userId, result)
+  return result
 }
 
 export async function editAccount(
@@ -63,7 +116,13 @@ export async function editAccount(
 ): Promise<Result> {
   await assertAdmin(headers)
   try {
+    const before = await db.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: { email: true },
+    })
     await db.user.update({ where: { id: userId }, data: { email, name } })
+    // Link wysłany na stary adres mógł trafić pod zły adres.
+    if (before.email !== email) await deletePasswordLinks(userId)
     return { ok: true }
   } catch (e) {
     if (isUniqueViolation(e)) return { ok: false, code: "EMAIL_TAKEN" }
@@ -71,13 +130,25 @@ export async function editAccount(
   }
 }
 
-/** Nowe hasło wylogowuje wszystkie sesje tej osoby. */
-export async function setPassword(
+/** Ponowne zaproszenie albo link do zmiany hasła; do użycia linku nic się nie zmienia. */
+export async function sendAccountPasswordLink(
   headers: Headers,
-  { userId, password }: z.infer<typeof setPasswordSchema>,
+  { userId }: AccountRef,
 ): Promise<Result> {
-  await assertAdmin(headers)
-  await replacePassword(userId, password)
+  const admin = await assertAdmin(headers)
+  const result = await sendPasswordLink(userId)
+  logAction(admin.id, "link-hasla", userId, result)
+  return result
+}
+
+export async function resetAccountTwoFactor(
+  headers: Headers,
+  { userId }: AccountRef,
+): Promise<Result> {
+  const admin = await assertAdmin(headers)
+  if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
+  await resetTwoFactor(userId)
+  logAction(admin.id, "reset-2fa", userId, { ok: true })
   return { ok: true }
 }
 
@@ -90,6 +161,7 @@ export async function setBanned(
   await (banned
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))
+  logAction(admin.id, banned ? "blokada" : "odblokowanie", userId, { ok: true })
   return { ok: true }
 }
 
@@ -100,6 +172,9 @@ export async function setAdmin(
   const admin = await assertAdmin(headers)
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
   await auth.api.setRole({ body: { userId, role: isAdmin ? "admin" : "user" }, headers })
+  logAction(admin.id, isAdmin ? "nadanie-superadmina" : "odebranie-superadmina", userId, {
+    ok: true,
+  })
   return { ok: true }
 }
 
