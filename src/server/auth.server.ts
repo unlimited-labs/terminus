@@ -202,13 +202,19 @@ export const auth = betterAuth({
   ],
 })
 
-/** Zalogowany prowadzący z nagłówków żądania; zablokowane konto i student = brak. */
-export async function sessionUser(headers: Headers) {
+/** Prowadzący z sesją, także bez skonfigurowanego 2FA (ekran konfiguracji); zablokowany i student = brak. */
+export async function signedInTeacher(headers: Headers) {
   const session = await auth.api.getSession({ headers })
   if (!session || session.user.banned || session.user.role === STUDENT_ROLE) return null
   const { id, name, email, role } = session.user
   const { totp, ready } = await factorsOf(id)
   return { id, name, email, isAdmin: role === "admin", totp, twoFactorReady: ready }
+}
+
+/** Zalogowany prowadzący z gotowym 2FA; tylko on dostaje dane i operacje (bramka 2FA). */
+export async function sessionUser(headers: Headers) {
+  const user = await signedInTeacher(headers)
+  return user?.twoFactorReady ? user : null
 }
 
 /** Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje wylogowane. */

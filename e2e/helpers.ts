@@ -1,11 +1,12 @@
 import { readFileSync } from "node:fs"
 
-import type { Locator, Page } from "@playwright/test"
+import { expect, type Locator, type Page } from "@playwright/test"
 import { z } from "zod"
 
 import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
 
 import { dayOf, E2E, MAIL_FILE, STATE_FILE, e2eStateSchema, type E2EState } from "./config.ts"
+import { totpCode } from "./totp.ts"
 
 const state = (): E2EState => e2eStateSchema.parse(JSON.parse(readFileSync(STATE_FILE, "utf8")))
 
@@ -39,11 +40,37 @@ export async function openBoard(page: Page, examId: string) {
   await page.getByRole("heading", { name: /tablica zapisów/ }).waitFor()
 }
 
-export async function login(page: Page, email = E2E.admin.email, password = E2E.admin.password) {
-  await page.goto("/login")
+/** E-mail, hasło i „Zaloguj się” po hydratacji (wcześniej React wyczyściłby wpisane pola). */
+export async function fillLogin(page: Page, email: string, password: string) {
+  const submit = page.getByRole("button", { name: "Zaloguj się" })
+  await expect(submit).toBeEnabled()
   await page.getByLabel("E-mail").fill(email)
-  await page.getByLabel("Hasło").fill(password)
-  await page.getByRole("button", { name: "Zaloguj się" }).click()
+  await page.getByLabel("Hasło", { exact: true }).fill(password)
+  await submit.click()
+}
+
+/** Zaproszenie z panelu kont (superadmin zalogowany) po hydratacji formularza. */
+export async function invite(page: Page, name: string, email: string) {
+  await page.goto("/konta")
+  const form = page.locator("form", { hasText: "Wyślij zaproszenie" })
+  const submit = form.getByRole("button", { name: "Wyślij zaproszenie" })
+  await expect(submit).toBeEnabled()
+  await form.getByLabel("Imię i nazwisko").fill(name)
+  await form.getByLabel("E-mail").fill(email)
+  await submit.click()
+  await expect(page.locator("li", { hasText: email })).toContainText("Zaproszone")
+}
+
+/** Logowanie hasłem i kodem z aplikacji (domyślnie superadmin z TOTP z `seed.ts`). */
+export async function login(
+  page: Page,
+  email = E2E.admin.email,
+  password = E2E.admin.password,
+  totpURI = state().adminTotp,
+) {
+  await page.goto("/login")
+  await fillLogin(page, email, password)
+  await page.getByLabel("Kod z aplikacji").fill(await totpCode(totpURI))
   await page.waitForURL((url) => url.pathname !== "/login")
 }
 

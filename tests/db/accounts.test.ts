@@ -19,7 +19,7 @@ import { db } from "@/server/db.server"
 import { sendMail } from "@/server/mail.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
-import { account, enableTotp, signIn, signInWithTotp } from "./sessions"
+import { account, signIn } from "./sessions"
 
 vi.mock("@/server/mail.server", () => ({ sendMail: vi.fn<() => Promise<void>>() }))
 
@@ -148,7 +148,7 @@ test("błąd poczty przy zaproszeniu: konto zostaje, panel dostaje MAIL_FAILED",
 test("link do zmiany hasła niczego nie zmienia do użycia; reset 2FA czyści składniki i sesje", async () => {
   const admin = await account("admin")
   const other = await account()
-  const session = await signInWithTotp(other.email, await enableTotp(other.headers))
+  const session = other.headers
   await db.verification.create({
     data: {
       id: randomUUID(),

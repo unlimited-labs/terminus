@@ -47,6 +47,8 @@ export const e2eStateSchema = z.object({
   /** Dzień 0 danych testowych (YYYY-MM-DD, czas polski): dziś + 30 dni. */
   baseDay: z.iso.date(),
   exams: z.record(z.enum(EXAMS), z.uuid()),
+  /** Adres `otpauth://` aplikacji z kodami superadmina (TOTP włączone w `seed.ts`). */
+  adminTotp: z.string(),
 })
 
 export type E2EState = z.infer<typeof e2eStateSchema>

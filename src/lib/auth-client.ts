@@ -1,11 +1,10 @@
-import { passkeyClient } from "@better-auth/passkey/client"
-import { twoFactorClient } from "better-auth/client/plugins"
 import { createAuthClient } from "better-auth/react"
 import { toast } from "sonner"
 
 import { authErrorMessage } from "@/messages.pl"
 
-export const authClient = createAuthClient({ plugins: [twoFactorClient(), passkeyClient()] })
+/** Bez wtyczek 2FA: strona studenta ładuje tylko to (mniejsza paczka, szybsza hydratacja). */
+export const authClient = createAuthClient()
 
 /** Wywołanie klienta better-auth → komunikat błędu (także gdy zawiedzie sieć) albo `null` po sukcesie. */
 export async function authFailure(call: Promise<{ error: object | null }>): Promise<string | null> {

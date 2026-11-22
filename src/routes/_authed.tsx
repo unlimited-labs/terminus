@@ -18,6 +18,7 @@ export const Route = createFileRoute("/_authed")({
   beforeLoad: async ({ context, location }) => {
     const user = await context.queryClient.query(sessionQuery())
     if (!user) throw redirect({ to: "/login", search: { redirect: location.href } })
+    if (!user.twoFactorReady) throw redirect({ to: "/konfiguracja-2fa" })
     return { user }
   },
   component: AuthedLayout,

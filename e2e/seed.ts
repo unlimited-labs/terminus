@@ -4,6 +4,7 @@ import { defaultEmail } from "../src/domain/email.ts"
 import { db } from "../src/server/db.server.ts"
 
 import { dayOf, E2E, type E2EState } from "./config.ts"
+import { totpCode } from "./totp.ts"
 
 const baseDay = warsawDay(new Date(Date.now() + 30 * 86_400_000))
 const pad = (n: number) => String(n).padStart(2, "0")
@@ -279,6 +280,24 @@ export async function seed(): Promise<E2EState> {
       email: "wspolprowadzacy@e2e.test",
     },
   })
+  const adminTotp = await enableAdminTotp()
   await db.$disconnect()
-  return { baseDay, exams }
+  return { baseDay, exams, adminTotp }
+}
+
+/** Bramka 2FA wpuszcza tylko konto z drugim sposobem: superadmin dostaje TOTP jak z ekranu konfiguracji. */
+async function enableAdminTotp() {
+  const { auth } = await import("../src/server/auth.server.ts")
+  const { email, password } = E2E.admin
+  const signedIn = await auth.api.signInEmail({ body: { email, password }, returnHeaders: true })
+  const headers = new Headers({
+    cookie: signedIn.headers
+      .getSetCookie()
+      .map((c) => c.split(";")[0])
+      .join("; "),
+  })
+  const enabled = await auth.api.enableTwoFactor({ body: { password, method: "totp" }, headers })
+  if (enabled.method !== "totp") throw new Error("oczekiwano TOTP")
+  await auth.api.verifyTOTP({ body: { code: await totpCode(enabled.totpURI) }, headers })
+  return enabled.totpURI
 }

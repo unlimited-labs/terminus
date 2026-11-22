@@ -16,19 +16,8 @@ export const cookiesOf = (headers: Headers) =>
       .join("; "),
   })
 
-export const signIn = async (email: string, password = TEST_PASSWORD) => {
-  const res = await auth.api.signInEmail({ body: { email, password }, returnHeaders: true })
-  return cookiesOf(res.headers)
-}
-
-/** Konto z otwartą sesją; zwraca jego id, e-mail i nagłówki tej sesji. */
-export async function account(role: "admin" | "user" = "user") {
-  const email = `${randomUUID()}@example.com`
-  const { user } = await auth.api.createUser({
-    body: { email, password: TEST_PASSWORD, name: "Osoba", role },
-  })
-  return { id: user.id, email, headers: await signIn(email) }
-}
+/** Adres `otpauth://` kont testowych z TOTP, żeby `signIn` sam podał kod. */
+const totpOf = new Map<string, string>()
 
 /** Kod TOTP z adresu `otpauth://` (sekret w Base32, jak w kodzie QR). */
 async function totpCode(totpURI: string) {
@@ -36,28 +25,42 @@ async function totpCode(totpURI: string) {
   return createOTP(base32.decode(secret)).totp()
 }
 
+/** Logowanie hasłem; konto z TOTP dostaje od razu kod, jak w drugim kroku ekranu logowania. */
+export async function signIn(email: string, password = TEST_PASSWORD) {
+  const res = await auth.api.signInEmail({ body: { email, password }, returnHeaders: true })
+  const totpURI = totpOf.get(email)
+  if (!("twoFactorRedirect" in res.response) || !totpURI) return cookiesOf(res.headers)
+  const verified = await auth.api.verifyTOTP({
+    body: { code: await totpCode(totpURI) },
+    headers: cookiesOf(res.headers),
+    returnHeaders: true,
+  })
+  return cookiesOf(verified.headers)
+}
+
 /** Włącza TOTP na koncie z sesją `headers` (jak ekran konfiguracji); zwraca adres `otpauth://`. */
 export async function enableTotp(headers: Headers) {
+  const session = await auth.api.getSession({ headers })
   const enabled = await auth.api.enableTwoFactor({
     body: { password: TEST_PASSWORD, method: "totp" },
     headers,
   })
   if (enabled.method !== "totp") throw new Error("oczekiwano TOTP")
-  const { totpURI } = enabled
-  await auth.api.verifyTOTP({ body: { code: await totpCode(totpURI) }, headers })
-  return totpURI
+  await auth.api.verifyTOTP({ body: { code: await totpCode(enabled.totpURI) }, headers })
+  if (session) totpOf.set(session.user.email, enabled.totpURI)
+  return enabled.totpURI
 }
 
-/** Logowanie hasłem + kodem TOTP; nagłówki sesji. */
-export async function signInWithTotp(email: string, totpURI: string) {
-  const first = await auth.api.signInEmail({
-    body: { email, password: TEST_PASSWORD },
-    returnHeaders: true,
+/**
+ * Konto z otwartą sesją; zwraca jego id, e-mail i nagłówki tej sesji. Domyślnie z włączonym TOTP
+ * (bramka 2FA wpuszcza tylko takie); `twoFactor: false` = konto, które dopiero skonfiguruje 2FA.
+ */
+export async function account(role: "admin" | "user" = "user", { twoFactor = true } = {}) {
+  const email = `${randomUUID()}@example.com`
+  const { user } = await auth.api.createUser({
+    body: { email, password: TEST_PASSWORD, name: "Osoba", role },
   })
-  const res = await auth.api.verifyTOTP({
-    body: { code: await totpCode(totpURI) },
-    headers: cookiesOf(first.headers),
-    returnHeaders: true,
-  })
-  return cookiesOf(res.headers)
+  const first = await signIn(email)
+  if (twoFactor) await enableTotp(first)
+  return { id: user.id, email, headers: twoFactor ? await signIn(email) : first }
 }

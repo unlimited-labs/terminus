@@ -4,9 +4,9 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 
 import { ACCESS_DENIED } from "../messages.pl.ts"
 
-import { sessionUser } from "./auth.server.ts"
+import { sessionUser, signedInTeacher } from "./auth.server.ts"
 
-const getSessionUser = createServerFn().handler(() => sessionUser(getRequestHeaders()))
+const getSessionUser = createServerFn().handler(() => signedInTeacher(getRequestHeaders()))
 
 /** Sesja dla `beforeLoad` bez wywołania serwera przy każdej nawigacji; dane i tak chroni `requireUser`. */
 export const sessionQuery = () =>

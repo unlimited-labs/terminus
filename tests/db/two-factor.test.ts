@@ -2,11 +2,11 @@ import { randomUUID } from "node:crypto"
 
 import { expect, test, vi } from "vitest"
 
-import { auth } from "@/server/auth.server"
+import { auth, sessionUser, signedInTeacher } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { sendMail } from "@/server/mail.server"
 
-import { account, cookiesOf, enableTotp, signInWithTotp, TEST_PASSWORD } from "./sessions"
+import { account, cookiesOf, enableTotp, signIn, TEST_PASSWORD } from "./sessions"
 
 vi.mock("@/server/mail.server", () => ({ sendMail: vi.fn<() => Promise<void>>() }))
 
@@ -29,8 +29,8 @@ const signInBody = (email: string, password = TEST_PASSWORD) => ({
 })
 
 test("konto z TOTP: samo hasło nie daje sesji, hasło + kod daje", async () => {
-  const { id, email, headers } = await account()
-  const totpURI = await enableTotp(headers)
+  const { id, email, headers } = await account("user", { twoFactor: false })
+  await enableTotp(headers)
   expect(await db.user.findUniqueOrThrow({ where: { id } })).toMatchObject({
     twoFactorEnabled: true,
   })
@@ -39,12 +39,12 @@ test("konto z TOTP: samo hasło nie daje sesji, hasło + kod daje", async () => 
   expect(first.response).toMatchObject({ twoFactorRedirect: true })
   expect(await auth.api.getSession({ headers: cookiesOf(first.headers) })).toBeNull()
 
-  const session = await auth.api.getSession({ headers: await signInWithTotp(email, totpURI) })
+  const session = await auth.api.getSession({ headers: await signIn(email) })
   expect(session?.user.id).toBe(id)
 })
 
 test("konto z samym kluczem dostępu nie loguje się hasłem; złe hasło nie zdradza, że ma klucz", async () => {
-  const { id, email } = await account()
+  const { id, email } = await account("user", { twoFactor: false })
   await addPasskey(id)
   await expect(auth.api.signInEmail(signInBody(email))).rejects.toMatchObject({
     body: { code: "PASSKEY_ONLY" },
@@ -56,9 +56,7 @@ test("konto z samym kluczem dostępu nie loguje się hasłem; złe hasło nie zd
 })
 
 test("ostatniego sposobu potwierdzania nie da się usunąć", async () => {
-  const { id, email, headers } = await account()
-  const totpURI = await enableTotp(headers)
-  const session = await signInWithTotp(email, totpURI)
+  const { id, headers: session } = await account()
   const key = await addPasskey(id)
 
   await auth.api.deletePasskey({ body: { id: key.id }, headers: session })
@@ -99,4 +97,14 @@ test("student nie rejestruje klucza dostępu ani TOTP", async () => {
   await expect(
     auth.api.enableTwoFactor({ body: { password: "cokolwiek" }, headers }),
   ).rejects.toMatchObject({ body: { code: "TEACHERS_ONLY" } })
+})
+
+test("bramka 2FA: konto bez drugiego sposobu ma sesję, ale nie dostaje danych", async () => {
+  const { id, headers } = await account("user", { twoFactor: false })
+  expect(await signedInTeacher(headers)).toMatchObject({ id, twoFactorReady: false })
+  expect(await sessionUser(headers)).toBeNull()
+
+  await enableTotp(headers)
+  const { headers: ready } = await account()
+  expect(await sessionUser(ready)).toMatchObject({ twoFactorReady: true, totp: true })
 })

@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { formatDay } from "@/domain/time"
-import { authClient, authWithToast } from "@/lib/auth-client"
+import { authWithToast } from "@/lib/auth-client"
+import { teacherAuthClient as authClient } from "@/lib/teacher-auth-client"
 import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/_authed/weryfikacja-dwuetapowa")({
