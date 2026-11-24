@@ -14,6 +14,7 @@ import { Route as Konfiguracja2faRouteImport } from './routes/konfiguracja-2fa'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NiePamietamHaslaRouteImport } from './routes/nie-pamietam-hasla'
 import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
+import { Route as ZgodaRouteImport } from './routes/zgoda'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
@@ -47,6 +48,11 @@ const NiePamietamHaslaRoute = NiePamietamHaslaRouteImport.update({
 const NoweHasloRoute = NoweHasloRouteImport.update({
   id: '/nowe-haslo',
   path: '/nowe-haslo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ZgodaRoute = ZgodaRouteImport.update({
+  id: '/zgoda',
+  path: '/zgoda',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
@@ -109,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/zgoda'
     | '/.well-known/$'
     | '/haslo'
     | '/konta'
@@ -176,6 +186,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/zgoda'
     | '/.well-known/$'
     | '/haslo'
     | '/konta'
@@ -193,6 +204,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/zgoda'
     | '/.well-known/$'
     | '/_authed/haslo'
     | '/_authed/konta'
@@ -211,6 +223,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NiePamietamHaslaRoute: typeof NiePamietamHaslaRoute
   NoweHasloRoute: typeof NoweHasloRoute
+  ZgodaRoute: typeof ZgodaRoute
   DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ZExamIdEnterRoute: typeof ZExamIdEnterRoute
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/nowe-haslo'
       fullPath: '/nowe-haslo'
       preLoaderRoute: typeof NoweHasloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/zgoda': {
+      id: '/zgoda'
+      path: '/zgoda'
+      fullPath: '/zgoda'
+      preLoaderRoute: typeof ZgodaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/.well-known/$': {
@@ -354,6 +374,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NiePamietamHaslaRoute: NiePamietamHaslaRoute,
   NoweHasloRoute: NoweHasloRoute,
+  ZgodaRoute: ZgodaRoute,
   DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ZExamIdEnterRoute: ZExamIdEnterRoute,
