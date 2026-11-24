@@ -20,7 +20,7 @@ export const mcpCaller = z.object({
 
 export type McpCaller = z.infer<typeof mcpCaller>
 
-// ponytail: licznik w pamięci jednego procesu, jak `attempt-limit.server.ts`.
+// shortcut: licznik w pamięci jednego procesu (zerowany po restarcie, osobny na replikę), przenieść do Postgresa/Redisa przy więcej niż jednej instancji
 const calls = new RateLimiterMemory({ points: 120, duration: 60 })
 
 const NOT_FOUND: Result = { ok: false, code: "NOT_FOUND" }

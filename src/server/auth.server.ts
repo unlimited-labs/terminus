@@ -22,6 +22,8 @@ const adminPlugin = admin()
 const APP_URL = new URL(env.APP_PUBLIC_URL)
 /** Adres serwera MCP; tokeny agentów są wydawane tylko na niego (`aud`). */
 export const MCP_RESOURCE = `${APP_URL.origin}/mcp`
+/** `iss` tokenów agentów (`jwt.issuer`); serwer MCP sprawdza ten sam. */
+export const MCP_ISSUER = APP_URL.origin
 
 /** Typy hooków i wtyczek nie znają pola `role` z wtyczki admin. */
 const roleOf = (user: object | null | undefined) =>
@@ -61,7 +63,7 @@ const agentCutoffOnPasswordChange = {
         handler: createAuthMiddleware(async (ctx) => {
           const userId = ctx.context.session?.user.id
           if (userId && ctx.body?.revokeOtherSessions && !isAPIError(ctx.context.returned))
-            await deleteAgentGrants(userId)
+            await disconnectAgents(userId)
         }),
       },
     ],
@@ -84,7 +86,7 @@ export const deleteTrustedDevices = (userId: string, tx: Pick<typeof db, "verifi
     where: { identifier: { startsWith: "trust-device-" }, value: userId },
   })
 
-const agentGrantDeletes = (userId: string, clientId?: string) => {
+const agentDisconnects = (userId: string, clientId?: string) => {
   const where = { userId, clientId }
   return [
     db.oauthAccessToken.deleteMany({ where }),
@@ -97,8 +99,8 @@ const agentGrantDeletes = (userId: string, clientId?: string) => {
  * Odcięcie agentów AI konta (zgoda i tokeny; z `clientId` — jednego klienta). Wołane wprost tam, gdzie
  * kasujemy wszystkie sesje: hooki Better Auth nie ruszają refresh tokenów z `offline_access`.
  */
-export const deleteAgentGrants = (userId: string, clientId?: string) =>
-  db.$transaction(agentGrantDeletes(userId, clientId))
+export const disconnectAgents = (userId: string, clientId?: string) =>
+  db.$transaction(agentDisconnects(userId, clientId))
 
 /** Student nie rejestruje klucza dostępu ani TOTP (2FA jest dla prowadzących). */
 const teachersOnlyFactors = {
@@ -127,7 +129,7 @@ export const auth = betterAuth({
     disableSignUp: true,
     revokeSessionsOnPasswordReset: true,
     onPasswordReset: async ({ user }) => {
-      await Promise.all([deleteTrustedDevices(user.id), deleteAgentGrants(user.id)])
+      await Promise.all([deleteTrustedDevices(user.id), disconnectAgents(user.id)])
     },
   },
   logger: { log: (level, message, ...args) => consola[level](`auth ${message}`, ...args) },
@@ -196,7 +198,7 @@ export const auth = betterAuth({
       // Logowanie przyciskiem bez e-maila wymaga klucza zapisanego na urządzeniu; sam klucz bez PIN-u nie wystarcza.
       authenticatorSelection: { residentKey: "required", userVerification: "required" },
     }),
-    jwt({ disableSettingJwtHeader: true, jwt: { issuer: APP_URL.origin } }),
+    jwt({ disableSettingJwtHeader: true, jwt: { issuer: MCP_ISSUER } }),
     mcp({
       loginPage: "/login",
       consentPage: "/zgoda",
@@ -284,7 +286,7 @@ export async function resetTwoFactor(userId: string) {
     db.passkey.deleteMany({ where: { userId } }),
     deleteTrustedDevices(userId),
     db.session.deleteMany({ where: { userId } }),
-    ...agentGrantDeletes(userId),
+    ...agentDisconnects(userId),
   ])
 }
 
@@ -293,5 +295,5 @@ export async function replacePassword(userId: string, password: string) {
   const ctx = await auth.$context
   await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password))
   await ctx.internalAdapter.deleteUserSessions(userId)
-  await deleteAgentGrants(userId)
+  await disconnectAgents(userId)
 }

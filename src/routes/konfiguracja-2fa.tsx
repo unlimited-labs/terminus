@@ -6,6 +6,7 @@ import { Notice } from "@/components/notice"
 import { AddPasskeyButton, TotpSetup } from "@/components/two-factor"
 import { Button } from "@/components/ui/button"
 import { useLogout } from "@/components/use-logout"
+import { isAgentConnectFlow } from "@/domain/agents"
 import { authWithToast } from "@/lib/auth-client"
 import { oauthAuthClient } from "@/lib/teacher-auth-client"
 import { sessionQuery } from "@/server/session"
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/konfiguracja-2fa")({
     const user = await context.queryClient.query(sessionQuery())
     if (!user) throw redirect({ to: "/login" })
     // Tu odsyła serwer autoryzacji, gdy agenta podłącza konto bez 2FA (podpisany adres z `sig`).
-    const oauth = "sig" in location.search
+    const oauth = isAgentConnectFlow(location.search)
     if (user.twoFactorReady && !oauth) throw redirect({ to: "/" })
     return { oauth, ready: user.twoFactorReady }
   },

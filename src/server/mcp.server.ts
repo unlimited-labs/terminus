@@ -4,6 +4,7 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
 import { APIError } from "better-auth/api"
 import { z } from "zod"
 
+import { agentHost } from "../domain/agents.ts"
 import { boardInputSchema } from "../schemas/board.ts"
 import {
   addTeacherSchema,
@@ -35,7 +36,7 @@ import {
 } from "../schemas/roster.ts"
 import { dayRefSchema, slotRefSchema, updateSlotSchema, windowSchema } from "../schemas/slot.ts"
 
-import { auth, MCP_RESOURCE, teacherById } from "./auth.server.ts"
+import { auth, MCP_ISSUER, MCP_RESOURCE, teacherById } from "./auth.server.ts"
 import { runBoardCommand } from "./board-ops.server.ts"
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"
@@ -377,8 +378,6 @@ function unauthorized() {
   )
 }
 
-const hostOf = (clientId: string) => (URL.canParse(clientId) ? new URL(clientId).host : clientId)
-
 /**
  * `POST /mcp`: podpis i `aud` tokenu, potem przy każdym żądaniu konto (`teacherById`) i zgoda na
  * klienta — zablokowanie, utrata 2FA i odłączenie agenta działają od razu, nie po wygaśnięciu tokenu.
@@ -401,10 +400,10 @@ export const serveMcp = requireMcpAuth(
         clientId,
         scopes: [],
         expiresAt: claims.exp,
-        extra: { user, clientHost: hostOf(clientId) } satisfies McpCaller,
+        extra: { user, clientHost: agentHost(clientId) ?? clientId } satisfies McpCaller,
       },
     })
   },
   // Token ma `iss` = domena (`jwt.issuer`); domyślny issuer tutaj to `…/api/auth`.
-  { resource: MCP_RESOURCE, issuer: new URL(env.APP_PUBLIC_URL).origin },
+  { resource: MCP_RESOURCE, issuer: MCP_ISSUER },
 )

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { isAgentConnectFlow } from "@/domain/agents"
 import { authFailure, authResult } from "@/lib/auth-client"
 import { oauthAuthClient } from "@/lib/teacher-auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
   beforeLoad: async ({ context, location }) => {
     // Podłączanie agenta (podpisany adres z `sig`) może wymagać ponownego logowania (`prompt=login`).
-    const oauth = "sig" in location.search
+    const oauth = isAgentConnectFlow(location.search)
     if (!oauth && (await context.queryClient.query(sessionQuery()))) throw redirect({ to: "/" })
     return { oauth }
   },

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import { expect, test, vi } from "vitest"
 
 import { resetAccountTwoFactor, setBanned } from "@/server/account-ops.server"
-import { auth, deleteAgentGrants, replacePassword } from "@/server/auth.server"
+import { auth, disconnectAgents, replacePassword } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { sendMail } from "@/server/mail.server"
 import { sendPasswordLink } from "@/server/password-link.server"
@@ -130,7 +130,7 @@ test("odłączenie jednego klienta zostawia pozostałych", async () => {
   const teacher = await account()
   const claude = await connectAgent(teacher.id)
   const chatgpt = await connectAgent(teacher.id)
-  await deleteAgentGrants(teacher.id, claude)
+  await disconnectAgents(teacher.id, claude)
   expect(await db.oauthConsent.findMany({ where: { userId: teacher.id } })).toMatchObject([
     { clientId: chatgpt },
   ])

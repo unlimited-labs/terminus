@@ -14,7 +14,7 @@ import type {
 } from "../schemas/account.ts"
 import type { deleteExamSchema } from "../schemas/exam.ts"
 
-import { auth, deleteAgentGrants, resetTwoFactor, sessionUser } from "./auth.server.ts"
+import { auth, disconnectAgents, resetTwoFactor, sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
@@ -159,7 +159,7 @@ export async function setBanned(
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))
   // Ważny link do hasła pozwoliłby ustawić hasło w czasie blokady.
-  if (banned) await Promise.all([deletePasswordLinks(userId), deleteAgentGrants(userId)])
+  if (banned) await Promise.all([deletePasswordLinks(userId), disconnectAgents(userId)])
   logAction(admin.id, banned ? "blokada" : "odblokowanie", userId)
   return { ok: true }
 }

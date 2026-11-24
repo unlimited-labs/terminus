@@ -6,7 +6,7 @@ import { z } from "zod"
 import { agentHost } from "../domain/agents.ts"
 
 import { connectedAgents } from "./agent-ops.server.ts"
-import { auth, deleteAgentGrants, MCP_RESOURCE } from "./auth.server.ts"
+import { auth, disconnectAgents, MCP_RESOURCE } from "./auth.server.ts"
 import { requireUser } from "./session.ts"
 
 const clientIdSchema = z.object({ clientId: z.string().min(1).max(2000) })
@@ -35,5 +35,5 @@ export const disconnectAgent = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(clientIdSchema)
   .handler(async ({ data, context }) => {
-    await deleteAgentGrants(context.user.id, data.clientId)
+    await disconnectAgents(context.user.id, data.clientId)
   })
