@@ -4,7 +4,7 @@ import { mcp } from "@better-auth/mcp"
 import { passkey } from "@better-auth/passkey"
 import { prismaAdapter } from "@better-auth/prisma-adapter"
 import { betterAuth } from "better-auth"
-import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api"
+import { APIError, createAuthMiddleware, getSessionFromCtx, isAPIError } from "better-auth/api"
 import { consola } from "consola"
 import { setSessionCookie } from "better-auth/cookies"
 import { admin, jwt, magicLink, twoFactor } from "better-auth/plugins"
@@ -51,6 +51,23 @@ const studentSession = {
   },
 }
 
+/** Zmiana hasła w `/haslo` wylogowuje pozostałe sesje, więc odcina też agentów. */
+const agentCutoffOnPasswordChange = {
+  id: "agent-cutoff-on-password-change",
+  hooks: {
+    after: [
+      {
+        matcher: (ctx: { path?: string }) => ctx.path === "/change-password",
+        handler: createAuthMiddleware(async (ctx) => {
+          const userId = ctx.context.session?.user.id
+          if (userId && ctx.body?.revokeOtherSessions && !isAPIError(ctx.context.returned))
+            await deleteAgentGrants(userId)
+        }),
+      },
+    ],
+  },
+}
+
 const refuse = (code: keyof typeof AUTH_CODE) =>
   new APIError("FORBIDDEN", { code, message: AUTH_CODE[code] })
 
@@ -66,6 +83,22 @@ export const deleteTrustedDevices = (userId: string, tx: Pick<typeof db, "verifi
   tx.verification.deleteMany({
     where: { identifier: { startsWith: "trust-device-" }, value: userId },
   })
+
+const agentGrantDeletes = (userId: string, clientId?: string) => {
+  const where = { userId, clientId }
+  return [
+    db.oauthAccessToken.deleteMany({ where }),
+    db.oauthRefreshToken.deleteMany({ where }),
+    db.oauthConsent.deleteMany({ where }),
+  ]
+}
+
+/**
+ * Odcięcie agentów AI konta (zgoda i tokeny; z `clientId` — jednego klienta). Wołane wprost tam, gdzie
+ * kasujemy wszystkie sesje: hooki Better Auth nie ruszają refresh tokenów z `offline_access`.
+ */
+export const deleteAgentGrants = (userId: string, clientId?: string) =>
+  db.$transaction(agentGrantDeletes(userId, clientId))
 
 /** Student nie rejestruje klucza dostępu ani TOTP (2FA jest dla prowadzących). */
 const teachersOnlyFactors = {
@@ -94,7 +127,7 @@ export const auth = betterAuth({
     disableSignUp: true,
     revokeSessionsOnPasswordReset: true,
     onPasswordReset: async ({ user }) => {
-      await deleteTrustedDevices(user.id)
+      await Promise.all([deleteTrustedDevices(user.id), deleteAgentGrants(user.id)])
     },
   },
   logger: { log: (level, message, ...args) => consola[level](`auth ${message}`, ...args) },
@@ -195,6 +228,7 @@ export const auth = betterAuth({
     cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
     teachersOnlyFactors,
     studentSession,
+    agentCutoffOnPasswordChange,
     tanstackStartCookies(),
   ],
 })
@@ -239,7 +273,10 @@ export async function teacherById(id: string) {
   return teacher?.twoFactorReady ? teacher : null
 }
 
-/** Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje wylogowane. */
+/**
+ * Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje
+ * wylogowane, agenci odcięci.
+ */
 export async function resetTwoFactor(userId: string) {
   await db.$transaction([
     db.user.update({ where: { id: userId }, data: { twoFactorEnabled: false } }),
@@ -247,12 +284,14 @@ export async function resetTwoFactor(userId: string) {
     db.passkey.deleteMany({ where: { userId } }),
     deleteTrustedDevices(userId),
     db.session.deleteMany({ where: { userId } }),
+    ...agentGrantDeletes(userId),
   ])
 }
 
-/** Nowe hasło i wylogowanie wszystkich sesji tej osoby (skrypt reset-password). */
+/** Nowe hasło, wylogowanie wszystkich sesji tej osoby i odcięcie agentów (skrypt reset-password). */
 export async function replacePassword(userId: string, password: string) {
   const ctx = await auth.$context
   await ctx.internalAdapter.updatePassword(userId, await ctx.password.hash(password))
   await ctx.internalAdapter.deleteUserSessions(userId)
+  await deleteAgentGrants(userId)
 }
