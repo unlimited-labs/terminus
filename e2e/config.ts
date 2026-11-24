@@ -18,6 +18,7 @@ const EXAMS = [
   "boardKeyboard",
   "boardTeam",
   "boardGrades",
+  "boardAdd",
   "exportDuplicate",
   "fields",
   "student",

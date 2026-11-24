@@ -1,7 +1,8 @@
 import { useDragOperation, useDraggable, useDroppable } from "@dnd-kit/react"
 import { cn } from "cn"
-import { GripVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
+import { GripVerticalIcon, PencilIcon, Trash2Icon, UserPlusIcon } from "lucide-react"
 import { useCallback, useRef, useState } from "react"
+import { toast } from "sonner"
 
 import { GradeChip } from "@/components/grading"
 import { hasManyRosters } from "@/components/roster-choice"
@@ -180,6 +181,53 @@ function RenameForm({
   )
 }
 
+/** Dopisanie niezapisanej osoby do slotu po numerze albumu, bez przeciągania z panelu. */
+function AddPersonForm({
+  slotId,
+  people,
+  onCommand,
+  onDone,
+}: {
+  slotId: string
+  people: Person[]
+  onCommand: (command: BoardCommand) => boolean
+  onDone: () => void
+}) {
+  const [number, setNumber] = useState("")
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const n = number.trim()
+    if (!n) return
+    const person = people.find((p) => p.studentNumber === n)
+    // Tylko niezapisani: literówka nie może po cichu wyjąć kogoś z innego zespołu.
+    if (!person) return void toast.error(`Indeksu ${n} nie ma na liście zaliczenia.`)
+    if (person.slotId !== null) return void toast.error(`Indeks ${n} ma już zapis w innym slocie.`)
+    if (onCommand({ kind: "move", studentNumber: n, toSlotId: slotId })) onDone()
+  }
+  return (
+    <form
+      onSubmit={onSubmit}
+      onKeyDown={(e) => {
+        if (e.key === "Escape") onDone()
+      }}
+      className="mt-1 flex gap-1"
+    >
+      <Input
+        aria-label="Numer albumu"
+        placeholder="Numer albumu"
+        inputMode="numeric"
+        value={number}
+        onChange={(e) => setNumber(e.target.value)}
+        className="h-7 w-36"
+        autoFocus
+      />
+      <Button type="submit" size="sm" className="h-7">
+        Dodaj
+      </Button>
+    </form>
+  )
+}
+
 function useSlotDnd(slot: Slot, team: Person[], maxTeamSize: number, label: string) {
   const drop = useDroppable({
     id: dragId({ kind: "slot", slotId: slot.id }),
@@ -247,6 +295,7 @@ function TeamCell({
 export function BoardSlotRow({
   slot,
   team,
+  people,
   dayLabel,
   rosterNames,
   maxTeamSize,
@@ -256,6 +305,8 @@ export function BoardSlotRow({
 }: {
   slot: Slot
   team: Person[]
+  /** Wszyscy z list zaliczenia: dopisanie po numerze albumu. */
+  people: Person[]
   dayLabel: string | null
   /** `null` = jedna lista, bez kolumny „Lista”. */
   rosterNames: Map<string, string> | null
@@ -266,6 +317,7 @@ export function BoardSlotRow({
 }) {
   const label = `slot ${formatDayShort(slot.startsAt)} ${warsawTime(slot.startsAt)}`
   const { attach, attachHandle, tone } = useSlotDnd(slot, team, maxTeamSize, label)
+  const [adding, setAdding] = useState(false)
   return (
     <TableRow
       ref={attach}
@@ -293,6 +345,14 @@ export function BoardSlotRow({
           >
             <Trash2Icon className="size-4" />
           </TileAction>
+          <TileAction
+            disabled={team.length >= maxTeamSize}
+            aria-label={`Dodaj osobę do zespołu: ${label}`}
+            onClick={() => setAdding(true)}
+            className="text-muted-foreground disabled:invisible"
+          >
+            <UserPlusIcon className="size-4" />
+          </TileAction>
         </span>
       </TableCell>
       {rosterNames && (
@@ -306,6 +366,14 @@ export function BoardSlotRow({
           highlight={highlight}
           onCommand={onCommand}
         />
+        {adding && team.length < maxTeamSize && (
+          <AddPersonForm
+            slotId={slot.id}
+            people={people}
+            onCommand={onCommand}
+            onDone={() => setAdding(false)}
+          />
+        )}
         {fields.length > 0 && team[0] && (
           <SlotAnswers
             fields={fields}

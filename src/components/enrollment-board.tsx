@@ -76,6 +76,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
                       key={slot.id}
                       slot={slot}
                       team={team}
+                      people={exam.people}
                       dayLabel={firstOfDay ? formatDayShort(slot.startsAt) : null}
                       rosterNames={rosterNameOf}
                       maxTeamSize={exam.maxTeamSize}

@@ -45,6 +45,28 @@ test("myszą: cały zespół uchwytem na wolny slot", async ({ page }) => {
   await expect(row(page, "09:00–09:20")).toContainText("Anna Adamska")
 })
 
+test("dopisanie do zespołu po numerze albumu, bez przeciągania", async ({ page }) => {
+  await openBoard(page, exams().boardAdd)
+  const add = () =>
+    row(page, "09:00–09:20")
+      .getByRole("button", { name: /Dodaj osobę do zespołu/ })
+      .click()
+  await add()
+  await page.getByLabel("Numer albumu").fill("999999")
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click()
+  await expect(page.getByText("Indeksu 999999 nie ma na liście zaliczenia.")).toBeVisible()
+
+  await page.getByLabel("Numer albumu").fill("500003")
+  await page.getByRole("button", { name: "Dodaj", exact: true }).click()
+  await expect(page.getByText("Zapisano ręcznie.")).toBeVisible()
+  await expect(row(page, "09:00–09:20")).toContainText("Anna Adamska")
+  await expect(row(page, "09:00–09:20")).toContainText("Celina Cis")
+  // Zespół pełny (2 osoby): przycisk znika.
+  await expect(
+    row(page, "09:00–09:20").getByRole("button", { name: /Dodaj osobę do zespołu/ }),
+  ).toBeHidden()
+})
+
 test("za długie nazwisko: komunikat z limitem, formularz zostaje otwarty", async ({ page }) => {
   await openBoard(page, exams().boardKeyboard)
   await page

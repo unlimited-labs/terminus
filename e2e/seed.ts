@@ -214,6 +214,7 @@ export async function seed(): Promise<E2EState> {
       ["500001", 0],
       ["500002", 0],
     ]),
+    boardAdd: await board([["500001", 0]]),
     exportDuplicate: await board(),
     fields: await board(),
     student: await kolokwium(),
