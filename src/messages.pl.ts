@@ -29,6 +29,7 @@ export type AppError =
       code:
         | "NOT_FOUND"
         | "RATE_LIMITED"
+        | "TOO_MANY_CALLS"
         | "BUSY"
         | "ROSTER_REQUIRED"
         | "ROSTER_NOT_CHOSEN"
@@ -95,6 +96,8 @@ export function errorMessage(e: AppError, when: SlotWhen = formatDayTime): strin
       return "Brak wolnych slotów. Skontaktuj się z prowadzącym."
     case "RATE_LIMITED":
       return "Za dużo nieudanych prób. Spróbuj ponownie za kilka minut."
+    case "TOO_MANY_CALLS":
+      return "Za dużo wywołań, spróbuj za chwilę."
     case "BUSY":
       return "Za dużo osób zapisuje się naraz. Spróbuj ponownie za chwilę."
     case "NOT_FOUND":

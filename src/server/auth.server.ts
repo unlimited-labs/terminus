@@ -21,7 +21,7 @@ import { STUDENT_ROLE } from "./roles.ts"
 const adminPlugin = admin()
 const APP_URL = new URL(env.APP_PUBLIC_URL)
 /** Adres serwera MCP; tokeny agentów są wydawane tylko na niego (`aud`). */
-const MCP_RESOURCE = `${APP_URL.origin}/mcp`
+export const MCP_RESOURCE = `${APP_URL.origin}/mcp`
 
 /** Typy hooków i wtyczek nie znają pola `role` z wtyczki admin. */
 const roleOf = (user: object | null | undefined) =>
