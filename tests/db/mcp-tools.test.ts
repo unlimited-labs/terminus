@@ -36,21 +36,39 @@ async function rpc(teacherId: string, method: string, params: object = {}) {
 const callTool = (teacherId: string, name: string, args: object = {}) =>
   rpc(teacherId, "tools/call", { name, arguments: args })
 
-test("tools/list: trzy odczyty z adnotacjami; initialize podaje instructions", async () => {
+const READ = { readOnlyHint: true, idempotentHint: true }
+const IDEMPOTENT = { idempotentHint: true }
+const DESTRUCTIVE = { destructiveHint: true }
+
+/** Adnotacje z tabeli w spec §6; brak flagi = jawne `false`. */
+const ANNOTATIONS: Record<string, object> = {
+  list_exams: READ,
+  get_exam: READ,
+  list_entry_emails: READ,
+  board_command: {},
+  add_slot_window: {},
+  update_slot: IDEMPOTENT,
+  delete_slot: DESTRUCTIVE,
+  delete_free_slots_of_day: DESTRUCTIVE,
+  preview_roster_import: READ,
+  apply_roster_import: DESTRUCTIVE,
+  add_roster_entry: {},
+  delete_roster_entry: {},
+  delete_roster: DESTRUCTIVE,
+  set_entry_email: IDEMPOTENT,
+}
+
+test("tools/list: każde narzędzie z adnotacjami z tabeli; initialize podaje instructions", async () => {
   const { teacherId } = await createExam({ rosters: {} })
   const { tools } = await rpc(teacherId, "tools/list")
-  const readOnly = {
-    readOnlyHint: true,
-    destructiveHint: false,
-    idempotentHint: true,
-    openWorldHint: false,
-  }
-  expect(tools.map((t: { name: string }) => t.name).toSorted()).toEqual([
-    "get_exam",
-    "list_entry_emails",
-    "list_exams",
-  ])
-  for (const t of tools) expect(t.annotations).toEqual(readOnly)
+  const off = { destructiveHint: false, idempotentHint: false, openWorldHint: false }
+  expect(
+    Object.fromEntries(
+      tools.map((t: { name: string; annotations: object }) => [t.name, t.annotations]),
+    ),
+  ).toEqual(
+    Object.fromEntries(Object.entries(ANNOTATIONS).map(([name, a]) => [name, { ...off, ...a }])),
+  )
 
   const init = await rpc(teacherId, "initialize", {
     protocolVersion: "2025-11-25",
@@ -95,5 +113,72 @@ test("list_exams i list_entry_emails: tylko swoje zaliczenia", async () => {
   expect(await callTool(other.teacherId, "list_entry_emails", { examId })).toMatchObject({
     isError: true,
     structuredContent: { code: "NOT_FOUND" },
+  })
+})
+
+test("board_command: setGrades, potem jego inverse — ocena wraca do poprzedniej", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["1"])
+  const person = async () =>
+    (await callTool(teacherId, "get_exam", { examId })).structuredContent.people[0]
+  expect(await person()).toMatchObject({ grade: null, gradeComment: null })
+
+  const set = await callTool(teacherId, "board_command", {
+    examId,
+    command: { kind: "setGrades", grades: { "1": { grade: "G4", gradeComment: "dobrze" } } },
+  })
+  expect(set.isError).toBe(false)
+  expect(await person()).toMatchObject({ grade: "G4", gradeComment: "dobrze" })
+
+  const undo = await callTool(teacherId, "board_command", {
+    examId,
+    command: set.structuredContent.inverse,
+  })
+  expect(undo.isError).toBe(false)
+  expect(await person()).toMatchObject({ grade: null, gradeComment: null })
+})
+
+test("import listy: apply z withdrawnEnrolled z podglądu; zmiana zapisów od podglądu → IMPORT_PREVIEW_STALE", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1", "2", "3"], slots: [inDays(1), inDays(2)] } },
+  })
+  await enroll(examId, ["1"])
+  const csv = ["indeks;imie;nazwisko;skreslony", "1;A;A;1", "2;B;B;1", "3;C;C;0"].join("\n")
+  const args = { examId, rosterName: "g1", csv }
+  const previewed = async (): Promise<string[]> => {
+    const preview = await callTool(teacherId, "preview_roster_import", args)
+    expect(preview.isError).toBe(false)
+    return preview.structuredContent.withdrawnEnrolled.map(
+      (e: { studentNumber: string }) => e.studentNumber,
+    )
+  }
+
+  const stale = await previewed()
+  expect(stale).toEqual(["1"])
+  await enroll(examId, ["2"])
+  expect(
+    await callTool(teacherId, "apply_roster_import", { ...args, withdrawnEnrolled: stale }),
+  ).toMatchObject({ isError: true, structuredContent: { code: "IMPORT_PREVIEW_STALE" } })
+
+  const applied = await callTool(teacherId, "apply_roster_import", {
+    ...args,
+    withdrawnEnrolled: await previewed(),
+  })
+  expect(applied).toMatchObject({ isError: false, structuredContent: {} })
+  const { emails } = (await callTool(teacherId, "list_entry_emails", { examId })).structuredContent
+  expect(Object.keys(emails)).toEqual(["3"])
+})
+
+test("delete_slot: slot z zapisem → SLOT_HAS_ENROLLMENTS", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["1"])
+  const { slots } = (await callTool(teacherId, "get_exam", { examId })).structuredContent
+  expect(await callTool(teacherId, "delete_slot", { examId, slotId: slots[0].id })).toMatchObject({
+    isError: true,
+    structuredContent: { code: "SLOT_HAS_ENROLLMENTS" },
   })
 })

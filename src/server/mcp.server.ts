@@ -4,15 +4,44 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
 import { APIError } from "better-auth/api"
 import { z } from "zod"
 
+import { boardInputSchema } from "../schemas/board.ts"
 import { examIdSchema } from "../schemas/exam.ts"
-import { entryEmailsOutput, examDetailOutput, listExamsOutput } from "../schemas/mcp-output.ts"
+import {
+  boardCommandOutput,
+  doneOutput,
+  entryEmailsOutput,
+  examDetailOutput,
+  freeSlotsDeletedOutput,
+  listExamsOutput,
+  rosterImportPreviewOutput,
+  slotWindowOutput,
+} from "../schemas/mcp-output.ts"
+import {
+  addEntrySchema,
+  entryEmailSchema,
+  entryRefSchema,
+  rosterApplySchema,
+  rosterImportSchema,
+  rosterRefSchema,
+} from "../schemas/roster.ts"
+import { dayRefSchema, slotRefSchema, updateSlotSchema, windowSchema } from "../schemas/slot.ts"
 
 import { auth, MCP_RESOURCE, teacherById } from "./auth.server.ts"
+import { runBoardCommand } from "./board-ops.server.ts"
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"
 import { examsOf, readExam } from "./exam-ops.server.ts"
 import { mcpCaller, toolRegistrar, type McpCaller } from "./mcp-tools.server.ts"
-import { entryEmails } from "./roster-ops.server.ts"
+import {
+  addEntry,
+  applyImport,
+  deleteEntry,
+  entryEmails,
+  previewImport,
+  removeRoster,
+  setEntryEmail,
+} from "./roster-ops.server.ts"
+import { addWindow, editSlot, removeFreeSlotsOfDay, removeSlot } from "./slot-ops.server.ts"
 
 const INSTRUCTIONS = [
   "Terminus: zapisy studentów na zaliczenia.",
@@ -78,6 +107,149 @@ export const mcpHandler = createMcpHandler(
         const emails = await entryEmails(examId, user.id)
         return emails && { ok: true, emails }
       },
+    )
+
+    tool(
+      "board_command",
+      {
+        title: "Zmiana na tablicy",
+        description:
+          "Jedno polecenie tablicy zapisów: przeniesienie, zamiana osób lub slotów, zmiana nazwiska, wypisanie lub zapisanie zespołu, odpowiedzi, oceny. Zwraca `inverse` — podane z powrotem do `board_command` cofa tę zmianę.",
+        inputSchema: boardInputSchema,
+        outputSchema: boardCommandOutput,
+        annotations: {},
+      },
+      ({ examId, command }) => runBoardCommand(examId, user.id, command),
+    )
+
+    tool(
+      "add_slot_window",
+      {
+        title: "Dodanie slotów",
+        description:
+          "Tnie okno `from`–`to` dnia `date` (czas polski) na sloty po `minutes` minut dla listy `rosterId`. Odmawia, gdy okno nachodzi na istniejący slot.",
+        inputSchema: windowSchema,
+        outputSchema: slotWindowOutput,
+        annotations: {},
+      },
+      (data) => addWindow(data.examId, user.id, data),
+    )
+
+    tool(
+      "update_slot",
+      {
+        title: "Zmiana slotu",
+        description:
+          "Ustawia dzień, godziny (czas polski) i listę slotu. Zapisy w slocie zostają. Odmawia, gdy slot nachodzi na inny.",
+        inputSchema: updateSlotSchema,
+        outputSchema: doneOutput,
+        annotations: { idempotentHint: true },
+      },
+      (data) => editSlot(data.examId, user.id, data),
+    )
+
+    tool(
+      "delete_slot",
+      {
+        title: "Usunięcie slotu",
+        description:
+          "Usuwa slot. Slotu z zapisami nie usunie (`SLOT_HAS_ENROLLMENTS`): najpierw przenieś albo wypisz zespół. Zanim wywołasz, powiedz prowadzącemu, który slot zniknie (dzień i godziny).",
+        inputSchema: slotRefSchema,
+        outputSchema: doneOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, slotId }) => removeSlot(examId, user.id, slotId),
+    )
+
+    tool(
+      "delete_free_slots_of_day",
+      {
+        title: "Usunięcie wolnych slotów dnia",
+        description:
+          "Dzień `day` (czas polski): znikną wszystkie sloty bez zapisów. Sloty z zapisami zostaną. Zanim wywołasz, powiedz to prowadzącemu.",
+        inputSchema: dayRefSchema,
+        outputSchema: freeSlotsDeletedOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, day }) => removeFreeSlotsOfDay(examId, user.id, day),
+    )
+
+    tool(
+      "preview_roster_import",
+      {
+        title: "Podgląd importu listy",
+        description:
+          "Co zrobi import pliku CSV (kolumny `indeks;imie;nazwisko`, opcjonalnie `email`, `skreslony`, `rezygnacja`) do listy o tej nazwie: kto dojdzie, komu zmieni się nazwisko, kto zniknie. Nic nie zapisuje. Pokaż podgląd prowadzącemu, a po jego zgodzie wywołaj `apply_roster_import` z tymi samymi danymi i z numerami indeksów z `withdrawnEnrolled`.",
+        inputSchema: rosterImportSchema,
+        outputSchema: rosterImportPreviewOutput,
+        annotations: READ,
+      },
+      ({ examId, rosterName, csv }) => previewImport(examId, user.id, rosterName, csv),
+    )
+
+    tool(
+      "apply_roster_import",
+      {
+        title: "Import listy",
+        description:
+          "Zapisuje import pliku CSV do listy, zatwierdzony w `preview_roster_import`. `withdrawnEnrolled` = numery indeksów z `withdrawnEnrolled` podglądu; gdy zapisy zmieniły się od podglądu, odmawia (`IMPORT_PREVIEW_STALE`) — zrób podgląd jeszcze raz. Skreśleni znikną z listy; skreśleni z zapisem znikną z listy, a ich zapis zostanie usunięty. Zanim wywołasz, powiedz to prowadzącemu.",
+        inputSchema: rosterApplySchema,
+        outputSchema: doneOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, rosterName, csv, withdrawnEnrolled }) =>
+        applyImport(examId, user.id, rosterName, csv, withdrawnEnrolled),
+    )
+
+    tool(
+      "add_roster_entry",
+      {
+        title: "Dodanie osoby do listy",
+        description:
+          "Dopisuje osobę do listy `rosterId`. Pusty `rosterId` tylko, gdy zaliczenie nie ma jeszcze list — powstanie lista „lista”. Pusty `email` = adres domyślny z numeru indeksu.",
+        inputSchema: addEntrySchema,
+        outputSchema: doneOutput,
+        annotations: {},
+      },
+      (data) => addEntry(data.examId, user.id, data),
+    )
+
+    tool(
+      "delete_roster_entry",
+      {
+        title: "Usunięcie osoby z listy",
+        description:
+          "Usuwa osobę z listy indeksów. Osoby z zapisem nie usunie (`ENTRY_HAS_ENROLLMENT`): najpierw przenieś albo usuń zapis.",
+        inputSchema: entryRefSchema,
+        outputSchema: doneOutput,
+        annotations: {},
+      },
+      ({ examId, studentNumber }) => deleteEntry(examId, user.id, studentNumber),
+    )
+
+    tool(
+      "delete_roster",
+      {
+        title: "Usunięcie listy",
+        description:
+          "Usuwa listę indeksów. Znikną jej osoby i sloty. Jeśli ktoś z tej listy ma zapis, lista zostanie — najpierw przenieś albo usuń zapisy. Zanim wywołasz, powiedz prowadzącemu, co zniknie.",
+        inputSchema: rosterRefSchema,
+        outputSchema: doneOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, rosterId }) => removeRoster(examId, user.id, rosterId),
+    )
+
+    tool(
+      "set_entry_email",
+      {
+        title: "Adres e-mail osoby",
+        description: "Ustawia adres e-mail osoby z listy. Pusty = adres domyślny z numeru indeksu.",
+        inputSchema: entryEmailSchema,
+        outputSchema: doneOutput,
+        annotations: { idempotentHint: true },
+      },
+      ({ examId, studentNumber, email }) => setEntryEmail(examId, user.id, studentNumber, email),
     )
 
     return server
