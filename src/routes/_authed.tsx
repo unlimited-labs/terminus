@@ -60,6 +60,7 @@ function AuthedLayout() {
                 <DropdownMenuItem render={<Link to="/weryfikacja-dwuetapowa" />}>
                   Weryfikacja dwuetapowa
                 </DropdownMenuItem>
+                <DropdownMenuItem render={<Link to="/agenci-ai" />}>Agenci AI</DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={logout}>Wyloguj</DropdownMenuItem>

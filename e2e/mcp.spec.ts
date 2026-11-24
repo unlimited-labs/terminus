@@ -101,7 +101,7 @@ test("agent AI: logowanie z TOTP, zgoda, token, narzędzia MCP, odłączenie odc
     inverse: { kind: "rename", studentNumber: "730001", firstName: "Ala", lastName: "Agent" },
   })
 
-  await page.goto("/weryfikacja-dwuetapowa")
+  await page.goto("/agenci-ai")
   const agents = page.getByRole("list", { name: "Podłączeni agenci" })
   const row = agents.getByRole("listitem").filter({ hasText: name })
   await (await hydrated(row.getByRole("button", { name: "Odłącz" }))).click()

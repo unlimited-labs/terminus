@@ -18,6 +18,7 @@ import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
 import { Route as ZgodaRouteImport } from './routes/zgoda'
 import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
+import { Route as AuthedAgenciAiRouteImport } from './routes/_authed/agenci-ai'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
 import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
 import { Route as AuthedWeryfikacjaDwuetapowaRouteImport } from './routes/_authed/weryfikacja-dwuetapowa'
@@ -69,6 +70,11 @@ const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedAgenciAiRoute = AuthedAgenciAiRouteImport.update({
+  id: '/agenci-ai',
+  path: '/agenci-ai',
   getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedHasloRoute = AuthedHasloRouteImport.update({
@@ -124,6 +130,7 @@ export interface FileRoutesByFullPath {
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/agenci-ai': typeof AuthedAgenciAiRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/agenci-ai': typeof AuthedAgenciAiRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -161,6 +169,7 @@ export interface FileRoutesById {
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
   '/.well-known/$': typeof DotwellKnownSplatRoute
+  '/_authed/agenci-ai': typeof AuthedAgenciAiRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
   '/_authed/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -182,6 +191,7 @@ export interface FileRouteTypes {
     | '/nowe-haslo'
     | '/zgoda'
     | '/.well-known/$'
+    | '/agenci-ai'
     | '/haslo'
     | '/konta'
     | '/weryfikacja-dwuetapowa'
@@ -199,6 +209,7 @@ export interface FileRouteTypes {
     | '/nowe-haslo'
     | '/zgoda'
     | '/.well-known/$'
+    | '/agenci-ai'
     | '/haslo'
     | '/konta'
     | '/weryfikacja-dwuetapowa'
@@ -218,6 +229,7 @@ export interface FileRouteTypes {
     | '/nowe-haslo'
     | '/zgoda'
     | '/.well-known/$'
+    | '/_authed/agenci-ai'
     | '/_authed/haslo'
     | '/_authed/konta'
     | '/_authed/weryfikacja-dwuetapowa'
@@ -308,6 +320,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedIndexRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/agenci-ai': {
+      id: '/_authed/agenci-ai'
+      path: '/agenci-ai'
+      fullPath: '/agenci-ai'
+      preLoaderRoute: typeof AuthedAgenciAiRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/haslo': {
       id: '/_authed/haslo'
       path: '/haslo'
@@ -368,6 +387,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthedRouteChildren {
+  AuthedAgenciAiRoute: typeof AuthedAgenciAiRoute
   AuthedHasloRoute: typeof AuthedHasloRoute
   AuthedKontaRoute: typeof AuthedKontaRoute
   AuthedWeryfikacjaDwuetapowaRoute: typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -377,6 +397,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedAgenciAiRoute: AuthedAgenciAiRoute,
   AuthedHasloRoute: AuthedHasloRoute,
   AuthedKontaRoute: AuthedKontaRoute,
   AuthedWeryfikacjaDwuetapowaRoute: AuthedWeryfikacjaDwuetapowaRoute,
