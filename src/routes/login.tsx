@@ -11,15 +11,18 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authFailure, authResult } from "@/lib/auth-client"
-import { teacherAuthClient } from "@/lib/teacher-auth-client"
+import { oauthAuthClient } from "@/lib/teacher-auth-client"
 import { loginSchema, loginSearchSchema } from "@/schemas/auth"
 import { mailAvailable } from "@/server/password-link"
 import { sessionQuery } from "@/server/session"
 
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
-  beforeLoad: async ({ context }) => {
-    if (await context.queryClient.query(sessionQuery())) throw redirect({ to: "/" })
+  beforeLoad: async ({ context, location }) => {
+    // Podłączanie agenta (podpisany adres z `sig`) może wymagać ponownego logowania (`prompt=login`).
+    const oauth = "sig" in location.search
+    if (!oauth && (await context.queryClient.query(sessionQuery()))) throw redirect({ to: "/" })
+    return { oauth }
   },
   loader: () => mailAvailable(),
   // Konfiguracja poczty nie zmienia się bez restartu serwera.
@@ -31,9 +34,11 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const { redirect: target, haslo } = Route.useSearch()
   const navigate = useNavigate()
-  const { queryClient } = Route.useRouteContext()
+  const { queryClient, oauth } = Route.useRouteContext()
   const [step, setStep] = useState<"password" | "code">("password")
   const enter = async () => {
+    // Przy podłączaniu agenta serwer odsyła dalej (`/konfiguracja-2fa`, `/zgoda` albo do agenta).
+    if (oauth) return
     // Po wygaśnięciu sesji w tej karcie może się zalogować ktoś inny; klucze zapytań nie zawierają użytkownika.
     queryClient.clear()
     await navigate({ href: target ?? "/" })
@@ -62,7 +67,7 @@ function PasswordStep({
     ...submitThenChange(loginSchema),
     onSubmit: async ({ value }) => {
       const { data, failure } = await authResult(
-        teacherAuthClient.signIn.email(loginSchema.parse(value)),
+        oauthAuthClient.signIn.email(loginSchema.parse(value)),
       )
       setError(failure)
       if (!data) return
@@ -72,7 +77,7 @@ function PasswordStep({
   })
   const signInWithPasskey = () =>
     startPasskey(async () => {
-      const failure = await authFailure(teacherAuthClient.signIn.passkey())
+      const failure = await authFailure(oauthAuthClient.signIn.passkey())
       setError(failure)
       if (!failure) await onDone()
     })
@@ -141,8 +146,8 @@ function CodeStep({ onDone, onRestart }: { onDone: () => Promise<void>; onRestar
     startVerify(async () => {
       const failure = await authFailure(
         backup
-          ? teacherAuthClient.twoFactor.verifyBackupCode({ code: value.trim(), trustDevice })
-          : teacherAuthClient.twoFactor.verifyTotp({ code: value, trustDevice }),
+          ? oauthAuthClient.twoFactor.verifyBackupCode({ code: value.trim(), trustDevice })
+          : oauthAuthClient.twoFactor.verifyTotp({ code: value, trustDevice }),
       )
       setError(failure)
       if (failure) setCode("")
