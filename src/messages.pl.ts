@@ -340,7 +340,7 @@ export const GRADING = {
   picker: "Ocena",
   comment: "Komentarz (opcjonalny)",
   commentHint:
-    "Komentarz widzą wszyscy prowadzący tego zaliczenia. Nie wpisuj danych o zdrowiu ani innych danych wrażliwych.",
+    "Komentarz widzą wszyscy prowadzący tego zaliczenia.",
   notGraded: "nieocenione",
   noGrade: "bez stopnia",
   previewGrade: (name: string) => `, ocena ${name}`,
