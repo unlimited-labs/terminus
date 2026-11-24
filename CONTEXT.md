@@ -102,6 +102,14 @@ _Avoid_: Passkey (w interfejsie), token sprzętowy
 Wyłączenie logowania prowadzącego bez usuwania jego zaliczeń; kont się nie usuwa.
 _Avoid_: Usunięcie konta
 
+**Agent AI**:
+Program AI (np. Claude, ChatGPT), który za zgodą prowadzącego działa w jego imieniu na jego zaliczeniach.
+_Avoid_: Klient MCP, bot, integracja
+
+**Podłączenie agenta**:
+Zgoda prowadzącego dla jednego agenta AI; odłączenie ją cofa, a wszystko, co wylogowuje prowadzącego ze wszystkich sesji, także.
+_Avoid_: Integracja, autoryzacja
+
 **Student**:
 Osoba z listy zaliczenia, zapisuje się numerem albumu; przy opcji logowania mailem potwierdza się linkiem. W bazie wiersz z rolą `student`, nie konto prowadzącego.
 _Avoid_: Użytkownik
