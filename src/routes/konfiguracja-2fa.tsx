@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Notice } from "@/components/notice"
 import { AddPasskeyButton, TotpSetup } from "@/components/two-factor"
@@ -24,6 +24,26 @@ export const Route = createFileRoute("/konfiguracja-2fa")({
   component: SetupTwoFactor,
 })
 
+const continueConnecting = () => authWithToast(oauthAuthClient.oauth2.continue({ postLogin: true }))
+
+/** Konto ma już 2FA (np. odświeżona strona): od razu dalej, raz; „Dalej” zostaje na wypadek błędu. */
+function AlreadySecured() {
+  const continued = useRef(false)
+  useEffect(() => {
+    if (continued.current) return
+    continued.current = true
+    void continueConnecting()
+  }, [])
+  return (
+    <section className="grid max-w-lg gap-4">
+      <Notice tone="info">Konto jest już zabezpieczone.</Notice>
+      <Button className="justify-self-start" onClick={continueConnecting}>
+        Dalej
+      </Button>
+    </section>
+  )
+}
+
 function SetupTwoFactor() {
   const logout = useLogout()
   const queryClient = useQueryClient()
@@ -33,8 +53,7 @@ function SetupTwoFactor() {
   const [passkeyAdded, setPasskeyAdded] = useState(false)
   const finish = async () => {
     // Serwer sprawdza 2FA jeszcze raz i odsyła na `/zgoda` albo do agenta.
-    if (oauth)
-      return void (await authWithToast(oauthAuthClient.oauth2.continue({ postLogin: true })))
+    if (oauth) return void (await continueConnecting())
     await queryClient.invalidateQueries({ queryKey: sessionQuery().queryKey })
     await navigate({ to: "/" })
   }
@@ -53,12 +72,7 @@ function SetupTwoFactor() {
         </p>
       </div>
       {ready ? (
-        <section className="grid max-w-lg gap-4">
-          <Notice tone="info">Konto jest już zabezpieczone.</Notice>
-          <Button className="justify-self-start" onClick={finish}>
-            Dalej
-          </Button>
-        </section>
+        <AlreadySecured />
       ) : (
         <section className="grid max-w-lg gap-4">
           {passkeyAdded ? (

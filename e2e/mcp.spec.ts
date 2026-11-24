@@ -40,6 +40,9 @@ test("agent AI: logowanie z TOTP, zgoda, token, narzędzia MCP, odłączenie odc
   await page.getByLabel("Kod z aplikacji").fill(await totpCode(adminTotp()))
 
   await page.waitForURL(/\/zgoda\?/)
+  // Konto z gotowym 2FA na `/konfiguracja-2fa` (np. odświeżona strona) idzie dalej samo, bez „Dalej”.
+  await page.goto(`/konfiguracja-2fa${new URL(page.url()).search}`)
+  await page.waitForURL(/\/zgoda\?/)
   await expect(page.getByText(`${name} będzie działać w Twoim imieniu`)).toBeVisible()
   await (await hydrated(page.getByRole("button", { name: "Podłącz" }))).click()
   await page.waitForURL((url) => url.href.startsWith(redirectUri))
