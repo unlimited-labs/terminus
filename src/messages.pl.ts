@@ -224,7 +224,7 @@ export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 export const AUTH_CODE = {
   PASSKEY_ONLY: "To konto loguje się kluczem dostępu. Użyj przycisku „Zaloguj kluczem dostępu”.",
   TEACHERS_ONLY: "Ta funkcja jest tylko dla prowadzących.",
-  MCP_TEACHERS_ONLY: "MCP jest tylko dla prowadzących.",
+  MCP_TEACHERS_ONLY: "Agenci AI są tylko dla prowadzących.",
 }
 
 const AUTH_ERROR: Record<string, string> = {

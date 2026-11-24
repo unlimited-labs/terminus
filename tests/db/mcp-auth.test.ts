@@ -42,7 +42,9 @@ const tokenClaims = async (userId: string) => {
 
 test("access token MCP: wydany prowadzącemu z 2FA, odmowa dla studenta, zablokowanego i konta bez 2FA", async () => {
   expect(await tokenClaims((await account()).id)).toEqual({})
-  await expect(tokenClaims(await student())).rejects.toThrow("MCP jest tylko dla prowadzących.")
-  await expect(tokenClaims(await banned())).rejects.toThrow("MCP jest tylko dla prowadzących.")
-  await expect(tokenClaims(await without2fa())).rejects.toThrow("MCP jest tylko dla prowadzących.")
+  await expect(tokenClaims(await student())).rejects.toThrow("Agenci AI są tylko dla prowadzących.")
+  await expect(tokenClaims(await banned())).rejects.toThrow("Agenci AI są tylko dla prowadzących.")
+  await expect(tokenClaims(await without2fa())).rejects.toThrow(
+    "Agenci AI są tylko dla prowadzących.",
+  )
 })
