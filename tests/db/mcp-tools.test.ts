@@ -9,6 +9,8 @@ import {
   emptyOutput,
   examCsvOutput,
   examDetailOutput,
+  freeSlotsDeletedOutput,
+  slotWindowOutput,
 } from "@/schemas/mcp-output"
 import { db } from "@/server/db.server"
 import { mcpHandler } from "@/server/mcp.server"
@@ -339,4 +341,91 @@ test("export_exam_csv: plik CSV w wyniku; cudze → NOT_FOUND", async () => {
 
   const other = await createExam({ rosters: {} })
   expect(await callTool(other.teacherId, "export_exam_csv", { examId })).toMatchObject(notFound)
+})
+
+const ok = { isError: false, structuredContent: {} }
+
+test("sloty: add_slot_window, update_slot, delete_free_slots_of_day — wyniki zgodne z outputSchema", async () => {
+  const { examId, teacherId, rosterIds } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["1"])
+  const rosterId = rosterIds.g1!
+  const slotsOn = async (day: string) =>
+    examDetailOutput
+      .parse((await callTool(teacherId, "get_exam", { examId })).structuredContent)
+      .slots.filter((s) => s.startsAt.startsWith(day))
+
+  const added = await callTool(teacherId, "add_slot_window", {
+    examId,
+    rosterId,
+    date: "2030-01-03",
+    from: "10:00",
+    to: "11:00",
+    minutes: 20,
+  })
+  expect(added.isError).toBe(false)
+  expect(slotWindowOutput.parse(added.structuredContent)).toEqual({ count: 3 })
+
+  const [first] = await slotsOn("2030-01-03")
+  expect(
+    await callTool(teacherId, "update_slot", {
+      examId,
+      slotId: first!.id,
+      rosterId,
+      date: "2030-01-03",
+      from: "12:00",
+      to: "12:30",
+    }),
+  ).toMatchObject(ok)
+  expect((await slotsOn("2030-01-03")).map((s) => s.startsAt)).toContain(
+    "2030-01-03T12:00:00+01:00",
+  )
+
+  const freed = await callTool(teacherId, "delete_free_slots_of_day", { examId, day: "2030-01-03" })
+  expect(freed.isError).toBe(false)
+  expect(freeSlotsDeletedOutput.parse(freed.structuredContent)).toEqual({ deleted: 3, skipped: 0 })
+  const kept = await callTool(teacherId, "delete_free_slots_of_day", { examId, day: "2030-01-02" })
+  expect(freeSlotsDeletedOutput.parse(kept.structuredContent)).toEqual({ deleted: 0, skipped: 1 })
+})
+
+test("listy: add_roster_entry, set_entry_email, delete_roster_entry, delete_roster — wyniki zgodne z outputSchema", async () => {
+  const { examId, teacherId, rosterIds } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [] } },
+  })
+  const rosterId = rosterIds.g1!
+  const exam = async () =>
+    examDetailOutput.parse((await callTool(teacherId, "get_exam", { examId })).structuredContent)
+
+  expect(
+    await callTool(teacherId, "add_roster_entry", {
+      examId,
+      rosterId,
+      studentNumber: "2",
+      firstName: "Ala",
+      lastName: "Nowak",
+      email: "",
+    }),
+  ).toMatchObject(ok)
+  expect((await exam()).people).toContainEqual(
+    expect.objectContaining({ studentNumber: "2", firstName: "Ala", lastName: "Nowak" }),
+  )
+
+  expect(
+    await callTool(teacherId, "set_entry_email", {
+      examId,
+      studentNumber: "2",
+      email: "ala@example.com",
+    }),
+  ).toMatchObject(ok)
+  const { emails } = (await callTool(teacherId, "list_entry_emails", { examId })).structuredContent
+  expect(emails["2"]).toBe("ala@example.com")
+
+  expect(
+    await callTool(teacherId, "delete_roster_entry", { examId, studentNumber: "2" }),
+  ).toMatchObject(ok)
+  expect((await exam()).people.map((p) => p.studentNumber)).toEqual(["1"])
+
+  expect(await callTool(teacherId, "delete_roster", { examId, rosterId })).toMatchObject(ok)
+  expect((await exam()).rosters).toEqual([])
 })

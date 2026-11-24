@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto"
 import type { mcp } from "@better-auth/mcp"
 import { expect, test } from "vitest"
 
-import { auth, teacherById } from "@/server/auth.server"
+import { auth, MCP_ISSUER, teacherById } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 
 import { account } from "./sessions"
@@ -46,5 +46,19 @@ test("access token MCP: wydany prowadzącemu z 2FA, odmowa dla studenta, zabloko
   await expect(tokenClaims(await banned())).rejects.toThrow("Agenci AI są tylko dla prowadzących.")
   await expect(tokenClaims(await without2fa())).rejects.toThrow(
     "Agenci AI są tylko dla prowadzących.",
+  )
+})
+
+test("metadane serwera autoryzacji: klient publiczny przez CIMD, bez rejestracji dynamicznej", async () => {
+  const res = await auth.handler(
+    new Request(new URL("/.well-known/oauth-authorization-server", MCP_ISSUER)),
+  )
+  expect(res.status).toBe(200)
+  const metadata = await res.json()
+  expect(metadata).toMatchObject({ client_id_metadata_document_supported: true })
+  expect(metadata.token_endpoint_auth_methods_supported).toContain("none")
+  expect(metadata).not.toHaveProperty("registration_endpoint")
+  expect(new Set(metadata.grant_types_supported)).toEqual(
+    new Set(["authorization_code", "refresh_token"]),
   )
 })
