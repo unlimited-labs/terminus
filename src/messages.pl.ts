@@ -221,6 +221,7 @@ export const tooLong = (max: number) => `Najwyżej ${max} znaków.`
 export const AUTH_CODE = {
   PASSKEY_ONLY: "To konto loguje się kluczem dostępu. Użyj przycisku „Zaloguj kluczem dostępu”.",
   TEACHERS_ONLY: "Ta funkcja jest tylko dla prowadzących.",
+  MCP_TEACHERS_ONLY: "MCP jest tylko dla prowadzących.",
 }
 
 const AUTH_ERROR: Record<string, string> = {
@@ -339,8 +340,7 @@ export const GRADING = {
   chipLabel: (name: string) => `Ocena: ${name}`,
   picker: "Ocena",
   comment: "Komentarz (opcjonalny)",
-  commentHint:
-    "Komentarz widzą wszyscy prowadzący tego zaliczenia.",
+  commentHint: "Komentarz widzą wszyscy prowadzący tego zaliczenia.",
   notGraded: "nieocenione",
   noGrade: "bez stopnia",
   previewGrade: (name: string) => `, ocena ${name}`,

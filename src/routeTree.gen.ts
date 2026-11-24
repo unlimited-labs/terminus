@@ -14,6 +14,7 @@ import { Route as Konfiguracja2faRouteImport } from './routes/konfiguracja-2fa'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as NiePamietamHaslaRouteImport } from './routes/nie-pamietam-hasla'
 import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
+import { Route as DotwellKnownSplatRouteImport } from './routes/[.]well-known/$'
 import { Route as AuthedIndexRouteImport } from './routes/_authed/index'
 import { Route as AuthedHasloRouteImport } from './routes/_authed/haslo'
 import { Route as AuthedKontaRouteImport } from './routes/_authed/konta'
@@ -46,6 +47,11 @@ const NiePamietamHaslaRoute = NiePamietamHaslaRouteImport.update({
 const NoweHasloRoute = NoweHasloRouteImport.update({
   id: '/nowe-haslo',
   path: '/nowe-haslo',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DotwellKnownSplatRoute = DotwellKnownSplatRouteImport.update({
+  id: '/.well-known/$',
+  path: '/.well-known/$',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedIndexRoute = AuthedIndexRouteImport.update({
@@ -103,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/haslo': typeof AuthedHasloRoute
   '/konta': typeof AuthedKontaRoute
   '/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -134,6 +142,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
+  '/.well-known/$': typeof DotwellKnownSplatRoute
   '/_authed/haslo': typeof AuthedHasloRoute
   '/_authed/konta': typeof AuthedKontaRoute
   '/_authed/weryfikacja-dwuetapowa': typeof AuthedWeryfikacjaDwuetapowaRoute
@@ -152,6 +161,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/.well-known/$'
     | '/haslo'
     | '/konta'
     | '/weryfikacja-dwuetapowa'
@@ -166,6 +176,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/.well-known/$'
     | '/haslo'
     | '/konta'
     | '/weryfikacja-dwuetapowa'
@@ -182,6 +193,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
+    | '/.well-known/$'
     | '/_authed/haslo'
     | '/_authed/konta'
     | '/_authed/weryfikacja-dwuetapowa'
@@ -199,6 +211,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NiePamietamHaslaRoute: typeof NiePamietamHaslaRoute
   NoweHasloRoute: typeof NoweHasloRoute
+  DotwellKnownSplatRoute: typeof DotwellKnownSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ZExamIdEnterRoute: typeof ZExamIdEnterRoute
   ZExamIdIndexRoute: typeof ZExamIdIndexRoute
@@ -239,6 +252,13 @@ declare module '@tanstack/react-router' {
       path: '/nowe-haslo'
       fullPath: '/nowe-haslo'
       preLoaderRoute: typeof NoweHasloRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/.well-known/$': {
+      id: '/.well-known/$'
+      path: '/.well-known/$'
+      fullPath: '/.well-known/$'
+      preLoaderRoute: typeof DotwellKnownSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/': {
@@ -334,6 +354,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NiePamietamHaslaRoute: NiePamietamHaslaRoute,
   NoweHasloRoute: NoweHasloRoute,
+  DotwellKnownSplatRoute: DotwellKnownSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ZExamIdEnterRoute: ZExamIdEnterRoute,
   ZExamIdIndexRoute: ZExamIdIndexRoute,

@@ -1,10 +1,13 @@
+import { cimd } from "@better-auth/cimd"
+import { fetchClientMetadataResource } from "@better-auth/cimd/node"
+import { mcp } from "@better-auth/mcp"
 import { passkey } from "@better-auth/passkey"
 import { prismaAdapter } from "@better-auth/prisma-adapter"
 import { betterAuth } from "better-auth"
 import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/api"
 import { consola } from "consola"
 import { setSessionCookie } from "better-auth/cookies"
-import { admin, magicLink, twoFactor } from "better-auth/plugins"
+import { admin, jwt, magicLink, twoFactor } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 
 import { LOGIN_LINK_MINUTES } from "../domain/limits.ts"
@@ -17,6 +20,8 @@ import { STUDENT_ROLE } from "./roles.ts"
 
 const adminPlugin = admin()
 const APP_URL = new URL(env.APP_PUBLIC_URL)
+/** Adres serwera MCP; tokeny agentów są wydawane tylko na niego (`aud`). */
+const MCP_RESOURCE = `${APP_URL.origin}/mcp`
 
 /** Typy hooków i wtyczek nie znają pola `role` z wtyczki admin. */
 const roleOf = (user: object | null | undefined) =>
@@ -108,6 +113,8 @@ export const auth = betterAuth({
     // Usuwanie sposobów robi `factor-ops.server.ts` (blokada wiersza: nie da się usunąć ostatniego).
     "/passkey/delete-passkey",
     "/two-factor/disable",
+    // JWT sesji nie wydajemy; wtyczka `jwt` jest tylko po to, by `mcp()` podpisywał access tokeny.
+    "/token",
   ],
   databaseHooks: {
     user: {
@@ -156,6 +163,36 @@ export const auth = betterAuth({
       // Logowanie przyciskiem bez e-maila wymaga klucza zapisanego na urządzeniu; sam klucz bez PIN-u nie wystarcza.
       authenticatorSelection: { residentKey: "required", userVerification: "required" },
     }),
+    jwt({ disableSettingJwtHeader: true, jwt: { issuer: APP_URL.origin } }),
+    mcp({
+      loginPage: "/login",
+      consentPage: "/zgoda",
+      resource: MCP_RESOURCE,
+      // Prisma nie zapisze `allowedScopes: null` („bez ograniczeń”), więc jawnie domyślne zakresy.
+      resources: [
+        {
+          identifier: MCP_RESOURCE,
+          allowedScopes: ["openid", "profile", "email", "offline_access"],
+        },
+      ],
+      grantTypes: ["authorization_code", "refresh_token"],
+      // Klientów rejestruje tylko CIMD; domyślnie każdy zalogowany (także student) mógłby ich zakładać.
+      clientPrivileges: () => false,
+      postLogin: {
+        page: "/konfiguracja-2fa",
+        consentReferenceId: () => undefined,
+        shouldRedirect: async ({ user }) => {
+          if (roleOf(user) === STUDENT_ROLE) throw refuse("MCP_TEACHERS_ONLY")
+          return !(totpOn(user) || (await hasPasskey(user.id)))
+        },
+      },
+      // Przy wydaniu i odświeżeniu tokenu: konto mogło zostać zablokowane albo stracić 2FA.
+      customAccessTokenClaims: async ({ user }) => {
+        if (!user || !(await teacherById(user.id))) throw refuse("MCP_TEACHERS_ONLY")
+        return {}
+      },
+    }),
+    cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
     teachersOnlyFactors,
     studentSession,
     tanstackStartCookies(),
@@ -165,9 +202,20 @@ export const auth = betterAuth({
 /** Prowadzący z sesją, także bez skonfigurowanego 2FA (ekran konfiguracji); zablokowany i student = brak. */
 export async function signedInTeacher(headers: Headers) {
   const session = await auth.api.getSession({ headers })
-  if (!session || session.user.banned || session.user.role === STUDENT_ROLE) return null
-  const { id, name, email, role } = session.user
-  const totp = totpOn(session.user)
+  return session ? teacherOf(session.user) : null
+}
+
+async function teacherOf(user: {
+  id: string
+  name: string
+  email: string
+  role?: string | null
+  banned?: boolean | null
+  twoFactorEnabled?: boolean | null
+}) {
+  if (user.banned || user.role === STUDENT_ROLE) return null
+  const { id, name, email, role } = user
+  const totp = totpOn(user)
   return {
     id,
     name,
@@ -182,6 +230,13 @@ export async function signedInTeacher(headers: Headers) {
 export async function sessionUser(headers: Headers) {
   const user = await signedInTeacher(headers)
   return user?.twoFactorReady ? user : null
+}
+
+/** Jak `sessionUser`, ale konto z `sub` access tokenu MCP zamiast sesji przeglądarki. */
+export async function teacherById(id: string) {
+  const user = await db.user.findUnique({ where: { id } })
+  const teacher = user && (await teacherOf(user))
+  return teacher?.twoFactorReady ? teacher : null
 }
 
 /** Reset 2FA (panel kont i `pnpm reset-2fa`): konto wraca do stanu „bez 2FA”, hasło zostaje, sesje wylogowane. */
