@@ -4,13 +4,37 @@ import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
 import { APIError } from "better-auth/api"
 import { z } from "zod"
 
-import { examIdSchema } from "../schemas/exam.ts"
-import { entryEmailsOutput, examDetailOutput, listExamsOutput } from "../schemas/mcp-output.ts"
+import {
+  addTeacherSchema,
+  deleteExamSchema,
+  duplicateExamSchema,
+  examFormSchema,
+  examIdSchema,
+  removeTeacherSchema,
+} from "../schemas/exam.ts"
+import {
+  createExamOutput,
+  emptyOutput,
+  examCsvOutput,
+  entryEmailsOutput,
+  examDetailOutput,
+  listExamsOutput,
+} from "../schemas/mcp-output.ts"
 
 import { auth, MCP_RESOURCE, teacherById } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"
-import { examsOf, readExam } from "./exam-ops.server.ts"
+import {
+  addTeacher,
+  copyExam,
+  examCsv,
+  examsOf,
+  insertExam,
+  readExam,
+  removeExam,
+  removeTeacher,
+  updateExamSettings,
+} from "./exam-ops.server.ts"
 import { mcpCaller, toolRegistrar, type McpCaller } from "./mcp-tools.server.ts"
 import { entryEmails } from "./roster-ops.server.ts"
 
@@ -63,6 +87,95 @@ export const mcpHandler = createMcpHandler(
         const exam = await readExam(examId, user.id)
         return exam && { ok: true, ...exam, link: new URL(`/z/${examId}`, env.APP_PUBLIC_URL).href }
       },
+    )
+
+    tool(
+      "create_exam",
+      {
+        title: "Nowe zaliczenie",
+        description:
+          "Tworzy zaliczenie z ustawieniami jak w formularzu; jestem jego prowadzącym. Start zapisów: data i godzina po polsku albo oba pola puste.",
+        inputSchema: examFormSchema,
+        outputSchema: createExamOutput,
+        annotations: {},
+      },
+      (data) => insertExam(user.id, data),
+    )
+
+    tool(
+      "update_exam",
+      {
+        title: "Ustawienia zaliczenia",
+        description:
+          "Zmienia wszystkie ustawienia zaliczenia naraz (podaj pełny formularz, bieżące wartości weź z `get_exam`).",
+        inputSchema: examFormSchema.and(examIdSchema),
+        outputSchema: emptyOutput,
+        annotations: { idempotentHint: true },
+      },
+      ({ examId, ...data }) => updateExamSettings(examId, user.id, data),
+    )
+
+    tool(
+      "delete_exam",
+      {
+        title: "Usunięcie zaliczenia",
+        description:
+          "Usuwa zaliczenie. Znikną listy indeksów, sloty i wszystkie zapisy. Powiedz to prowadzącemu przed wywołaniem. `confirmName` = dokładna nazwa zaliczenia.",
+        inputSchema: deleteExamSchema,
+        outputSchema: emptyOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, confirmName }) => removeExam(examId, { teacher: user.id }, confirmName),
+    )
+
+    tool(
+      "copy_exam",
+      {
+        title: "Kopia zaliczenia",
+        description:
+          "Nowe zaliczenie z ustawieniami tego (np. poprawka), opcjonalnie z listami indeksów; bez slotów i zapisów.",
+        inputSchema: duplicateExamSchema,
+        outputSchema: createExamOutput,
+        annotations: {},
+      },
+      ({ examId, copyRosters }) => copyExam(examId, user.id, copyRosters),
+    )
+
+    tool(
+      "add_exam_teacher",
+      {
+        title: "Dodanie prowadzącego",
+        description: "Dodaje prowadzącego do zaliczenia po adresie e-mail jego konta.",
+        inputSchema: addTeacherSchema,
+        outputSchema: emptyOutput,
+        annotations: {},
+      },
+      ({ examId, email }) => addTeacher(examId, user.id, email),
+    )
+
+    tool(
+      "remove_exam_teacher",
+      {
+        title: "Usunięcie prowadzącego",
+        description:
+          "Usuwa prowadzącego z zaliczenia (identyfikator z `get_exam`). Usunięcie siebie: stracisz do niego dostęp, przywrócić może cię inny prowadzący. Powiedz to prowadzącemu przed wywołaniem.",
+        inputSchema: removeTeacherSchema,
+        outputSchema: emptyOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, teacherId }) => removeTeacher(examId, user.id, teacherId),
+    )
+
+    tool(
+      "export_exam_csv",
+      {
+        title: "Eksport CSV",
+        description: "Lista osób z zapisami i ocenami jako plik CSV (nazwa pliku i treść).",
+        inputSchema: examIdSchema,
+        outputSchema: examCsvOutput,
+        annotations: READ,
+      },
+      ({ examId }) => examCsv(examId, user.id),
     )
 
     tool(

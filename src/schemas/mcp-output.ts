@@ -70,6 +70,12 @@ export const examDetailOutput = z.object({
   link: z.url().describe("Strona zapisów dla studentów"),
 })
 
+export const emptyOutput = z.object({})
+
+export const createExamOutput = z.object({ examId: z.string() })
+
+export const examCsvOutput = z.object({ fileName: z.string(), csv: z.string() })
+
 export const entryEmailsOutput = z.object({
   emails: z.record(z.string(), z.string()).describe("Numer indeksu → adres e-mail"),
 })

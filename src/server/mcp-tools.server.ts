@@ -8,7 +8,7 @@ import { RateLimiterMemory } from "rate-limiter-flexible"
 import { z } from "zod"
 
 import { warsawIso } from "../domain/time.ts"
-import { errorMessage, type Result } from "../messages.pl.ts"
+import { ACCESS_DENIED, errorMessage, type Result, UNEXPECTED_ERROR } from "../messages.pl.ts"
 
 import { logCall } from "./call-log.server.ts"
 
@@ -22,6 +22,8 @@ export type McpCaller = z.infer<typeof mcpCaller>
 
 // ponytail: licznik w pamięci jednego procesu, jak `attempt-limit.server.ts`.
 const calls = new RateLimiterMemory({ points: 120, duration: 60 })
+
+const NOT_FOUND: Result = { ok: false, code: "NOT_FOUND" }
 
 /** `Date` z Prismy → ISO po warszawsku, w głąb obiektów i tablic (JSON Schema nie zna `Date`). */
 const withIsoDates = (value: unknown): unknown => {
@@ -58,6 +60,7 @@ export function toolRegistrar(server: McpServer, { user, clientHost }: McpCaller
   ) {
     const write = !config.annotations.readOnlyHint
     const annotations = {
+      readOnlyHint: false,
       destructiveHint: false,
       idempotentHint: false,
       openWorldHint: false,
@@ -69,18 +72,30 @@ export function toolRegistrar(server: McpServer, { user, clientHost }: McpCaller
       // SDK już sprawdził wejście; ponowne `parse` tylko nadaje mu typ schematu.
       async (args) => {
         const input = config.inputSchema.parse(args)
-        const { result } = await logCall({ name: `mcp:${name}`, write, data: input }, async () => {
-          const allowed = await calls.consume(user.id).then(
-            () => true,
-            () => false,
+        try {
+          const { result } = await logCall(
+            { name: `mcp:${name}`, write, data: input },
+            async () => {
+              const allowed = await calls.consume(user.id).then(
+                () => true,
+                () => false,
+              )
+              const outcome: Result = allowed
+                ? ((await run(input)) ?? NOT_FOUND)
+                : { ok: false, code: "TOO_MANY_CALLS" }
+              // Kształt wyniku middleware funkcji serwerowej: z niego `logCall` czyta, kto i z jakim kodem odmowy.
+              return {
+                context: { user: { email: `${user.email} ${clientHost}` } },
+                result: outcome,
+              }
+            },
           )
-          const outcome: Result = allowed
-            ? ((await run(input)) ?? { ok: false, code: "NOT_FOUND" })
-            : { ok: false, code: "TOO_MANY_CALLS" }
-          // Kształt wyniku middleware funkcji serwerowej: z niego `logCall` czyta, kto i z jakim kodem odmowy.
-          return { context: { user: { email: `${user.email} ${clientHost}` } }, result: outcome }
-        })
-        return toolResult(result)
+          return toolResult(result)
+        } catch (e) {
+          // `logCall` już zapisał wyjątek; SDK oddałby klientowi jego treść.
+          if (e instanceof Error && e.message === ACCESS_DENIED) return toolResult(NOT_FOUND)
+          return { isError: true, content: [{ type: "text", text: UNEXPECTED_ERROR }] }
+        }
       },
     )
   }
