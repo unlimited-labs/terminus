@@ -31,6 +31,7 @@
     "@dnd-kit/dom": "0.5.3",
     "@dnd-kit/react": "0.5.3",
     "@fontsource-variable/figtree": "5.3.0",
+    "@modelcontextprotocol/server": "2.4.0",
     "@prisma/adapter-pg": "7.10.1",
     "@prisma/client": "7.10.1",
     "@t3-oss/env-core": "0.13.11",

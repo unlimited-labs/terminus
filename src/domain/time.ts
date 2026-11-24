@@ -16,6 +16,11 @@ export function warsawTime(date: Date): string {
   return format(date, "HH:mm", { in: warsaw })
 }
 
+/** Chwila jako ISO w strefie Europe/Warsaw z offsetem: "2026-12-01T10:20:00+01:00". */
+export function warsawIso(date: Date): string {
+  return format(date, "yyyy-MM-dd'T'HH:mm:ssXXX", { in: warsaw })
+}
+
 /** Czas polski ("RRRR-MM-DD", "GG:MM") → chwila w UTC. */
 export function warsawDateTime(date: string, time: string): Date {
   const [y = 0, m = 1, d = 1] = date.split("-").map(Number)

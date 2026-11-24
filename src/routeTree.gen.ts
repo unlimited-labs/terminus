@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as Konfiguracja2faRouteImport } from './routes/konfiguracja-2fa'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as McpRouteImport } from './routes/mcp'
 import { Route as NiePamietamHaslaRouteImport } from './routes/nie-pamietam-hasla'
 import { Route as NoweHasloRouteImport } from './routes/nowe-haslo'
 import { Route as ZgodaRouteImport } from './routes/zgoda'
@@ -38,6 +39,11 @@ const Konfiguracja2faRoute = Konfiguracja2faRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const McpRoute = McpRouteImport.update({
+  id: '/mcp',
+  path: '/mcp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NiePamietamHaslaRoute = NiePamietamHaslaRouteImport.update({
@@ -113,6 +119,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
   '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
@@ -148,6 +156,7 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/konfiguracja-2fa': typeof Konfiguracja2faRoute
   '/login': typeof LoginRoute
+  '/mcp': typeof McpRoute
   '/nie-pamietam-hasla': typeof NiePamietamHaslaRoute
   '/nowe-haslo': typeof NoweHasloRoute
   '/zgoda': typeof ZgodaRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
     | '/'
     | '/konfiguracja-2fa'
     | '/login'
+    | '/mcp'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/zgoda'
@@ -184,6 +194,7 @@ export interface FileRouteTypes {
   to:
     | '/konfiguracja-2fa'
     | '/login'
+    | '/mcp'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/zgoda'
@@ -202,6 +213,7 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/konfiguracja-2fa'
     | '/login'
+    | '/mcp'
     | '/nie-pamietam-hasla'
     | '/nowe-haslo'
     | '/zgoda'
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   Konfiguracja2faRoute: typeof Konfiguracja2faRoute
   LoginRoute: typeof LoginRoute
+  McpRoute: typeof McpRoute
   NiePamietamHaslaRoute: typeof NiePamietamHaslaRoute
   NoweHasloRoute: typeof NoweHasloRoute
   ZgodaRoute: typeof ZgodaRoute
@@ -251,6 +264,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mcp': {
+      id: '/mcp'
+      path: '/mcp'
+      fullPath: '/mcp'
+      preLoaderRoute: typeof McpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/nie-pamietam-hasla': {
@@ -372,6 +392,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   Konfiguracja2faRoute: Konfiguracja2faRoute,
   LoginRoute: LoginRoute,
+  McpRoute: McpRoute,
   NiePamietamHaslaRoute: NiePamietamHaslaRoute,
   NoweHasloRoute: NoweHasloRoute,
   ZgodaRoute: ZgodaRoute,
