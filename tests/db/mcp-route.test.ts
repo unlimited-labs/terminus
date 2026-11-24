@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto"
 
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
-import { auth, MCP_RESOURCE } from "@/server/auth.server"
+import { auth, deleteAgentGrants, MCP_RESOURCE } from "@/server/auth.server"
 import { db } from "@/server/db.server"
 import { mcpHandler, serveMcp } from "@/server/mcp.server"
 
@@ -97,10 +97,12 @@ test("GET i DELETE (sesje klientów 2025) → 405", async () => {
   }
 })
 
-test("odłączony agent (usunięta zgoda) i zablokowane konto: kolejne żądanie 401", async () => {
+test("„Odłącz” w sekcji Agenci AI i zablokowane konto: kolejne żądanie 401", async () => {
   const unplugged = await connected()
-  await db.oauthConsent.deleteMany({ where: { userId: unplugged.id } })
+  const colleague = await connected()
+  await deleteAgentGrants(unplugged.id, CLIENT_ID)
   expect(challenge(await listTools(unplugged.token))).toEqual(UNAUTHORIZED)
+  expect((await listTools(colleague.token)).status).toBe(200)
 
   const banned = await connected()
   await db.user.update({ where: { id: banned.id }, data: { banned: true } })
