@@ -5,11 +5,20 @@ import { APIError } from "better-auth/api"
 import { z } from "zod"
 
 import { boardInputSchema } from "../schemas/board.ts"
-import { examIdSchema } from "../schemas/exam.ts"
+import {
+  addTeacherSchema,
+  deleteExamSchema,
+  duplicateExamSchema,
+  examFormSchema,
+  examIdSchema,
+  removeTeacherSchema,
+} from "../schemas/exam.ts"
 import {
   boardCommandOutput,
-  doneOutput,
+  createExamOutput,
+  emptyOutput,
   entryEmailsOutput,
+  examCsvOutput,
   examDetailOutput,
   freeSlotsDeletedOutput,
   listExamsOutput,
@@ -30,7 +39,17 @@ import { auth, MCP_RESOURCE, teacherById } from "./auth.server.ts"
 import { runBoardCommand } from "./board-ops.server.ts"
 import { db } from "./db.server.ts"
 import { env } from "./env.server.ts"
-import { examsOf, readExam } from "./exam-ops.server.ts"
+import {
+  addTeacher,
+  copyExam,
+  examCsv,
+  examsOf,
+  insertExam,
+  readExam,
+  removeExam,
+  removeTeacher,
+  updateExamSettings,
+} from "./exam-ops.server.ts"
 import { mcpCaller, toolRegistrar, type McpCaller } from "./mcp-tools.server.ts"
 import {
   addEntry,
@@ -95,6 +114,95 @@ export const mcpHandler = createMcpHandler(
     )
 
     tool(
+      "create_exam",
+      {
+        title: "Nowe zaliczenie",
+        description:
+          "Tworzy zaliczenie z ustawieniami jak w formularzu; jestem jego prowadzącym. Start zapisów: data i godzina po polsku albo oba pola puste.",
+        inputSchema: examFormSchema,
+        outputSchema: createExamOutput,
+        annotations: {},
+      },
+      (data) => insertExam(user.id, data),
+    )
+
+    tool(
+      "update_exam",
+      {
+        title: "Ustawienia zaliczenia",
+        description:
+          "Zmienia wszystkie ustawienia zaliczenia naraz (podaj pełny formularz, bieżące wartości weź z `get_exam`).",
+        inputSchema: examFormSchema.and(examIdSchema),
+        outputSchema: emptyOutput,
+        annotations: { idempotentHint: true },
+      },
+      ({ examId, ...data }) => updateExamSettings(examId, user.id, data),
+    )
+
+    tool(
+      "delete_exam",
+      {
+        title: "Usunięcie zaliczenia",
+        description:
+          "Usuwa zaliczenie. Znikną listy indeksów, sloty i wszystkie zapisy. Powiedz to prowadzącemu przed wywołaniem. `confirmName` = dokładna nazwa zaliczenia.",
+        inputSchema: deleteExamSchema,
+        outputSchema: emptyOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, confirmName }) => removeExam(examId, { teacher: user.id }, confirmName),
+    )
+
+    tool(
+      "copy_exam",
+      {
+        title: "Kopia zaliczenia",
+        description:
+          "Nowe zaliczenie z ustawieniami tego (np. poprawka), opcjonalnie z listami indeksów; bez slotów i zapisów.",
+        inputSchema: duplicateExamSchema,
+        outputSchema: createExamOutput,
+        annotations: {},
+      },
+      ({ examId, copyRosters }) => copyExam(examId, user.id, copyRosters),
+    )
+
+    tool(
+      "add_exam_teacher",
+      {
+        title: "Dodanie prowadzącego",
+        description: "Dodaje prowadzącego do zaliczenia po adresie e-mail jego konta.",
+        inputSchema: addTeacherSchema,
+        outputSchema: emptyOutput,
+        annotations: {},
+      },
+      ({ examId, email }) => addTeacher(examId, user.id, email),
+    )
+
+    tool(
+      "remove_exam_teacher",
+      {
+        title: "Usunięcie prowadzącego",
+        description:
+          "Usuwa prowadzącego z zaliczenia (identyfikator z `get_exam`). Usunięcie siebie: stracisz do niego dostęp, przywrócić może cię inny prowadzący. Powiedz to prowadzącemu przed wywołaniem.",
+        inputSchema: removeTeacherSchema,
+        outputSchema: emptyOutput,
+        annotations: { destructiveHint: true },
+      },
+      ({ examId, teacherId }) => removeTeacher(examId, user.id, teacherId),
+    )
+
+    tool(
+      "export_exam_csv",
+      {
+        title: "Eksport CSV",
+        description: "Lista osób z zapisami i ocenami jako plik CSV (nazwa pliku i treść).",
+        inputSchema: examIdSchema,
+        outputSchema: examCsvOutput,
+        annotations: READ,
+      },
+      ({ examId }) => examCsv(examId, user.id),
+    )
+
+    tool(
       "list_entry_emails",
       {
         title: "Adresy e-mail z list",
@@ -142,7 +250,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Ustawia dzień, godziny (czas polski) i listę slotu. Zapisy w slocie zostają. Odmawia, gdy slot nachodzi na inny.",
         inputSchema: updateSlotSchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: { idempotentHint: true },
       },
       (data) => editSlot(data.examId, user.id, data),
@@ -155,7 +263,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Usuwa slot. Slotu z zapisami nie usunie (`SLOT_HAS_ENROLLMENTS`): najpierw przenieś albo wypisz zespół. Zanim wywołasz, powiedz prowadzącemu, który slot zniknie (dzień i godziny).",
         inputSchema: slotRefSchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: { destructiveHint: true },
       },
       ({ examId, slotId }) => removeSlot(examId, user.id, slotId),
@@ -194,7 +302,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Zapisuje import pliku CSV do listy, zatwierdzony w `preview_roster_import`. `withdrawnEnrolled` = numery indeksów z `withdrawnEnrolled` podglądu; gdy zapisy zmieniły się od podglądu, odmawia (`IMPORT_PREVIEW_STALE`) — zrób podgląd jeszcze raz. Skreśleni znikną z listy; skreśleni z zapisem znikną z listy, a ich zapis zostanie usunięty. Zanim wywołasz, powiedz to prowadzącemu.",
         inputSchema: rosterApplySchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: { destructiveHint: true },
       },
       ({ examId, rosterName, csv, withdrawnEnrolled }) =>
@@ -208,7 +316,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Dopisuje osobę do listy `rosterId`. Pusty `rosterId` tylko, gdy zaliczenie nie ma jeszcze list — powstanie lista „lista”. Pusty `email` = adres domyślny z numeru indeksu.",
         inputSchema: addEntrySchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: {},
       },
       (data) => addEntry(data.examId, user.id, data),
@@ -221,7 +329,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Usuwa osobę z listy indeksów. Osoby z zapisem nie usunie (`ENTRY_HAS_ENROLLMENT`): najpierw przenieś albo usuń zapis.",
         inputSchema: entryRefSchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: {},
       },
       ({ examId, studentNumber }) => deleteEntry(examId, user.id, studentNumber),
@@ -234,7 +342,7 @@ export const mcpHandler = createMcpHandler(
         description:
           "Usuwa listę indeksów. Znikną jej osoby i sloty. Jeśli ktoś z tej listy ma zapis, lista zostanie — najpierw przenieś albo usuń zapisy. Zanim wywołasz, powiedz prowadzącemu, co zniknie.",
         inputSchema: rosterRefSchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: { destructiveHint: true },
       },
       ({ examId, rosterId }) => removeRoster(examId, user.id, rosterId),
@@ -246,7 +354,7 @@ export const mcpHandler = createMcpHandler(
         title: "Adres e-mail osoby",
         description: "Ustawia adres e-mail osoby z listy. Pusty = adres domyślny z numeru indeksu.",
         inputSchema: entryEmailSchema,
-        outputSchema: doneOutput,
+        outputSchema: emptyOutput,
         annotations: { idempotentHint: true },
       },
       ({ examId, studentNumber, email }) => setEntryEmail(examId, user.id, studentNumber, email),

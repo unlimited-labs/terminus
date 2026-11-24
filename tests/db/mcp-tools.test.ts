@@ -1,13 +1,24 @@
-import { expect, test } from "vitest"
+import { createMcpHandler, McpServer } from "@modelcontextprotocol/server"
+import { consola } from "consola"
+import { expect, test, vi } from "vitest"
+import { z } from "zod"
 
-import { examDetailOutput } from "@/schemas/mcp-output"
+import { ACCESS_DENIED, errorMessage, UNEXPECTED_ERROR } from "@/messages.pl"
+import {
+  createExamOutput,
+  emptyOutput,
+  examCsvOutput,
+  examDetailOutput,
+} from "@/schemas/mcp-output"
+import { db } from "@/server/db.server"
 import { mcpHandler } from "@/server/mcp.server"
+import { mcpCaller, toolRegistrar } from "@/server/mcp-tools.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
 
 /** Żądanie JSON-RPC jak klient 2025 (bezstanowo) z prowadzącym, którego trasa `/mcp` już sprawdziła. */
-async function rpc(teacherId: string, method: string, params: object = {}) {
-  const res = await mcpHandler.fetch(
+async function rpc(teacherId: string, method: string, params: object = {}, handler = mcpHandler) {
+  const res = await handler.fetch(
     new Request("http://localhost:3000/mcp", {
       method: "POST",
       headers: {
@@ -33,42 +44,82 @@ async function rpc(teacherId: string, method: string, params: object = {}) {
   return JSON.parse(data ?? "null").result
 }
 
-const callTool = (teacherId: string, name: string, args: object = {}) =>
-  rpc(teacherId, "tools/call", { name, arguments: args })
+const callTool = (teacherId: string, name: string, args: object = {}, handler = mcpHandler) =>
+  rpc(teacherId, "tools/call", { name, arguments: args }, handler)
 
-const READ = { readOnlyHint: true, idempotentHint: true }
-const IDEMPOTENT = { idempotentHint: true }
-const DESTRUCTIVE = { destructiveHint: true }
+test("wyjątek w funkcji: brak dostępu → NOT_FOUND, inny → ogólny komunikat bez jego treści", async () => {
+  const handler = createMcpHandler(
+    ({ authInfo }) => {
+      const server = new McpServer({ name: "test", version: "1" })
+      const tool = toolRegistrar(server, mcpCaller.parse(authInfo?.extra))
+      const config = {
+        title: "",
+        description: "",
+        inputSchema: z.object({}),
+        outputSchema: emptyOutput,
+        annotations: {},
+      }
+      tool("denied", config, () => Promise.reject(new Error(ACCESS_DENIED)))
+      tool("broken", config, () => Promise.reject(new Error("tajny szczegół bazy")))
+      return server
+    },
+    { legacy: "stateless", responseMode: "json" },
+  )
+  vi.spyOn(consola, "warn").mockImplementation(() => {})
+  const error = vi.spyOn(consola, "error").mockImplementation(() => {})
 
-/** Adnotacje z tabeli w spec §6; brak flagi = jawne `false`. */
-const ANNOTATIONS: Record<string, object> = {
-  list_exams: READ,
-  get_exam: READ,
-  list_entry_emails: READ,
-  board_command: {},
-  add_slot_window: {},
-  update_slot: IDEMPOTENT,
-  delete_slot: DESTRUCTIVE,
-  delete_free_slots_of_day: DESTRUCTIVE,
-  preview_roster_import: READ,
-  apply_roster_import: DESTRUCTIVE,
-  add_roster_entry: {},
-  delete_roster_entry: {},
-  delete_roster: DESTRUCTIVE,
-  set_entry_email: IDEMPOTENT,
+  expect(await callTool("t1", "denied", {}, handler)).toEqual({
+    isError: true,
+    content: [{ type: "text", text: errorMessage({ code: "NOT_FOUND" }) }],
+    structuredContent: { code: "NOT_FOUND" },
+  })
+  expect(await callTool("t1", "broken", {}, handler)).toEqual({
+    isError: true,
+    content: [{ type: "text", text: UNEXPECTED_ERROR }],
+  })
+  expect(String(error.mock.calls[0]?.[0])).toContain("mcp:broken")
+})
+
+/** Tabela §6 speca: [readOnlyHint, destructiveHint, idempotentHint]; jeden wiersz na narzędzie. */
+const ANNOTATIONS: Record<string, [boolean, boolean, boolean]> = {
+  list_exams: [true, false, true],
+  get_exam: [true, false, true],
+  create_exam: [false, false, false],
+  update_exam: [false, false, true],
+  delete_exam: [false, true, false],
+  copy_exam: [false, false, false],
+  add_exam_teacher: [false, false, false],
+  remove_exam_teacher: [false, true, false],
+  export_exam_csv: [true, false, true],
+  list_entry_emails: [true, false, true],
+  board_command: [false, false, false],
+  add_slot_window: [false, false, false],
+  update_slot: [false, false, true],
+  delete_slot: [false, true, false],
+  delete_free_slots_of_day: [false, true, false],
+  preview_roster_import: [true, false, true],
+  apply_roster_import: [false, true, false],
+  add_roster_entry: [false, false, false],
+  delete_roster_entry: [false, false, false],
+  delete_roster: [false, true, false],
+  set_entry_email: [false, false, true],
 }
 
-test("tools/list: każde narzędzie z adnotacjami z tabeli; initialize podaje instructions", async () => {
+test("tools/list: adnotacje z tabeli §6; initialize podaje instructions", async () => {
   const { teacherId } = await createExam({ rosters: {} })
   const { tools } = await rpc(teacherId, "tools/list")
-  const off = { destructiveHint: false, idempotentHint: false, openWorldHint: false }
-  expect(
-    Object.fromEntries(
-      tools.map((t: { name: string; annotations: object }) => [t.name, t.annotations]),
-    ),
-  ).toEqual(
-    Object.fromEntries(Object.entries(ANNOTATIONS).map(([name, a]) => [name, { ...off, ...a }])),
+  const listed = Object.fromEntries(
+    tools.map((t: { name: string; annotations: object }) => [t.name, t.annotations]),
   )
+  const expected = Object.fromEntries(
+    Object.entries(ANNOTATIONS).map(([name, [readOnlyHint, destructiveHint, idempotentHint]]) => [
+      name,
+      { readOnlyHint, destructiveHint, idempotentHint, openWorldHint: false },
+    ]),
+  )
+  expect(listed).toEqual(expected)
+  // MCP wymaga obiektu w korzeniu `inputSchema` (`update_exam` to przecięcie dwóch schematów).
+  for (const t of tools) expect([t.name, t.inputSchema.type]).toEqual([t.name, "object"])
 
   const init = await rpc(teacherId, "initialize", {
     protocolVersion: "2025-11-25",
@@ -181,4 +232,111 @@ test("delete_slot: slot z zapisem → SLOT_HAS_ENROLLMENTS", async () => {
     isError: true,
     structuredContent: { code: "SLOT_HAS_ENROLLMENTS" },
   })
+})
+
+const examForm = {
+  name: "Egzamin",
+  description: "",
+  defaultSlotMinutes: 20,
+  maxTeamSize: 1,
+  assignmentMode: "RANDOM",
+  requireEmailLogin: false,
+  showSlotTimes: true,
+  fields: [],
+  opensDate: "",
+  opensTime: "",
+}
+
+const notFound = { isError: true, structuredContent: { code: "NOT_FOUND" } }
+
+test("create_exam i update_exam: nowe zaliczenie, zmiana ustawień; cudze → NOT_FOUND", async () => {
+  const { teacherId } = await createExam({ rosters: {} })
+  const created = await callTool(teacherId, "create_exam", examForm)
+  expect(created.isError).toBe(false)
+  const { examId } = createExamOutput.parse(created.structuredContent)
+  const exam = await callTool(teacherId, "get_exam", { examId })
+  expect(exam.structuredContent).toMatchObject({ name: "Egzamin" })
+
+  const updated = await callTool(teacherId, "update_exam", { ...examForm, name: "Nowa", examId })
+  expect(updated).toMatchObject({ isError: false, structuredContent: {} })
+  const renamed = await callTool(teacherId, "get_exam", { examId })
+  expect(renamed.structuredContent).toMatchObject({ name: "Nowa" })
+
+  const other = await createExam({ rosters: {} })
+  expect(await callTool(other.teacherId, "update_exam", { ...examForm, examId })).toMatchObject(
+    notFound,
+  )
+})
+
+test("delete_exam: zła nazwa → NAME_MISMATCH, cudze → NOT_FOUND, dobra usuwa", async () => {
+  const { examId, teacherId } = await createExam({ rosters: {} })
+  const other = await createExam({ rosters: {} })
+  expect(
+    await callTool(other.teacherId, "delete_exam", { examId, confirmName: "Kolokwium" }),
+  ).toMatchObject(notFound)
+  expect(await callTool(teacherId, "delete_exam", { examId, confirmName: "Inne" })).toMatchObject({
+    isError: true,
+    structuredContent: { code: "NAME_MISMATCH" },
+  })
+  expect(
+    await callTool(teacherId, "delete_exam", { examId, confirmName: "Kolokwium" }),
+  ).toMatchObject({ isError: false, structuredContent: {} })
+  expect(await callTool(teacherId, "get_exam", { examId })).toMatchObject(notFound)
+})
+
+test("copy_exam: kopia z listami; cudze → NOT_FOUND", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["1"], slots: [] } },
+  })
+  const copied = await callTool(teacherId, "copy_exam", { examId, copyRosters: true })
+  const copy = createExamOutput.parse(copied.structuredContent)
+  const exam = await callTool(teacherId, "get_exam", { examId: copy.examId })
+  expect(exam.structuredContent).toMatchObject({
+    name: "Kolokwium (kopia)",
+    rosters: [expect.objectContaining({ name: "g1" })],
+  })
+
+  const other = await createExam({ rosters: {} })
+  expect(
+    await callTool(other.teacherId, "copy_exam", { examId, copyRosters: false }),
+  ).toMatchObject(notFound)
+})
+
+test("add_exam_teacher i remove_exam_teacher: współprowadzący po e-mailu; cudze → NOT_FOUND", async () => {
+  const { examId, teacherId } = await createExam({ rosters: {} })
+  const other = await createExam({ rosters: {} })
+  const { email } = await db.user.findUniqueOrThrow({ where: { id: other.teacherId } })
+
+  expect(await callTool(teacherId, "add_exam_teacher", { examId, email })).toMatchObject({
+    isError: false,
+    structuredContent: {},
+  })
+  const exam = examDetailOutput.parse(
+    (await callTool(other.teacherId, "get_exam", { examId })).structuredContent,
+  )
+  expect(exam.teachers.map((t) => t.id).toSorted()).toEqual([teacherId, other.teacherId].toSorted())
+
+  expect(
+    await callTool(teacherId, "remove_exam_teacher", { examId, teacherId: other.teacherId }),
+  ).toMatchObject({ isError: false, structuredContent: {} })
+  expect(
+    await callTool(other.teacherId, "remove_exam_teacher", { examId, teacherId }),
+  ).toMatchObject(notFound)
+  expect(await callTool(other.teacherId, "add_exam_teacher", { examId, email })).toMatchObject(
+    notFound,
+  )
+})
+
+test("export_exam_csv: plik CSV w wyniku; cudze → NOT_FOUND", async () => {
+  const { examId, teacherId } = await createExam({
+    rosters: { g1: { students: ["123456"], slots: [inDays(1)] } },
+  })
+  await enroll(examId, ["123456"])
+  const exported = await callTool(teacherId, "export_exam_csv", { examId })
+  const { fileName, csv } = examCsvOutput.parse(exported.structuredContent)
+  expect(fileName).toMatch(/\.csv$/)
+  expect(csv).toContain("123456")
+
+  const other = await createExam({ rosters: {} })
+  expect(await callTool(other.teacherId, "export_exam_csv", { examId })).toMatchObject(notFound)
 })
