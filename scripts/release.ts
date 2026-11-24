@@ -18,6 +18,9 @@ const tag = read("git describe --tags --always")
 run("pnpm check")
 run("pnpm e2e")
 run(`docker buildx build --platform linux/amd64 -t ${image}:${tag} -t ${image}:latest --push .`)
-console.log(
-  `Wysłano ${image}:${tag} (i :latest). Na VPS: IMAGE_TAG=${tag} w .env, potem docker compose up -d`,
-)
+const site = "https://terminus.wimiip.eu"
+console.log(`Wysłano ${image}:${tag} (i :latest). Na VPS: IMAGE_TAG=${tag} w .env, potem docker compose up -d.
+Po nginx -s reload sprawdź serwer MCP:
+  curl -s -o /dev/null -w "%{http_code}\\n" ${site}/.well-known/oauth-protected-resource/mcp   # 200
+  curl -s -o /dev/null -w "%{http_code}\\n" ${site}/.well-known/oauth-authorization-server    # 200
+  curl -si -X POST ${site}/mcp | grep -i "^HTTP\\|www-authenticate"                            # 401 + WWW-Authenticate`)

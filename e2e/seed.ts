@@ -272,6 +272,7 @@ export async function seed(): Promise<E2EState> {
     noTimes: await noTimesExam(),
     emailLogin: await emailLoginExam("Logowanie mailem E2E", true),
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
+    agent: await createExam("Agent E2E", 1, [["730001", "Ala", "Agent"]], [at(22, 9)], []),
   }
   await db.user.create({
     data: {
@@ -281,8 +282,37 @@ export async function seed(): Promise<E2EState> {
     },
   })
   const adminTotp = await enableAdminTotp()
+  await agentClient()
   await db.$disconnect()
   return { baseDay, exams, adminTotp }
+}
+
+/**
+ * Klient OAuth agenta z PKCE i dostępem do `/mcp` (bez wiersza `oauthClientResource` authorize
+ * odpowiada `invalid_target`). Wiersz zasobu zakłada Better Auth przy starcie — po `enableAdminTotp`.
+ */
+async function agentClient() {
+  const { clientId, name, redirectUri } = E2E.agent
+  await db.oauthClient.create({
+    data: {
+      id: clientId,
+      clientId,
+      name,
+      redirectUris: [redirectUri],
+      tokenEndpointAuthMethod: "none",
+      grantTypes: ["authorization_code", "refresh_token"],
+      responseTypes: ["code"],
+      scopes: ["openid", "profile", "email", "offline_access"],
+      requirePKCE: true,
+      contacts: [],
+      postLogoutRedirectUris: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      oauthclientresources: {
+        create: { id: `${clientId}-mcp`, resourceId: `${E2E.baseURL}/mcp`, createdAt: new Date() },
+      },
+    },
+  })
 }
 
 /** Bramka 2FA wpuszcza tylko konto z drugim sposobem: superadmin dostaje TOTP jak z ekranu konfiguracji. */

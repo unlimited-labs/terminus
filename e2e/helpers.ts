@@ -11,6 +11,7 @@ import { totpCode } from "./totp.ts"
 const state = (): E2EState => e2eStateSchema.parse(JSON.parse(readFileSync(STATE_FILE, "utf8")))
 
 export const exams = () => state().exams
+export const adminTotp = () => state().adminTotp
 
 const mailsSchema = z.array(z.object({ to: z.string(), subject: z.string(), text: z.string() }))
 const mailsTo = (address: string) =>
@@ -69,6 +70,14 @@ export async function login(
   await fillLogin(page, email, password)
   await page.getByLabel("Kod z aplikacji").fill(await totpCode(totpURI))
   await page.waitForURL((url) => url.pathname !== "/login")
+}
+
+/** Czeka, aż React podepnie obsługę zdarzeń pod element — klik przed hydratacją przepada. */
+export async function hydrated(locator: Locator) {
+  await expect
+    .poll(() => locator.evaluate((el) => Object.keys(el).some((k) => k.startsWith("__reactProps"))))
+    .toBe(true)
+  return locator
 }
 
 const center = async (locator: Locator) => {

@@ -4,6 +4,8 @@ export const E2E = {
   port: 3100,
   baseURL: "http://localhost:3100",
   admin: { email: "admin@e2e.test", password: "haslo-admina-e2e", name: "Admin E2E" },
+  /** Agent AI z `seed.ts` (wiersz `oauthClient`, bez dokumentu CIMD); odpowiedź odbiera serwer testu. */
+  agent: { clientId: "e2e-agent", name: "Agent testowy", redirectUri: "http://127.0.0.1:3999/cb" },
 }
 
 export const STATE_FILE = "e2e/.state.json"
@@ -40,6 +42,7 @@ const EXAMS = [
   "noTimes",
   "emailLogin",
   "emailLoginSetup",
+  "agent",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */
