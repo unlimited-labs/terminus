@@ -5,11 +5,9 @@ const FIRST_RETRY_MS = 1000
 const MAX_RETRY_MS = 30_000
 
 /**
- * `EventSource` na kanał zmian; `onChange` przy sygnale i przy każdym otwarciu (domyka okno między
- * SSR a podłączeniem, nadrabia przerwę). Sam `EventSource` wznawia tylko po zerwaniu sieci; po
- * odpowiedzi innej niż 200 (502 przy wydaniu, 403) łączymy ponownie z narastającym odstępem,
- * a pierwsze takie zamknięcie w serii też woła `onChange` (przy 403 strona trafi do logowania).
- * Zwraca rozłączenie.
+ * `onChange` także przy każdym otwarciu (nadrabia czas od SSR i przerwy). Po odpowiedzi innej niż 200
+ * `EventSource` sam nie wznawia, więc łączymy ponownie; pierwsze takie zamknięcie w serii też woła
+ * `onChange` (przy 403 strona trafi do logowania).
  */
 export function watchExamChanges(url: string, onChange: () => void) {
   let source: EventSource

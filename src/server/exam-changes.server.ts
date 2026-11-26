@@ -40,7 +40,6 @@ export function emitExamChange(examId: string) {
   closeWindowLater(examId)
 }
 
-/** Subskrypcja sygnałów zaliczenia; zwraca odpięcie. */
 export function onExamChange(examId: string, listener: () => void) {
   emitter.on(examId, listener)
   return () => {
