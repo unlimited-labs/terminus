@@ -1,6 +1,17 @@
 import { expect, test } from "@playwright/test"
 
-import { dayLabel, dragWithMouse, exams, login, openBoard, pool, row, tile } from "./helpers.ts"
+import {
+  dayLabel,
+  dragWithMouse,
+  exams,
+  holdWrites,
+  login,
+  openBoard,
+  pool,
+  row,
+  secondBoard,
+  tile,
+} from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
@@ -29,14 +40,7 @@ test("dwa szybkie przeciągnięcia, pierwsze odrzucone przez serwer: tablica zgo
   browser,
 }) => {
   await openBoard(page, exams().raceDrag)
-  const held = Promise.withResolvers<void>()
-  let first = true
-  await page.route("**/_serverFn/**", async (route) => {
-    if (route.request().method() !== "POST" || !first) return route.continue()
-    first = false
-    await held.promise
-    await route.continue()
-  })
+  const release = await holdWrites(page, { firstOnly: true })
 
   await dragWithMouse(page, pool(page).getByText("900001"), row(page, "09:00–09:20"))
   await expect(row(page, "09:00–09:20")).toContainText("Kamil Kos")
@@ -45,13 +49,11 @@ test("dwa szybkie przeciągnięcia, pierwsze odrzucone przez serwer: tablica zgo
   await dragWithMouse(page, marek, row(page, "09:20–09:40"))
   await expect(page.getByRole("status")).toContainText(`na: slot ${dayLabel(9)} 09:20.`)
 
-  const other = await browser.newPage()
-  await login(other)
-  await openBoard(other, exams().raceDrag)
+  const other = await secondBoard(page, browser, exams().raceDrag)
   await dragWithMouse(other, pool(other).getByText("900002"), row(other, "09:00–09:20"))
   await expect(other.getByText("Zapisano ręcznie.")).toBeVisible()
   await other.close()
-  held.resolve()
+  release()
 
   await expect(page.getByText("Slot jest pełny.")).toBeVisible()
   await expect(page.getByText("Przeniesiono.")).toBeVisible()

@@ -150,6 +150,8 @@ async function noTimesExam() {
   return id
 }
 
+const TOPIC_FIELD = [{ id: "t", label: "Temat", required: false }]
+
 /** Ręczny przydział z polem „Temat”: dwóch studentów, dwa sloty (jeden zostaje wolny po zapisie). */
 async function livePickExam() {
   const id = await manualExam("Wybór na żywo E2E", "MANUAL", [
@@ -158,7 +160,7 @@ async function livePickExam() {
   ])
   await db.exam.update({
     where: { id },
-    data: { fields: [{ id: "t", label: "Temat", required: false }] },
+    data: { fields: TOPIC_FIELD },
   })
   return id
 }
@@ -208,7 +210,7 @@ export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
     )
     await db.exam.update({
       where: { id },
-      data: { fields: [{ id: "t", label: "Temat", required: false }] },
+      data: { fields: TOPIC_FIELD },
     })
     await db.enrollment.updateMany({ where: { examId: id }, data: { answers: { t: "Robot" } } })
     return id

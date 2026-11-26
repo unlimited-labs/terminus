@@ -8,6 +8,7 @@ import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
   // staleTime > 0: dane z SSR nie są pobierane drugi raz zaraz po hydracji; świeżość dają unieważnienia po mutacjach.
+  // Wyjątek: strony z kanałem zmian (`useExamChanges`) pobierają raz po połączeniu, nadrabiając czas od SSR.
   // Sesja wygasła lub odebrana, a `beforeLoad` wziął ją z cache: zamiast strony błędu logowanie.
   const onError = (error: Error) => {
     if (error.message !== ACCESS_DENIED || typeof window === "undefined") return

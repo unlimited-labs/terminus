@@ -8,11 +8,13 @@ import {
   dragWithKeyboard,
   dragWithMouse,
   exams,
+  holdWrites,
   hydrated,
   login,
   openBoard,
   pool,
   row,
+  secondBoard,
   tile,
 } from "./helpers.ts"
 
@@ -35,9 +37,18 @@ async function watchChannel(page: Page) {
       }
     }
   })
+  const signals = () => page.evaluate(() => window.signals ?? 0)
   return {
     open: () => page.evaluate(() => window.channelOpen === true),
-    signals: () => page.evaluate(() => window.signals ?? 0),
+    /** Zapamiętuje liczbę sygnałów; zwrócona funkcja czeka na kolejny i jeszcze 500 ms — tyle, ile
+     * nieodłożony sygnał potrzebowałby, by pobrać dane i podmienić stronę. */
+    nextSignal: async () => {
+      const before = await signals()
+      return async () => {
+        await expect.poll(signals).toBeGreaterThan(before)
+        await page.waitForTimeout(500)
+      }
+    },
   }
 }
 
@@ -176,11 +187,7 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
   await openBoard(page, examId)
   await expect.poll(channel.open).toBe(true)
 
-  const held = Promise.withResolvers<void>()
-  await page.route("**/_serverFn/**", async (route) => {
-    if (route.request().method() === "POST") await held.promise
-    await route.continue()
-  })
+  const release = await holdWrites(page)
   const reads: string[] = []
   page.on("request", (r) => {
     if (r.method() === "GET" && r.url().includes("/_serverFn/")) reads.push(r.url())
@@ -197,11 +204,9 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
       if (!slot?.textContent?.includes("Celina Cis")) window.flashed = true
     }).observe(document.body, { subtree: true, childList: true, characterData: true })
   })
-  const signalsBefore = await channel.signals()
+  const signal = await channel.nextSignal()
 
-  const other = await browser.newPage()
-  await login(other)
-  await openBoard(other, examId)
+  const other = await secondBoard(page, browser, examId)
   await dragWithMouse(
     other,
     await hydrated(pool(other).getByText("500002")),
@@ -210,13 +215,11 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
   await expect(other.getByText("Zapisano ręcznie.")).toBeVisible()
   await other.close()
 
-  await expect.poll(channel.signals).toBeGreaterThan(signalsBefore)
-  // Czas, w którym nieodłożony sygnał zdążyłby pobrać zaliczenie i podmienić tablicę.
-  await page.waitForTimeout(500)
+  await signal()
   expect(reads).toEqual([])
   await expect(row(page, "09:20–09:40")).toContainText("wolny")
 
-  held.resolve()
+  release()
   await expect(page.getByText("Zapisano ręcznie.")).toBeVisible()
   await expect(row(page, "09:20–09:40")).toContainText("Bartosz Bąk")
   await expect(row(page, "09:40–10:00")).toContainText("Celina Cis")
@@ -235,18 +238,15 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   await bartosz.focus()
   await page.keyboard.press("Space")
   await expect(page.getByRole("status")).toContainText("Bartosz Bąk")
-  const signalsBefore = await channel.signals()
+  const signal = await channel.nextSignal()
 
-  const other = await browser.newPage()
-  await login(other)
-  await openBoard(other, examId)
+  const other = await secondBoard(page, browser, examId)
   const otherTile = tile(other, "Bartosz Bąk")
   await dragWithKeyboard(other, await hydrated(otherTile), row(other, "09:40–10:00"))
   await expect(other.getByText("Przeniesiono.")).toBeVisible()
   await other.close()
 
-  await expect.poll(channel.signals).toBeGreaterThan(signalsBefore)
-  await page.waitForTimeout(500)
+  await signal()
   await expect(row(page, "09:20–09:40")).toContainText("Bartosz Bąk")
 
   await page.keyboard.press("Escape")

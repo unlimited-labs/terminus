@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 
-import { expect, type Locator, type Page } from "@playwright/test"
+import { expect, type Browser, type Locator, type Page } from "@playwright/test"
 import { z } from "zod"
 
 import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
@@ -43,6 +43,26 @@ export const tile = (page: Page, name: string) =>
 export async function openBoard(page: Page, examId: string) {
   await page.goto(`/zaliczenia/${examId}/tablica`)
   await page.getByRole("heading", { name: /tablica zapisów/ }).waitFor()
+}
+
+/** Druga karta tego samego prowadzącego (sesja z `page`) z tablicą zaliczenia. */
+export async function secondBoard(page: Page, browser: Browser, examId: string) {
+  const other = await browser.newPage({ storageState: await page.context().storageState() })
+  await openBoard(other, examId)
+  return other
+}
+
+/** Wstrzymuje zapisy funkcji serwerowych strony (POST; przy `firstOnly` tylko pierwszy) do wywołania zwróconej funkcji. */
+export async function holdWrites(page: Page, { firstOnly = false } = {}) {
+  const held = Promise.withResolvers<void>()
+  let holding = true
+  await page.route("**/_serverFn/**", async (route) => {
+    if (route.request().method() !== "POST" || !holding) return route.continue()
+    if (firstOnly) holding = false
+    await held.promise
+    await route.continue()
+  })
+  return held.resolve
 }
 
 export async function fillLogin(page: Page, email: string, password: string) {
