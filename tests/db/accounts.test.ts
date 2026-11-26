@@ -235,14 +235,11 @@ test("zaliczenia zablokowanego konta: superadmin widzi je i usuwa; aktywnego kon
 
 test("blokada i edycja konta budzą strony zaliczeń, które to konto prowadzi, i tylko te", async () => {
   const admin = await account("admin")
-  const rosters = { g1: { students: ["1"], slots: [inDays(1)] } }
-  const banned = await createExam({ rosters })
-  const edited = await createExam({ rosters })
+  const banned = await createExam({ rosters: {} })
+  const edited = await createExam({ rosters: {} })
   const signals = { banned: 0, edited: 0 }
-  const offs = [
-    onExamChange(banned.examId, () => signals.banned++),
-    onExamChange(edited.examId, () => signals.edited++),
-  ]
+  onExamChange(banned.examId, () => signals.banned++)
+  onExamChange(edited.examId, () => signals.edited++)
 
   expect(await setBanned(admin.headers, { userId: banned.teacherId, banned: true })).toEqual({
     ok: true,
@@ -254,5 +251,4 @@ test("blokada i edycja konta budzą strony zaliczeń, które to konto prowadzi, 
     await editAccount(admin.headers, { userId: edited.teacherId, email, name: "Nowe imię" }),
   ).toEqual({ ok: true })
   expect(signals).toEqual({ banned: 1, edited: 1 })
-  for (const off of offs) off()
 })

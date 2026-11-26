@@ -167,8 +167,7 @@ test("student się zapisuje → tablica prowadzącego pokazuje go bez przeładow
 
   const student = await browser.newPage()
   await student.goto(`/z/${examId}`)
-  await hydrated(student.getByRole("button", { name: "Zapisz się" }))
-  await student.getByRole("button", { name: "Zapisz się" }).click()
+  await (await hydrated(student.getByRole("button", { name: "Zapisz się" }))).click()
   await student.getByLabel("Osoba 1 — numer indeksu").fill("500003")
   await student.getByRole("button", { name: "Losuj slot" }).click()
   await expect(student.getByText("Slot jest przydzielony na stałe.")).toBeVisible()

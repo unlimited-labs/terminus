@@ -45,10 +45,10 @@ test("skrypt superadmina bez ADMIN_PASSWORD kończy się kodem 0", () => {
   expect(out).toContain("pomijam")
 })
 
-test("końcówki pluginu admin nie są dostępne przez HTTP", async () => {
-  for (const path of ["impersonate-user", "remove-user"]) {
+test("końcówki pluginu admin i zmiana własnego nazwiska nie są dostępne przez HTTP", async () => {
+  for (const path of ["admin/impersonate-user", "admin/remove-user", "update-user"]) {
     const response = await auth.handler(
-      new Request(`http://localhost:3000/api/auth/admin/${path}`, {
+      new Request(`http://localhost:3000/api/auth/${path}`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ userId: "x" }),
@@ -56,15 +56,4 @@ test("końcówki pluginu admin nie są dostępne przez HTTP", async () => {
     )
     expect(response.status).toBe(404)
   }
-})
-
-test("zmiana własnego nazwiska przez HTTP jest wyłączona", async () => {
-  const response = await auth.handler(
-    new Request("http://localhost:3000/api/auth/update-user", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name: "x" }),
-    }),
-  )
-  expect(response.status).toBe(404)
 })

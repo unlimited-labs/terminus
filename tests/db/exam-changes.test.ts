@@ -17,53 +17,37 @@ test("komenda tablicy emituje sygnał po zapisie; NO_CHANGE i NOT_FOUND nie", as
   const [slot] = await db.slot.findMany({ where: { examId } })
   const listener = vi.fn<() => void>()
   onExamChange(examId, listener)
+  const move = (teacher: string, toSlotId: string | null) =>
+    runBoardCommand(examId, teacher, { kind: "move", studentNumber: "1", toSlotId })
 
   // Najpierw odmowy: po udanej komendzie okno łączenia jest otwarte i błędny sygnał by się ukrył.
-  expect(
-    await runBoardCommand(examId, teacherId, { kind: "move", studentNumber: "1", toSlotId: null }),
-  ).toMatchObject({ ok: false, code: "NO_CHANGE" })
-  expect(
-    await runBoardCommand(examId, randomUUID(), {
-      kind: "move",
-      studentNumber: "1",
-      toSlotId: slot!.id,
-    }),
-  ).toMatchObject({ ok: false, code: "NOT_FOUND" })
+  expect(await move(teacherId, null)).toMatchObject({ ok: false, code: "NO_CHANGE" })
+  expect(await move(randomUUID(), slot!.id)).toMatchObject({ ok: false, code: "NOT_FOUND" })
   expect(listener).not.toHaveBeenCalled()
 
-  expect(
-    await runBoardCommand(examId, teacherId, {
-      kind: "move",
-      studentNumber: "1",
-      toSlotId: slot!.id,
-    }),
-  ).toMatchObject({ ok: true })
+  expect(await move(teacherId, slot!.id)).toMatchObject({ ok: true })
   expect(listener).toHaveBeenCalledTimes(1)
 })
 
-const changes = (examId: string, headers = new Headers()) =>
-  serveExamChanges(new Request(`http://localhost/api/exams/${examId}/changes`, { headers }), examId)
-
-/** Status odpowiedzi; strumień 200 od razu zamknięty, żeby nie wisiał. */
-async function statusOf(response: Response) {
+/** Status trasy zmian; strumień 200 od razu zamknięty, żeby nie wisiał. */
+async function status(examId: string, headers = new Headers()) {
+  const request = new Request(`http://localhost/api/exams/${examId}/changes`, { headers })
+  const response = await serveExamChanges(request, examId)
   await response.body?.cancel()
   return response.status
 }
 
 test("trasa zmian: prowadzący i student przy otwartej bramce tak, obcy prowadzący i bramka logowania nie", async () => {
-  const { examId } = await createExam({ rosters: { g1: { students: ["1"], slots: [] } } })
+  const { examId } = await createExam({ rosters: {} })
   const owner = await account()
   const stranger = await account()
-  await db.exam.update({
-    where: { id: examId },
-    data: { teachers: { connect: { id: owner.id } } },
-  })
+  await db.exam.update({ where: { id: examId }, data: { teachers: { connect: { id: owner.id } } } })
 
-  expect(await statusOf(await changes(examId))).toBe(200)
-  expect(await statusOf(await changes("nie-uuid"))).toBe(404)
+  expect(await status(examId)).toBe(200)
+  expect(await status("nie-uuid")).toBe(404)
 
   await db.exam.update({ where: { id: examId }, data: { requireEmailLogin: true } })
-  expect(await statusOf(await changes(examId, owner.headers))).toBe(200)
-  expect(await statusOf(await changes(examId, stranger.headers))).toBe(403)
-  expect(await statusOf(await changes(examId))).toBe(403)
+  expect(await status(examId, owner.headers)).toBe(200)
+  expect(await status(examId, stranger.headers)).toBe(403)
+  expect(await status(examId)).toBe(403)
 })
