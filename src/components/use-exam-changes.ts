@@ -19,7 +19,7 @@ export function watchExamChanges(url: string, onChange: () => void) {
       delay = FIRST_RETRY_MS
       onChange()
     })
-    source.addEventListener("message", () => onChange())
+    source.addEventListener("message", onChange)
     source.addEventListener("error", () => {
       if (source.readyState !== EventSource.CLOSED) return
       if (delay === FIRST_RETRY_MS) onChange()

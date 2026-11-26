@@ -79,9 +79,12 @@ function usePickedSlot(schedule: Schedule, numbering: SlotNumbering) {
     setSeenMode(schedule.assignmentMode)
     setPickedId(null)
   }
-  const slot = schedule.slots.find((s) => s.id === pickedId && isFreeTeamSlot(s, schedule.now))
-  const picked = slot ? { id: slot.id, label: formatSlotWhen(slot.startsAt, numbering) } : null
-  const taken = schedule.slots.some((s) => s.id === pickedId && s.team.length > 0)
+  const slot = schedule.slots.find((s) => s.id === pickedId)
+  const picked =
+    slot && isFreeTeamSlot(slot, schedule.now)
+      ? { id: slot.id, label: formatSlotWhen(slot.startsAt, numbering) }
+      : null
+  const taken = (slot?.team.length ?? 0) > 0
   useEffect(() => {
     if (taken) toast.info(PICKED_SLOT_TAKEN)
   }, [taken])

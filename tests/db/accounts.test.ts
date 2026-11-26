@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto"
 
-import { consola } from "consola"
 import { beforeEach, expect, test, vi } from "vitest"
 
 import {
@@ -256,26 +255,4 @@ test("blokada i edycja konta budzą strony zaliczeń, które to konto prowadzi, 
   ).toEqual({ ok: true })
   expect(signals).toEqual({ banned: 1, edited: 1 })
   for (const off of offs) off()
-})
-
-test("nieudane szukanie zaliczeń do sygnału nie zamienia zapisanej zmiany konta w błąd", async () => {
-  const admin = await account("admin")
-  const target = await account()
-  const error = vi.spyOn(consola, "error").mockImplementation(() => {})
-  const lookup = vi.spyOn(db.exam, "findMany").mockRejectedValue(new Error("db down"))
-  const email = `${randomUUID()}@example.com`
-
-  try {
-    expect(await editAccount(admin.headers, { userId: target.id, email, name: "X" })).toEqual({
-      ok: true,
-    })
-    expect(await setBanned(admin.headers, { userId: target.id, banned: true })).toEqual({
-      ok: true,
-    })
-    expect(error).toHaveBeenCalledTimes(2)
-  } finally {
-    lookup.mockRestore()
-    error.mockRestore()
-  }
-  expect(await row(target.id)).toMatchObject({ email, banned: true })
 })

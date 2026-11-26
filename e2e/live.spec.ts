@@ -107,7 +107,6 @@ test("po zapisie ustawień formularz bierze zmianę drugiego prowadzącego", asy
 }) => {
   const url = `/zaliczenia/${exams().liveSettings}?tab=ustawienia`
   await login(page)
-  await page.clock.install()
   await page.goto(url)
   const name = await hydrated(page.getByLabel("Nazwa (z nazwą przedmiotu)"))
   await name.fill("Ustawienia A E2E")
@@ -122,9 +121,7 @@ test("po zapisie ustawień formularz bierze zmianę drugiego prowadzącego", asy
   await expect(other.getByText("Zapisano zmiany.")).toBeVisible()
   await other.close()
 
-  // Odświeżenie pod otwartym formularzem: dane starsze niż staleTime i powrót na kartę.
-  await page.clock.fastForward("00:31")
-  await page.evaluate(() => window.dispatchEvent(new Event("visibilitychange")))
+  // Sygnał kanału zmian odświeża dane pod otwartym, już zapisanym formularzem.
   await expect(page.getByLabel("Opis i miejsce")).toHaveValue("Sala B")
   await expect(name).toHaveValue("Ustawienia A E2E")
 })

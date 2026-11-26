@@ -48,15 +48,15 @@ const isEmailTaken = (e: unknown) =>
   isUniqueViolation(e) ||
   (isAPIError(e) && e.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")
 
-/** Imię i blokada prowadzącego zmieniają stronę studenta jego zaliczeń. */
-async function emitTaughtExams(userId: string) {
-  try {
-    const exams = await db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
-    for (const { id } of exams) emitExamChange(id)
-  } catch (e) {
-    // Zmiana jest już zapisana; bez sygnału strony odświeżą się przy powrocie do karty.
-    consola.error("exam-changes", e)
-  }
+/**
+ * Imię i blokada prowadzącego zmieniają strony jego zaliczeń. Zaliczenia czytane przed zapisem:
+ * błąd odczytu przerywa operację, zanim cokolwiek się zmieni, a sam sygnał nie rzuca.
+ */
+const taughtExamIds = (userId: string) =>
+  db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
+
+const emitExams = (exams: { id: string }[]) => {
+  for (const { id } of exams) emitExamChange(id)
 }
 
 /** Powtarza middleware `requireAdmin`, żeby odmowę dało się sprawdzić testem każdej operacji. */
@@ -124,15 +124,15 @@ export async function editAccount(
 ): Promise<Result> {
   await assertAdmin(headers)
   try {
-    const before = await db.user.findFirst({
-      where: { id: userId, ...notStudent },
-      select: { email: true },
-    })
+    const [before, exams] = await Promise.all([
+      db.user.findFirst({ where: { id: userId, ...notStudent }, select: { email: true } }),
+      taughtExamIds(userId),
+    ])
     if (!before) return { ok: false, code: "NOT_FOUND" }
     await db.user.update({ where: { id: userId }, data: { email, name } })
     // Link wysłany na stary adres mógł trafić pod zły adres.
     if (before.email !== email) await deletePasswordLinks(userId)
-    await emitTaughtExams(userId)
+    emitExams(exams)
     return { ok: true }
   } catch (e) {
     if (isUniqueViolation(e)) return { ok: false, code: "EMAIL_TAKEN" }
@@ -168,12 +168,13 @@ export async function setBanned(
 ): Promise<Result> {
   const admin = await assertAdmin(headers)
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
+  const exams = await taughtExamIds(userId)
   await (banned
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))
   // Ważny link do hasła pozwoliłby ustawić hasło w czasie blokady.
   if (banned) await Promise.all([deletePasswordLinks(userId), disconnectAgents(userId)])
-  await emitTaughtExams(userId)
+  emitExams(exams)
   logAction(admin.id, banned ? "blokada" : "odblokowanie", userId)
   return { ok: true }
 }
