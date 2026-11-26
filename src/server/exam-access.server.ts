@@ -1,11 +1,11 @@
 import { Prisma } from "../generated/prisma/client.ts"
+import { resultOk } from "../messages.pl.ts"
 import { examIdSchema } from "../schemas/exam.ts"
 
 import { sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { changeStream, emitExamChange } from "./exam-changes.server.ts"
 import { sessionEmail, studentAccess, studentAllowed } from "./student-access.server.ts"
-import { resultOk } from "../messages.pl.ts"
 
 export type Tx = Prisma.TransactionClient
 type NotFound = { ok: false; code: "NOT_FOUND" }
@@ -32,9 +32,8 @@ export function getOwnedExam(examId: string, userId: string) {
 }
 
 /**
- * Kanał zmian zaliczenia (`GET /api/exams/$examId/changes`): prowadzący albo student z dostępem do
- * harmonogramu. Dostęp sprawdzany raz, przy otwarciu: sygnał nie niesie danych, a każde pobranie
- * po nim przechodzi własną autoryzację. Odmowa = 403, po której `EventSource` nie wznawia sam.
+ * Kanał zmian: prowadzący zaliczenia albo student z dostępem do harmonogramu. Dostęp sprawdzany raz,
+ * przy otwarciu: sygnał nie niesie danych, a każde pobranie po nim przechodzi własną autoryzację.
  */
 export async function serveExamChanges(request: Request, examId: string) {
   if (!examIdSchema.safeParse({ examId }).success) return new Response(null, { status: 404 })

@@ -154,12 +154,10 @@ function SchedulePage() {
   )
 }
 
-/** Harmonogram na żywo: sygnały kanału zmian oraz pobranie w chwili otwarcia zapisów wg zegara
- * serwera. Każde pobranie (nowe `now`) ustawia licznik od nowa, a kanał pobiera przy każdym
- * połączeniu, więc licznik nie zostaje na starych danych z SSR ani z pamięci podręcznej. */
+/** Harmonogram na żywo: kanał zmian i pobranie w chwili otwarcia zapisów wg zegara serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
 function useLiveSchedule(examId: string, { opensAt, now }: Schedule) {
   const queryClient = useQueryClient()
-  useExamChanges(examId, scheduleQuery(examId).queryKey)
+  useExamChanges(examId)
   useEffect(() => {
     const { queryKey } = scheduleQuery(examId)
     const ms = msUntilOpen(opensAt, now)

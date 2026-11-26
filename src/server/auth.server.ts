@@ -150,7 +150,7 @@ export const auth = betterAuth({
     "/two-factor/disable",
     // JWT sesji nie wydajemy; wtyczka `jwt` jest tylko po to, by `mcp()` podpisywał access tokeny.
     "/token",
-    // Nazwisko prowadzącego zmienia tylko superadmin (`editAccount`); imiona studentów są z listy indeksów.
+    // Imię i nazwisko prowadzącego zmienia tylko superadmin (`editAccount`); studentów — lista indeksów.
     "/update-user",
   ],
   databaseHooks: {

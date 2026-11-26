@@ -53,7 +53,9 @@ export async function studentAccess(
 }
 
 /** Czy student widzi harmonogram: bramka otwarta albo zalogowany adres z listy. */
-export const studentAllowed = (access: StudentAccess) =>
+export const studentAllowed = (
+  access: StudentAccess,
+): access is Extract<StudentAccess, { kind: "open" | "ok" }> =>
   access.kind === "open" || access.kind === "ok"
 
 /** Dla funkcji serwerowych studenta: poza `open` i `ok` odmowa, po której strona wraca do ekranu logowania. */

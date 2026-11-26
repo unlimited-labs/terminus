@@ -6,7 +6,7 @@ import { examIdSchema } from "../schemas/exam.ts"
 
 import { loadSchedule } from "./exam-state.server.ts"
 import { cachedSchedule } from "./schedule-cache.server.ts"
-import { sessionEmail, studentAccess } from "./student-access.server.ts"
+import { sessionEmail, studentAccess, studentAllowed } from "./student-access.server.ts"
 
 export type Schedule = NonNullable<Awaited<ReturnType<typeof loadSchedule>>>
 
@@ -25,7 +25,7 @@ const getSchedule = createServerFn()
     ])
     if (!schedule) return null
     const access = await studentAccess(examId, email, schedule.requireEmailLogin)
-    if (access.kind === "login" || access.kind === "unavailable") {
+    if (!studentAllowed(access)) {
       return { gate: access.kind, name: schedule.name }
     }
     const studentIndex = access.kind === "ok" ? access.studentNumber : null

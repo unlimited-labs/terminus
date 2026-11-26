@@ -1,5 +1,8 @@
-import { useQueryClient, type QueryKey } from "@tanstack/react-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useEffectEvent, useRef } from "react"
+
+import { examQuery } from "@/server/exams"
+import { scheduleQuery } from "@/server/schedule"
 
 const FIRST_RETRY_MS = 1000
 const MAX_RETRY_MS = 30_000
@@ -35,14 +38,10 @@ export function watchExamChanges(url: string, onChange: () => void) {
 }
 
 /**
- * Strona na żywo: sygnał zmiany zaliczenia unieważnia zapytanie `queryKey` (karta w tle tylko oznacza je
- * nieaktualne; pobranie przy powrocie). Przy `defer` sygnał czeka, aż `defer` znów będzie `false`.
+ * Strona na żywo: sygnał zmiany zaliczenia unieważnia jego zapytania (zaliczenie prowadzącego, harmonogram
+ * studenta; karta w tle tylko oznacza je nieaktualne, pobranie przy powrocie). Przy `defer` sygnał czeka, aż `defer` znów będzie `false`.
  */
-export function useExamChanges(
-  examId: string,
-  queryKey: QueryKey,
-  { defer = false }: { defer?: boolean } = {},
-) {
+export function useExamChanges(examId: string, { defer = false }: { defer?: boolean } = {}) {
   const queryClient = useQueryClient()
   const pending = useRef(false)
   const onChange = useEffectEvent(() => {
@@ -51,7 +50,8 @@ export function useExamChanges(
       return
     }
     const refetchType = document.hidden ? "none" : "active"
-    void queryClient.invalidateQueries({ queryKey, refetchType })
+    for (const { queryKey } of [examQuery(examId), scheduleQuery(examId)])
+      void queryClient.invalidateQueries({ queryKey, refetchType })
   })
   useEffect(() => watchExamChanges(`/api/exams/${examId}/changes`, () => onChange()), [examId])
   useEffect(() => {

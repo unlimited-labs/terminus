@@ -16,16 +16,13 @@ import { examCounts, fullName } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { GRADING } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
-import { examQuery } from "@/server/exams"
 
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
   const [dragging, setDragging] = useState(false)
   const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
   // Sygnał w trakcie kolejki nadpisałby stan optymistyczny, w trakcie przeciągania — kafelki pod kursorem.
-  useExamChanges(exam.id, examQuery(exam.id).queryKey, {
-    defer: useBoardBusy(exam.id) || dragging,
-  })
+  useExamChanges(exam.id, { defer: useBoardBusy(exam.id) || dragging })
   const rosterNameOf = hasManyRosters(exam.rosters) ? rosterNames(exam.rosters) : null
   const teams = Map.groupBy(exam.people, (p) => p.slotId)
   const q = search.trim().toLowerCase()

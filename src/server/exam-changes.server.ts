@@ -55,10 +55,7 @@ const encoder = new TextEncoder()
 const CHANGE = encoder.encode("data: change\n\n")
 const PING = encoder.encode(": ping\n\n")
 
-/**
- * Odpowiedź SSE z sygnałami zaliczenia (bez danych) i pingiem co 30 s; dostęp sprawdza wołający.
- * Zamknięcie przez klienta (`signal`) albo anulowanie strumienia odpina słuchacza i ping.
- */
+/** Odpowiedź SSE z sygnałami zaliczenia (bez danych) i pingiem co 30 s; dostęp sprawdza wołający. */
 export function changeStream(examId: string, signal: AbortSignal) {
   let stop: () => void
   const body = new ReadableStream<Uint8Array>({

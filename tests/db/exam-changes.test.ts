@@ -29,7 +29,7 @@ test("komenda tablicy emituje sygnał po zapisie; NO_CHANGE i NOT_FOUND nie", as
   expect(listener).toHaveBeenCalledTimes(1)
 })
 
-/** Status trasy zmian; strumień 200 od razu zamknięty, żeby nie wisiał. */
+/** Status odpowiedzi kanału zmian; strumień 200 od razu zamknięty, żeby nie wisiał. */
 async function status(examId: string, headers = new Headers()) {
   const request = new Request(`http://localhost/api/exams/${examId}/changes`, { headers })
   const response = await serveExamChanges(request, examId)
@@ -37,7 +37,7 @@ async function status(examId: string, headers = new Headers()) {
   return response.status
 }
 
-test("trasa zmian: prowadzący i student przy otwartej bramce tak, obcy prowadzący i bramka logowania nie", async () => {
+test("kanał zmian: prowadzący i student przy otwartej bramce tak, obcy prowadzący i bramka logowania nie", async () => {
   const { examId } = await createExam({ rosters: {} })
   const owner = await account()
   const stranger = await account()

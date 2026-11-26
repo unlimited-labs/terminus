@@ -29,7 +29,7 @@ function ExamPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const { data: exam } = useSuspenseQuery(examQuery(examId))
-  useExamChanges(examId, examQuery(examId).queryKey)
+  useExamChanges(examId)
   if (!exam) throw notFound()
   const tab = search.tab ?? (exam.rosters.length ? "sloty" : "lista")
   return (
