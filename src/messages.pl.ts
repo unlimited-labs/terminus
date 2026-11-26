@@ -171,6 +171,8 @@ export const firstIssue = (error: z.ZodError) => error.issues[0]?.message ?? UNE
 
 export const SLOT_IS_FINAL = "Slot jest przydzielony na stałe."
 
+export const PICKED_SLOT_TAKEN = "Wybrany slot zajął ktoś inny. Wybierz inny."
+
 /** `ALREADY_ENROLLED` dla jednej osoby: to nie błąd, tylko jej slot. */
 export const ownSlotMessage = (startsAt: Date, when: SlotWhen = formatDayTime) =>
   `Masz już zapis: ${when(startsAt)}. ${SLOT_IS_FINAL}`

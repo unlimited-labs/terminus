@@ -150,6 +150,19 @@ async function noTimesExam() {
   return id
 }
 
+/** Ręczny przydział z polem „Temat”: dwóch studentów, dwa sloty (jeden zostaje wolny po zapisie). */
+async function livePickExam() {
+  const id = await manualExam("Wybór na żywo E2E", "MANUAL", [
+    ["990011", "Adam", "Ar"],
+    ["990012", "Beata", "Bor"],
+  ])
+  await db.exam.update({
+    where: { id },
+    data: { fields: [{ id: "t", label: "Temat", required: false }] },
+  })
+  return id
+}
+
 /** Zaliczenie z adresami na liście; `requireEmailLogin` włączone, gdy `emailLogin`. */
 async function emailLoginExam(name: string, emailLogin: boolean) {
   const id = await createExam(
@@ -275,6 +288,8 @@ export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
     agent: await createExam("Agent E2E", 1, [["730001", "Ala", "Agent"]], [at(22, 9)], []),
     liveStudent: await board([["500002", 0]]),
+    livePick: await livePickExam(),
+    liveSettings: await createExam("Ustawienia na żywo E2E", 1, [], [], []),
     liveOpening: await createExam(
       "Otwarcie E2E",
       1,
