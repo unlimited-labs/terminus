@@ -13,34 +13,27 @@ const WINDOW_MS = 1000
 /** Zaliczenia z otwartym oknem łączenia → czy w oknie przyszedł kolejny sygnał. */
 const changedInWindow = new Map<string, boolean>()
 
-function send(examId: string) {
+/** Sygnał od razu i okno łączenia; sygnał z okna idzie na jego końcu i otwiera następne. */
+function sendAndOpenWindow(examId: string) {
+  changedInWindow.set(examId, false)
   try {
     emitter.emit(examId)
   } catch (e) {
     // Błąd słuchacza nie może zamienić zapisanej zmiany w błąd zapisu.
     consola.error("exam-changes", e)
   }
-}
-
-function closeWindowLater(examId: string) {
   setTimeout(() => {
-    if (!changedInWindow.get(examId)) return changedInWindow.delete(examId)
-    changedInWindow.set(examId, false)
-    send(examId)
-    closeWindowLater(examId)
+    const changed = changedInWindow.get(examId)
+    changedInWindow.delete(examId)
+    if (changed) sendAndOpenWindow(examId)
   }, WINDOW_MS)
 }
 
 /** Sygnał „zaliczenie się zmieniło”: pierwszy od razu, kolejne najwyżej raz na sekundę, ostatni zawsze dochodzi. */
 export function emitExamChange(examId: string) {
   forgetSchedule(examId)
-  if (changedInWindow.has(examId)) {
-    changedInWindow.set(examId, true)
-    return
-  }
-  changedInWindow.set(examId, false)
-  send(examId)
-  closeWindowLater(examId)
+  if (changedInWindow.has(examId)) changedInWindow.set(examId, true)
+  else sendAndOpenWindow(examId)
 }
 
 export function onExamChange(examId: string, listener: () => void) {
