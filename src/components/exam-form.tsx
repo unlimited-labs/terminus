@@ -11,16 +11,19 @@ export function ExamForm({
   submitLabel,
   emailLoginAvailable,
   onSubmit,
+  resetOnOk,
 }: {
   defaultValues: ExamValues
   submitLabel: string
   /** Podane = pokazuje opcję logowania mailem; `false` = serwer nie ma poczty. */
   emailLoginAvailable?: boolean
   onSubmit: (values: ExamValues) => Promise<unknown>
+  /** Po `{ ok: true }` formularz wraca do `defaultValues` i znów bierze świeże dane. */
+  resetOnOk?: boolean
 }) {
   const form = useAppForm({
     defaultValues,
-    ...schemaSubmit(examFormSchema, onSubmit),
+    ...schemaSubmit(examFormSchema, onSubmit, { resetOnOk }),
   })
   return (
     <form.AppForm>

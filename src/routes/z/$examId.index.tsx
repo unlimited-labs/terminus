@@ -1,7 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
 import { EnrollForm, EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
@@ -13,7 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeTeamSlot } from "@/domain/schedule"
 import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
-import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
+import { errorMessage, PICKED_SLOT_TAKEN, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
 import { scheduleQuery, type Schedule } from "@/server/schedule"
 
@@ -80,6 +81,10 @@ function usePickedSlot(schedule: Schedule, numbering: SlotNumbering) {
   }
   const slot = schedule.slots.find((s) => s.id === pickedId && isFreeTeamSlot(s, schedule.now))
   const picked = slot ? { id: slot.id, label: formatSlotWhen(slot.startsAt, numbering) } : null
+  const taken = schedule.slots.some((s) => s.id === pickedId && s.team.length > 0)
+  useEffect(() => {
+    if (taken) toast.info(PICKED_SLOT_TAKEN)
+  }, [taken])
   return [picked, setPickedId] as const
 }
 
@@ -223,7 +228,12 @@ function OpenSchedule({
           fields={mode.fields}
           submitLabel={mode.submitLabel}
           slotWhen={(at) => formatSlotWhen(at, numbering)}
-          onEnrolled={(slotId, ticket) => setMine({ slotId, ticket })}
+          onEnrolled={(slotId, ticket) => {
+            // Własny zapis zajmuje slot — bez toastu „zajął ktoś inny”.
+            // shortcut: odświeżenie z kanału przed odpowiedzią zapisu nadal pokaże toast; blokować na czas zapisu, jeśli ktoś to zgłosi
+            setPickedId(null)
+            setMine({ slotId, ticket })
+          }}
         />
       </EnrollSheet>
     </StudentPage>

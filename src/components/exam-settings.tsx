@@ -93,6 +93,7 @@ export function ExamSettingsForm({ exam }: { exam: ExamDetail }) {
         submitLabel="Zapisz"
         emailLoginAvailable={exam.emailLoginAvailable}
         onSubmit={(values) => update.mutateAsync({ examId: exam.id, ...values })}
+        resetOnOk
       />
     </SectionCard>
   )
