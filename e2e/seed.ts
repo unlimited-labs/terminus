@@ -296,7 +296,6 @@ export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
       [["510001", "Olga", "Otwarta"]],
       [at(23, 9)],
       [],
-      at(30, 9),
     ),
     liveBoard: await board([]),
     liveQueue: await board([["500001", 0]]),

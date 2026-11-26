@@ -35,10 +35,9 @@ test("prowadzący zmienia sposób przy otwartej stronie: dane zostają, strona p
 
   // Kanał zmian przełącza otwarty formularz na wybór bez klikania „Losuj slot”.
   const dialog = page.getByRole("dialog")
-  await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeVisible()
+  await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeDisabled()
   await expect(dialog.getByLabel("Numer indeksu")).toHaveValue("990002")
   await expect(dialog).toContainText("Nie wybrano slotu")
-  await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeDisabled()
 })
 
 test("prowadzący wyłącza godziny: student widzi numery slotów, tablica dalej godziny", async ({

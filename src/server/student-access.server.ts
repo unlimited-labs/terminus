@@ -52,9 +52,13 @@ export async function studentAccess(
   return entry ? { kind: "ok", email, studentNumber: entry.studentNumber } : { kind: "login" }
 }
 
+/** Czy student widzi harmonogram: bramka otwarta albo zalogowany adres z listy. */
+export const studentAllowed = (access: StudentAccess) =>
+  access.kind === "open" || access.kind === "ok"
+
 /** Dla funkcji serwerowych studenta: poza `open` i `ok` odmowa, po której strona wraca do ekranu logowania. */
 export async function requireStudent(examId: string, headers: Headers) {
   const access = await studentAccess(examId, await sessionEmail(headers))
-  if (access.kind !== "open" && access.kind !== "ok") throw new Error(ACCESS_DENIED)
+  if (!studentAllowed(access)) throw new Error(ACCESS_DENIED)
   return access
 }

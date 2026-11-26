@@ -5,7 +5,7 @@ import { Prisma } from "../generated/prisma/client.ts"
 import { sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { changeStream, emitExamChange } from "./exam-changes.server.ts"
-import { sessionEmail, studentAccess } from "./student-access.server.ts"
+import { sessionEmail, studentAccess, studentAllowed } from "./student-access.server.ts"
 import { resultOk } from "../messages.pl.ts"
 
 export type Tx = Prisma.TransactionClient
@@ -43,7 +43,7 @@ export async function serveExamChanges(request: Request, examId: string) {
   const teaches = user !== null && (await getOwnedExam(examId, user.id)) !== null
   if (!teaches) {
     const access = await studentAccess(examId, await sessionEmail(request.headers))
-    if (access.kind !== "open" && access.kind !== "ok") return new Response(null, { status: 403 })
+    if (!studentAllowed(access)) return new Response(null, { status: 403 })
   }
   return changeStream(examId, request.signal)
 }
