@@ -8,6 +8,7 @@ import { Notice } from "@/components/notice"
 import { StudentGate } from "@/components/student-gate"
 import { StickyAction, StudentPage } from "@/components/student-page"
 import { ScheduleBoard } from "@/components/schedule-board"
+import { useExamChanges } from "@/components/use-exam-changes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { isEnrollmentOpen, isFreeTeamSlot } from "@/domain/schedule"
@@ -161,6 +162,7 @@ function OpenSchedule({
   const numbering = slotNumbering(schedule)
   const [picked, setPickedId] = usePickedSlot(schedule, numbering)
   const [showCount, setShowCount] = useState(0)
+  useExamChanges(examId, [scheduleQuery(examId).queryKey])
 
   const mode = entryMode(schedule, picked)
   const title = mine ? "Twój slot" : mode.action
