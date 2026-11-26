@@ -6,6 +6,7 @@ import { sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
 import { changeStream, emitExamChange } from "./exam-changes.server.ts"
 import { sessionEmail, studentAccess } from "./student-access.server.ts"
+import { resultOk } from "../messages.pl.ts"
 
 export type Tx = Prisma.TransactionClient
 type NotFound = { ok: false; code: "NOT_FOUND" }
@@ -86,7 +87,6 @@ export async function withExamLock<T>(
     }
     throw e
   }
-  const refused = typeof result === "object" && result !== null && "ok" in result && !result.ok
-  if (!refused) emitExamChange(examId)
+  if (resultOk(result) !== false) emitExamChange(examId)
   return result
 }

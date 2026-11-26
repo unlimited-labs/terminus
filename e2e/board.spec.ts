@@ -1,6 +1,15 @@
 import { expect, test } from "@playwright/test"
 
-import { dragWithKeyboard, dragWithMouse, exams, login, openBoard, pool, row } from "./helpers.ts"
+import {
+  dragWithKeyboard,
+  dragWithMouse,
+  exams,
+  login,
+  openBoard,
+  pool,
+  row,
+  tile,
+} from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
@@ -27,8 +36,8 @@ test("myszą: ręczny zapis z Niezapisanych, Cofnij, zamiana osób", async ({ pa
 
 test("klawiaturą: przeniesienie osoby do wolnego slotu", async ({ page }) => {
   await openBoard(page, exams().boardKeyboard)
-  const tile = page.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
-  await dragWithKeyboard(page, tile, row(page, "09:40–10:00"))
+  const bartosz = tile(page, "Bartosz Bąk")
+  await dragWithKeyboard(page, bartosz, row(page, "09:40–10:00"))
   await expect(page.getByText("Przeniesiono.")).toBeVisible()
   await expect(row(page, "09:40–10:00")).toContainText("Bartosz Bąk")
   await expect(page.getByText(/^Upuszczono Bartosz Bąk/)).toBeAttached()

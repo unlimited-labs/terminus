@@ -23,7 +23,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [dragging, setDragging] = useState(false)
   const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
   // Sygnał w trakcie kolejki nadpisałby stan optymistyczny, w trakcie przeciągania — kafelki pod kursorem.
-  useExamChanges(exam.id, [examQuery(exam.id).queryKey], {
+  useExamChanges(exam.id, examQuery(exam.id).queryKey, {
     defer: useBoardBusy(exam.id) || dragging,
   })
   const rosterNameOf = hasManyRosters(exam.rosters) ? rosterNames(exam.rosters) : null

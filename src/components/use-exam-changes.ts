@@ -35,12 +35,12 @@ export function watchExamChanges(url: string, onChange: () => void) {
 }
 
 /**
- * Strona na żywo: sygnał zmiany zaliczenia unieważnia zapytania `keys` (karta w tle tylko oznacza je
+ * Strona na żywo: sygnał zmiany zaliczenia unieważnia zapytanie `queryKey` (karta w tle tylko oznacza je
  * nieaktualne; pobranie przy powrocie). Przy `defer` sygnał czeka, aż `defer` znów będzie `false`.
  */
 export function useExamChanges(
   examId: string,
-  keys: QueryKey[],
+  queryKey: QueryKey,
   { defer = false }: { defer?: boolean } = {},
 ) {
   const queryClient = useQueryClient()
@@ -51,7 +51,7 @@ export function useExamChanges(
       return
     }
     const refetchType = document.hidden ? "none" : "active"
-    for (const queryKey of keys) void queryClient.invalidateQueries({ queryKey, refetchType })
+    void queryClient.invalidateQueries({ queryKey, refetchType })
   })
   useEffect(() => watchExamChanges(`/api/exams/${examId}/changes`, () => onChange()), [examId])
   useEffect(() => {

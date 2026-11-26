@@ -13,6 +13,7 @@ import {
   openBoard,
   pool,
   row,
+  tile,
 } from "./helpers.ts"
 
 declare global {
@@ -54,8 +55,8 @@ test("prowadzący przenosi studenta na tablicy → strona studenta zmienia się 
   await expect(taken).toHaveAccessibleName(/09:00/)
   await hydrated(taken)
 
-  const tile = page.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
-  await dragWithKeyboard(page, tile, row(page, "09:40–10:00"))
+  const bartosz = tile(page, "Bartosz Bąk")
+  await dragWithKeyboard(page, bartosz, row(page, "09:40–10:00"))
   await expect(page.getByText("Przeniesiono.")).toBeVisible()
 
   await expect(taken).toHaveAccessibleName(/09:40/)
@@ -78,13 +79,13 @@ test("wybrany slot zajmuje ktoś inny → toast, wpisane dane zostają", async (
   await expect(other.getByRole("dialog")).toContainText("Beata Bor")
   await other.close()
 
-  await expect(page.getByText("Wybrany slot zajął ktoś inny. Wybierz inny.")).toBeVisible()
+  const toast = page.getByText("Wybrany slot zajął ktoś inny. Wybierz inny.")
+  await expect(toast).toBeVisible()
   await expect(dialog).toContainText("Nie wybrano slotu")
   await expect(dialog.getByLabel("Numer indeksu")).toHaveValue("990011")
   await expect(dialog.getByLabel("Temat (opcjonalnie)")).toHaveValue("Robot")
 
   // Własny zapis zajmuje slot, ale nie pokazuje toastu.
-  const toast = page.getByText("Wybrany slot zajął ktoś inny. Wybierz inny.")
   await expect(toast).toBeHidden({ timeout: 10_000 })
   await page.keyboard.press("Escape")
   await page.getByRole("button", { name: /^09:20.*wolny/ }).click()
@@ -232,9 +233,9 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   await openBoard(page, examId)
   await expect.poll(channel.open).toBe(true)
 
-  const tile = page.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
-  await hydrated(tile)
-  await tile.focus()
+  const bartosz = tile(page, "Bartosz Bąk")
+  await hydrated(bartosz)
+  await bartosz.focus()
   await page.keyboard.press("Space")
   await expect(page.getByRole("status")).toContainText("Bartosz Bąk")
   const signalsBefore = await channel.signals()
@@ -242,7 +243,7 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   const other = await browser.newPage()
   await login(other)
   await openBoard(other, examId)
-  const otherTile = other.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
+  const otherTile = tile(other, "Bartosz Bąk")
   await dragWithKeyboard(other, await hydrated(otherTile), row(other, "09:40–10:00"))
   await expect(other.getByText("Przeniesiono.")).toBeVisible()
   await other.close()

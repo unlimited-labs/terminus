@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test"
 
-import { dayLabel, dragWithMouse, exams, login, openBoard, pool, row } from "./helpers.ts"
+import { dayLabel, dragWithMouse, exams, login, openBoard, pool, row, tile } from "./helpers.ts"
 
 test.beforeEach(async ({ page }) => {
   await login(page)
@@ -41,7 +41,7 @@ test("dwa szybkie przeciągnięcia, pierwsze odrzucone przez serwer: tablica zgo
   await dragWithMouse(page, pool(page).getByText("900001"), row(page, "09:00–09:20"))
   await expect(row(page, "09:00–09:20")).toContainText("Kamil Kos")
   await expect(page.locator("[data-dnd-placeholder]")).toHaveCount(0)
-  const marek = page.locator("[aria-roledescription]", { hasText: "Marek Mak" })
+  const marek = tile(page, "Marek Mak")
   await dragWithMouse(page, marek, row(page, "09:20–09:40"))
   await expect(page.getByRole("status")).toContainText(`na: slot ${dayLabel(9)} 09:20.`)
 

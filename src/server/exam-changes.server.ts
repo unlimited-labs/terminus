@@ -51,25 +51,28 @@ export function onExamChange(examId: string, listener: () => void) {
 }
 
 const PING_MS = 30_000
+const encoder = new TextEncoder()
+const CHANGE = encoder.encode("data: change\n\n")
+const PING = encoder.encode(": ping\n\n")
+const OPEN = encoder.encode(": open\n\n")
 
 /**
  * Odpowiedź SSE z sygnałami zaliczenia (bez danych) i pingiem co 30 s; dostęp sprawdza wołający.
  * Zamknięcie przez klienta (`signal`) albo anulowanie strumienia odpina słuchacza i ping.
  */
 export function changeStream(examId: string, signal: AbortSignal) {
-  const encoder = new TextEncoder()
   let stop: () => void
   const body = new ReadableStream<Uint8Array>({
     start(controller) {
-      const write = (text: string) => {
+      const write = (chunk: Uint8Array) => {
         try {
-          controller.enqueue(encoder.encode(text))
+          controller.enqueue(chunk)
         } catch {
           stop()
         }
       }
-      const off = onExamChange(examId, () => write("data: change\n\n"))
-      const ping = setInterval(() => write(": ping\n\n"), PING_MS)
+      const off = onExamChange(examId, () => write(CHANGE))
+      const ping = setInterval(() => write(PING), PING_MS)
       stop = () => {
         off()
         clearInterval(ping)
@@ -82,7 +85,7 @@ export function changeStream(examId: string, signal: AbortSignal) {
       if (signal.aborted) return close()
       signal.addEventListener("abort", close)
       // Pierwszy bajt wysyła nagłówki od razu: przeglądarka zgłasza `open` bez czekania na ping.
-      write(": open\n\n")
+      write(OPEN)
     },
     cancel: () => stop(),
   })

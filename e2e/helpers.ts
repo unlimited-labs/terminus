@@ -35,6 +35,9 @@ export const dayLabel = (offset: number) => formatDayShort(warsawDateTime(day(of
 /** Wiersz slotu na tablicy po godzinie i panel „Niezapisani”. */
 export const row = (page: Page, time: string) => page.locator("tr", { hasText: time })
 export const pool = (page: Page) => page.getByRole("complementary", { name: "Niezapisani" })
+/** Kafelek osoby na tablicy (dnd-kit oznacza przeciągane elementy `aria-roledescription`). */
+export const tile = (page: Page, name: string) =>
+  page.locator("[aria-roledescription]", { hasText: name })
 
 /** Tablica zapisów zaliczenia (prowadzący musi być zalogowany). */
 export async function openBoard(page: Page, examId: string) {
