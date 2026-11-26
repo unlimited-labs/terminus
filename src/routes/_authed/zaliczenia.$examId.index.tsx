@@ -7,6 +7,7 @@ import { RosterSection } from "@/components/roster-section"
 import { SlotSection } from "@/components/slot-section"
 import { TeacherSection } from "@/components/teacher-section"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useExamChanges } from "@/components/use-exam-changes"
 import { examQuery } from "@/server/exams"
 
 import { loadExam } from "./-load-exam"
@@ -28,6 +29,7 @@ function ExamPage() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const { data: exam } = useSuspenseQuery(examQuery(examId))
+  useExamChanges(examId, [examQuery(examId).queryKey])
   if (!exam) throw notFound()
   const tab = search.tab ?? (exam.rosters.length ? "sloty" : "lista")
   return (

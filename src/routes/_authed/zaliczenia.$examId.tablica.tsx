@@ -17,11 +17,9 @@ export const Route = createFileRoute("/_authed/zaliczenia/$examId/tablica")({
 
 function BoardPage() {
   const { examId } = Route.useParams()
-  const mutating = useBoardBusy(examId)
   const { data: exam } = useSuspenseQuery({
     ...examQuery(examId),
-    refetchInterval: mutating ? false : 30_000,
-    refetchOnWindowFocus: !mutating,
+    refetchOnWindowFocus: !useBoardBusy(examId),
   })
   if (!exam) throw notFound()
   return (

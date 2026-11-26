@@ -275,6 +275,9 @@ export async function seed(): Promise<E2EState> {
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
     agent: await createExam("Agent E2E", 1, [["730001", "Ala", "Agent"]], [at(22, 9)], []),
     liveStudent: await board([["500002", 0]]),
+    liveBoard: await board([]),
+    liveQueue: await board([["500001", 0]]),
+    liveDrag: await board(),
   }
   await db.user.create({
     data: {

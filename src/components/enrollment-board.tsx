@@ -7,7 +7,8 @@ import { useUnenrollGuard } from "@/components/grading"
 import { hasManyRosters, rosterNames } from "@/components/roster-choice"
 import { CapacitySummary } from "@/components/slot-section"
 import { Input } from "@/components/ui/input"
-import { useBoardCommand } from "@/components/use-board-command"
+import { useBoardBusy, useBoardCommand } from "@/components/use-board-command"
+import { useExamChanges } from "@/components/use-exam-changes"
 import { PageTitle } from "@/components/page-title"
 import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { dropCommand, parseDragId } from "@/domain/board"
@@ -15,10 +16,16 @@ import { examCounts, fullName } from "@/domain/schedule"
 import { formatDayShort, warsawDay } from "@/domain/time"
 import { GRADING } from "@/messages.pl"
 import type { ExamDetail } from "@/server/exam-state.server"
+import { examQuery } from "@/server/exams"
 
 export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const [search, setSearch] = useState("")
+  const [dragging, setDragging] = useState(false)
   const { run, dialog } = useUnenrollGuard(exam, useBoardCommand(exam))
+  // Sygnał w trakcie kolejki nadpisałby stan optymistyczny, w trakcie przeciągania — kafelki pod kursorem.
+  useExamChanges(exam.id, [examQuery(exam.id).queryKey], {
+    defer: useBoardBusy(exam.id) || dragging,
+  })
   const rosterNameOf = hasManyRosters(exam.rosters) ? rosterNames(exam.rosters) : null
   const teams = Map.groupBy(exam.people, (p) => p.slotId)
   const q = search.trim().toLowerCase()
@@ -26,6 +33,7 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
     q !== "" && (p.studentNumber.includes(q) || fullName(p).toLowerCase().includes(q))
 
   const onDragEnd = ({ operation, canceled }: DragEndEvent) => {
+    setDragging(false)
     const source = operation.source ? parseDragId(operation.source.id) : undefined
     const target = operation.target ? parseDragId(operation.target.id) : undefined
     if (canceled || !source || !target) return
@@ -36,7 +44,11 @@ export function EnrollmentBoard({ exam }: { exam: ExamDetail }) {
   const { enrolled, graded, freeSlots } = examCounts(exam, exam.now)
 
   return (
-    <DragDropProvider plugins={boardPlugins} onDragEnd={onDragEnd}>
+    <DragDropProvider
+      plugins={boardPlugins}
+      onDragStart={() => setDragging(true)}
+      onDragEnd={onDragEnd}
+    >
       <div className="grid gap-4">
         <header className="grid gap-2">
           <PageTitle>{exam.name} — tablica zapisów</PageTitle>
