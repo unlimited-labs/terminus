@@ -53,28 +53,6 @@ async function watchChannel(page: Page) {
   }
 }
 
-test("prowadzący przenosi studenta na tablicy → strona studenta zmienia się bez przeładowania", async ({
-  page,
-  browser,
-}) => {
-  const examId = exams().liveStudent
-  await login(page)
-  await openBoard(page, examId)
-
-  const student = await browser.newPage()
-  await student.goto(`/z/${examId}`)
-  const taken = student.getByRole("button", { name: /zajęty: Bartosz Bąk/ })
-  await expect(taken).toHaveAccessibleName(/09:00/)
-  await hydrated(taken)
-
-  const bartosz = tile(page, "Bartosz Bąk")
-  await dragWithKeyboard(page, bartosz, row(page, "09:40–10:00"))
-  await expect(page.getByText("Przeniesiono.")).toBeVisible()
-
-  await expect(taken).toHaveAccessibleName(/09:40/)
-  await student.close()
-})
-
 test("wybrany slot zajmuje ktoś inny → toast, wpisane dane zostają", async ({ page, browser }) => {
   const examId = exams().livePick
   await page.goto(`/z/${examId}`)

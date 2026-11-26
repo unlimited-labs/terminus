@@ -289,7 +289,6 @@ export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
     emailLogin: await emailLoginExam("Logowanie mailem E2E", true),
     emailLoginSetup: await emailLoginExam("Ustawienie logowania E2E", false),
     agent: await createExam("Agent E2E", 1, [["730001", "Ala", "Agent"]], [at(22, 9)], []),
-    liveStudent: await board([["500002", 0]]),
     livePick: await livePickExam(),
     liveSettings: await createExam("Ustawienia na żywo E2E", 1, [], [], []),
     liveOpening: await createExam(

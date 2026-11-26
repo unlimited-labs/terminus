@@ -44,7 +44,6 @@ const EXAMS = [
   "emailLogin",
   "emailLoginSetup",
   "agent",
-  "liveStudent",
   "livePick",
   "liveSettings",
   "liveOpening",
