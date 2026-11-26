@@ -1,6 +1,11 @@
+import { z } from "zod"
+
 import { Prisma } from "../generated/prisma/client.ts"
 
+import { sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
+import { changeStream, emitExamChange } from "./exam-changes.server.ts"
+import { sessionEmail, studentAccess } from "./student-access.server.ts"
 
 export type Tx = Prisma.TransactionClient
 type NotFound = { ok: false; code: "NOT_FOUND" }
@@ -26,6 +31,22 @@ export function getOwnedExam(examId: string, userId: string) {
   return db.exam.findFirst({ where: examWhere(examId, { teacher: userId }), select: { id: true } })
 }
 
+/**
+ * Kanał zmian zaliczenia (`GET /api/exams/$examId/changes`): prowadzący albo student z dostępem do
+ * harmonogramu. Dostęp sprawdzany raz, przy otwarciu: sygnał nie niesie danych, a każde pobranie
+ * po nim przechodzi własną autoryzację. Odmowa = 403, po której `EventSource` nie wznawia sam.
+ */
+export async function serveExamChanges(request: Request, examId: string) {
+  if (!z.uuid().safeParse(examId).success) return new Response(null, { status: 404 })
+  const user = await sessionUser(request.headers)
+  const teaches = user !== null && (await getOwnedExam(examId, user.id)) !== null
+  if (!teaches) {
+    const access = await studentAccess(examId, await sessionEmail(request.headers))
+    if (access.kind !== "open" && access.kind !== "ok") return new Response(null, { status: 403 })
+  }
+  return changeStream(examId, request.signal)
+}
+
 /** Czy lista należy do zaliczenia. */
 export async function rosterInExam(tx: Tx, examId: string, rosterId: string) {
   return (await tx.roster.count({ where: { id: rosterId, examId } })) > 0
@@ -35,7 +56,7 @@ export async function rosterInExam(tx: Tx, examId: string, rosterId: string) {
  * Transakcja pod blokadą wiersza zaliczenia (`SELECT … FOR UPDATE`): zmiany jednego zaliczenia
  * wykonują się po kolei. Nieistniejące albo cudze zaliczenie = `NOT_FOUND` bez wywołania `fn`.
  * Limit czasu liczy się razem z czekaniem na blokadę; P2028 (pełna pula albo wygaśnięcie
- * w kolejce do blokady) = `BUSY`.
+ * w kolejce do blokady) = `BUSY`. Po commicie wynik inny niż `{ ok: false }` wysyła sygnał zmiany.
  */
 export async function withExamLock<T>(
   examId: string,
@@ -43,8 +64,9 @@ export async function withExamLock<T>(
   fn: (tx: Tx) => Promise<T>,
   timeout = 10_000,
 ): Promise<T | NotFound | Busy> {
+  let result: T | NotFound
   try {
-    return await db.$transaction(
+    result = await db.$transaction(
       async (tx) => {
         const notFound = { ok: false as const, code: "NOT_FOUND" as const }
         const allowed = () => tx.exam.count({ where: examWhere(examId, access) })
@@ -64,4 +86,7 @@ export async function withExamLock<T>(
     }
     throw e
   }
+  const refused = typeof result === "object" && result !== null && "ok" in result && !result.ok
+  if (!refused) emitExamChange(examId)
+  return result
 }
