@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 
-import { expect, type Browser, type Locator, type Page } from "@playwright/test"
+import { expect, type Browser, type Locator, type Page, type Request } from "@playwright/test"
 import { z } from "zod"
 
 import { formatDayShort, warsawDateTime } from "../src/domain/time.ts"
@@ -56,12 +56,15 @@ export async function secondBoard(page: Page, browser: Browser, examId: string) 
   return other
 }
 
+/** Zapis funkcji serwerowej (POST; odczyty idą GET-em). */
+export const isWrite = (r: Request) => r.method() === "POST" && r.url().includes("/_serverFn/")
+
 /** Wstrzymuje zapisy funkcji serwerowych strony (POST; przy `firstOnly` tylko pierwszy) do wywołania zwróconej funkcji. */
 export async function holdWrites(page: Page, { firstOnly = false } = {}) {
   const held = Promise.withResolvers<void>()
   let holding = true
   await page.route("**/_serverFn/**", async (route) => {
-    if (route.request().method() !== "POST" || !holding) return route.continue()
+    if (!isWrite(route.request()) || !holding) return route.continue()
     if (firstOnly) holding = false
     await held.promise
     await route.continue()

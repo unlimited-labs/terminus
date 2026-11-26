@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test"
 
-import { exams, login, openBoard } from "./helpers.ts"
+import { exams, isWrite, login, openBoard } from "./helpers.ts"
 
 const slot = (page: Page, time: string) => page.locator("li", { hasText: time })
 
@@ -46,7 +46,7 @@ test("podwójne kliknięcie Zapisz przy odpowiedziach wysyła jedno żądanie", 
 
   let posts = 0
   page.on("request", (r) => {
-    if (r.method() === "POST" && r.url().includes("/_serverFn/")) posts++
+    if (isWrite(r)) posts++
   })
   await page.getByRole("button", { name: "Zapisz" }).dblclick()
   await expect(page.getByText("Zapisano odpowiedzi zespołu.")).toBeVisible()

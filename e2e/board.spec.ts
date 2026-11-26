@@ -4,6 +4,7 @@ import {
   dragWithKeyboard,
   dragWithMouse,
   exams,
+  isWrite,
   login,
   openBoard,
   pool,
@@ -111,8 +112,7 @@ test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z
 
   // Tablica pokazuje zmianę od razu; przeładowanie przed odpowiedzią serwera zgubiłoby zapis.
   // (Nie `networkidle`: kanał zmian tablicy trzyma połączenie otwarte.)
-  const saved = () =>
-    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/_serverFn/"))
+  const saved = () => page.waitForResponse((r) => isWrite(r.request()))
   const undone = saved()
   await undo().press("Enter")
   await expect(chip("Bartosz Bąk")).toHaveText("ocena")
