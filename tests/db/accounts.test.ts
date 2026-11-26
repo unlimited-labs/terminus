@@ -16,6 +16,7 @@ import {
 import { ACCESS_DENIED } from "@/messages.pl"
 import { sessionUser } from "@/server/auth.server"
 import { db } from "@/server/db.server"
+import { onExamChange } from "@/server/exam-changes.server"
 import { sendMail } from "@/server/mail.server"
 
 import { createExam, enroll, inDays } from "./fixtures"
@@ -230,4 +231,28 @@ test("zaliczenia zablokowanego konta: superadmin widzi je i usuwa; aktywnego kon
   expect(await remove("Inna nazwa")).toEqual({ ok: false, code: "NAME_MISMATCH" })
   expect(await remove()).toEqual({ ok: true })
   expect(await db.exam.count({ where: { id: examId } })).toBe(0)
+})
+
+test("blokada i edycja konta budzą strony zaliczeń, które to konto prowadzi, i tylko te", async () => {
+  const admin = await account("admin")
+  const rosters = { g1: { students: ["1"], slots: [inDays(1)] } }
+  const banned = await createExam({ rosters })
+  const edited = await createExam({ rosters })
+  const signals = { banned: 0, edited: 0 }
+  const offs = [
+    onExamChange(banned.examId, () => signals.banned++),
+    onExamChange(edited.examId, () => signals.edited++),
+  ]
+
+  expect(await setBanned(admin.headers, { userId: banned.teacherId, banned: true })).toEqual({
+    ok: true,
+  })
+  expect(signals).toEqual({ banned: 1, edited: 0 })
+
+  const email = `${randomUUID()}@example.com`
+  expect(
+    await editAccount(admin.headers, { userId: edited.teacherId, email, name: "Nowe imię" }),
+  ).toEqual({ ok: true })
+  expect(signals).toEqual({ banned: 1, edited: 1 })
+  for (const off of offs) off()
 })
