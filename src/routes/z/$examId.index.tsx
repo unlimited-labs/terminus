@@ -12,7 +12,7 @@ import { ScheduleBoard } from "@/components/schedule-board"
 import { useExamChanges } from "@/components/use-exam-changes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { isEnrollmentOpen, isFreeTeamSlot, msUntilOpen } from "@/domain/schedule"
+import { isEnrollmentOpen, isFreeTeamSlot, msUntilOpen, receivedAt } from "@/domain/schedule"
 import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
 import { errorMessage, PICKED_SLOT_TAKEN, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
@@ -151,18 +151,26 @@ function SchedulePage() {
   )
 }
 
+/** Loader czeka na harmonogram, więc serwer liczy `now` przed pierwszym bajtem; bez wpisu: teraz. */
+function documentFirstByte() {
+  const [nav] = performance.getEntriesByType("navigation")
+  return nav instanceof PerformanceNavigationTiming
+    ? performance.timeOrigin + nav.responseStart
+    : Date.now()
+}
+
 /** Harmonogram na żywo: sygnały kanału zmian oraz pobranie w chwili otwarcia zapisów wg zegara
  * serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
 function useLiveSchedule(examId: string, { opensAt, now }: Schedule) {
   const queryClient = useQueryClient()
   useExamChanges(examId, [scheduleQuery(examId).queryKey])
   useEffect(() => {
-    const ms = msUntilOpen(opensAt, now)
+    const { queryKey } = scheduleQuery(examId)
+    const dataUpdatedAt = queryClient.getQueryState(queryKey)?.dataUpdatedAt ?? Date.now()
+    const at = Date.now()
+    const ms = msUntilOpen(opensAt, now, at - receivedAt(dataUpdatedAt, documentFirstByte(), at))
     if (ms === null) return
-    const timer = setTimeout(
-      () => void queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
-      ms,
-    )
+    const timer = setTimeout(() => void queryClient.invalidateQueries({ queryKey }), ms)
     return () => clearTimeout(timer)
   }, [queryClient, examId, opensAt, now])
 }

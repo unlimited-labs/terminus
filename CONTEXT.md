@@ -68,6 +68,10 @@ _Avoid_: Lider, kapitan
 Widok wszystkich slotów zaliczenia z imionami i nazwiskami zapisanych, dostępny dla każdego, kto ma link zaliczenia (przy logowaniu mailem: po zalogowaniu).
 _Avoid_: Lista zapisów, grafik
 
+**Kanał zmian**:
+Połączenie otwartej strony studenta lub prowadzącego z serwerem, którym przychodzi sygnał „zaliczenie się zmieniło” dla jednego zaliczenia, bez żadnych danych; strona sama pobiera wtedy aktualny stan zwykłą drogą, z tymi samymi uprawnieniami.
+_Avoid_: Powiadomienia, push, websocket
+
 **Link zaliczenia**:
 Unikalny adres, pod którym studenci zapisują się na jedno zaliczenie.
 

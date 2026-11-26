@@ -50,8 +50,13 @@ const isEmailTaken = (e: unknown) =>
 
 /** Imię i blokada prowadzącego zmieniają stronę studenta jego zaliczeń. */
 async function emitTaughtExams(userId: string) {
-  const exams = await db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
-  for (const { id } of exams) emitExamChange(id)
+  try {
+    const exams = await db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
+    for (const { id } of exams) emitExamChange(id)
+  } catch (e) {
+    // Zmiana jest już zapisana; bez sygnału strony odświeżą się przy powrocie do karty.
+    consola.error("exam-changes", e)
+  }
 }
 
 /** Powtarza middleware `requireAdmin`, żeby odmowę dało się sprawdzić testem każdej operacji. */

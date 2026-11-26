@@ -12,11 +12,26 @@ export function isEnrollmentOpen(opensAt: Date | null | undefined, now: Date) {
   return !opensAt || opensAt <= now
 }
 
-/** Ile ms do otwarcia zapisów (`null`, gdy otwarte), najwyżej tyle, ile przyjmie `setTimeout`. */
-export function msUntilOpen(opensAt: Date | null | undefined, now: Date) {
+const MAX_TIMEOUT_MS = 2 ** 31 - 1
+
+/**
+ * Ile ms do otwarcia zapisów (`null`, gdy według `now` otwarte), najwyżej tyle, ile przyjmie
+ * `setTimeout`; `elapsedMs` = czas od odebrania `now`, po otwarciu 0 (pobrać od razu).
+ */
+export function msUntilOpen(opensAt: Date | null | undefined, now: Date, elapsedMs = 0) {
   if (!opensAt || isEnrollmentOpen(opensAt, now)) return null
-  return Math.min(opensAt.getTime() - now.getTime(), 2 ** 31 - 1)
+  const ms = opensAt.getTime() - now.getTime() - elapsedMs
+  return Math.max(0, Math.min(ms, MAX_TIMEOUT_MS))
 }
+
+/**
+ * Lokalna chwila odebrania danych. `dataUpdatedAt` danych z SSR jest z zegara serwera, stąd
+ * przycięcie do [pierwszy bajt dokumentu, teraz]: licznik otwarcia może się spóźnić, nie przyspieszyć.
+ * shortcut: zegar serwera z przodu spóźnia licznik danych z SSR o tę różnicę (najwyżej o czas od
+ * pobrania); przy skargach na spóźnione otwarcie — lokalny znacznik czasu dopisany do danych z SSR.
+ */
+export const receivedAt = (dataUpdatedAt: number, firstByte: number, now: number) =>
+  Math.min(Math.max(dataUpdatedAt, firstByte), now)
 
 /** Liczniki zaliczenia: zapisane indeksy, ocenieni (sam komentarz to nie ocena) i sloty do wylosowania. */
 export function examCounts(

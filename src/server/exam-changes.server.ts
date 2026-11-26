@@ -11,7 +11,7 @@ emitter.setMaxListeners(0)
 
 const WINDOW_MS = 1000
 /** Zaliczenia z otwartym oknem łączenia → czy w oknie przyszedł kolejny sygnał. */
-const windows = new Map<string, boolean>()
+const changedInWindow = new Map<string, boolean>()
 
 function send(examId: string) {
   try {
@@ -24,8 +24,8 @@ function send(examId: string) {
 
 function closeWindowLater(examId: string) {
   setTimeout(() => {
-    if (!windows.get(examId)) return windows.delete(examId)
-    windows.set(examId, false)
+    if (!changedInWindow.get(examId)) return changedInWindow.delete(examId)
+    changedInWindow.set(examId, false)
     send(examId)
     closeWindowLater(examId)
   }, WINDOW_MS)
@@ -34,11 +34,11 @@ function closeWindowLater(examId: string) {
 /** Sygnał „zaliczenie się zmieniło”: pierwszy od razu, kolejne najwyżej raz na sekundę, ostatni zawsze dochodzi. */
 export function emitExamChange(examId: string) {
   forgetSchedule(examId)
-  if (windows.has(examId)) {
-    windows.set(examId, true)
+  if (changedInWindow.has(examId)) {
+    changedInWindow.set(examId, true)
     return
   }
-  windows.set(examId, false)
+  changedInWindow.set(examId, false)
   send(examId)
   closeWindowLater(examId)
 }
