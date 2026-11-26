@@ -60,7 +60,9 @@ test("wybrany slot zajmuje ktoś inny → toast, wpisane dane zostają", async (
   await expect(
     page.getByRole("button", { name: /^09:20.*Twój slot: .+/, includeHidden: true }),
   ).toBeAttached()
-  await expect(toast).toBeHidden()
+  // Jednorazowy odczyt: `toBeHidden` czekałby, aż toast sam zniknie, i przechodziłby zawsze.
+  await page.waitForTimeout(500)
+  expect(await toast.isVisible()).toBe(false)
 })
 
 test("po zapisie ustawień formularz bierze zmianę drugiego prowadzącego", async ({
