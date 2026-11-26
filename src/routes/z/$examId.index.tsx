@@ -12,7 +12,7 @@ import { ScheduleBoard } from "@/components/schedule-board"
 import { useExamChanges } from "@/components/use-exam-changes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { isEnrollmentOpen, isFreeTeamSlot, msUntilOpen } from "@/domain/schedule"
+import { isEnrollmentOpen, isFreeTeamSlot, msUntilOpen, receivedAt } from "@/domain/schedule"
 import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
 import { errorMessage, PICKED_SLOT_TAKEN, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
@@ -151,17 +151,12 @@ function SchedulePage() {
   )
 }
 
-/**
- * Lokalna chwila odebrania danych. Dane z SSR mają `dataUpdatedAt` z zegara serwera, stąd
- * przycięcie do [pierwszy bajt dokumentu, teraz]: licznik może się spóźnić, nigdy przyspieszyć.
- * shortcut: zegar serwera z przodu spóźnia licznik danych z SSR o tę różnicę, najwyżej o czas
- * od pobrania; przy skargach na spóźnione otwarcie zapisów — lokalny znacznik czasu w danych z SSR.
- */
-function receivedAt(dataUpdatedAt: number) {
+/** Loader czeka na harmonogram, więc serwer liczy `now` przed pierwszym bajtem; bez wpisu: teraz. */
+function documentFirstByte() {
   const [nav] = performance.getEntriesByType("navigation")
-  const firstByte =
-    performance.timeOrigin + (nav instanceof PerformanceNavigationTiming ? nav.responseStart : 0)
-  return Math.min(Math.max(dataUpdatedAt, firstByte), Date.now())
+  return nav instanceof PerformanceNavigationTiming
+    ? performance.timeOrigin + nav.responseStart
+    : Date.now()
 }
 
 /** Harmonogram na żywo: sygnały kanału zmian oraz pobranie w chwili otwarcia zapisów wg zegara
@@ -172,7 +167,8 @@ function useLiveSchedule(examId: string, { opensAt, now }: Schedule) {
   useEffect(() => {
     const { queryKey } = scheduleQuery(examId)
     const dataUpdatedAt = queryClient.getQueryState(queryKey)?.dataUpdatedAt ?? Date.now()
-    const ms = msUntilOpen(opensAt, now, Date.now() - receivedAt(dataUpdatedAt))
+    const at = Date.now()
+    const ms = msUntilOpen(opensAt, now, at - receivedAt(dataUpdatedAt, documentFirstByte(), at))
     if (ms === null) return
     const timer = setTimeout(() => void queryClient.invalidateQueries({ queryKey }), ms)
     return () => clearTimeout(timer)
