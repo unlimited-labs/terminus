@@ -100,11 +100,15 @@ test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z
   await expect(page.getByText("Zapisano ocenę.")).toHaveCount(3)
   await page.keyboard.press("Escape")
 
+  // Tablica pokazuje zmianę od razu; przeładowanie przed odpowiedzią serwera zgubiłoby zapis.
+  // (Nie `networkidle`: kanał zmian tablicy trzyma połączenie otwarte.)
+  const saved = () =>
+    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes("/_serverFn/"))
+  const undone = saved()
   await undo().press("Enter")
   await expect(chip("Bartosz Bąk")).toHaveText("ocena")
   await expect(counter).toContainText("ocenieni 1 / 2")
-  // Tablica pokazuje zmianę od razu; przeładowanie przed odpowiedzią serwera zgubiłoby Cofnij.
-  await page.waitForLoadState("networkidle")
+  await undone
 
   await page.reload()
   await expect(chip("Anna Adamska")).toHaveText("4")
@@ -116,8 +120,9 @@ test("ocena w okienku, cały zespół, Cofnij, potwierdzenie usunięcia zapisu z
 
   await chip("Bartosz Bąk").click()
   await page.getByLabel("Komentarz (opcjonalny)").fill("spóźniony")
+  const commented = saved()
   await page.keyboard.press("Escape")
-  await page.waitForLoadState("networkidle")
+  await commented
   await page.reload()
   await chip("Bartosz Bąk").click()
   await expect(page.getByLabel("Komentarz (opcjonalny)")).toHaveValue("spóźniony")

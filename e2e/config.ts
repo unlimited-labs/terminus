@@ -46,6 +46,9 @@ const EXAMS = [
   "agent",
   "liveStudent",
   "liveOpening",
+  "liveBoard",
+  "liveQueue",
+  "liveDrag",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */
