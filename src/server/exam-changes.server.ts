@@ -20,7 +20,7 @@ function sendAndOpenWindow(examId: string) {
     emitter.emit(examId)
   } catch (e) {
     // Błąd słuchacza nie może zamienić zapisanej zmiany w błąd zapisu.
-    consola.error("exam-changes", e)
+    consola.error(`sygnał examId=${examId}`, e)
   }
   setTimeout(() => {
     const changed = changedInWindow.get(examId)

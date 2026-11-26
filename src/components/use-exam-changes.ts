@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query"
 import { useEffect, useEffectEvent, useRef } from "react"
 
-import { examQuery } from "@/server/exams"
+import { examChangeKeys } from "@/server/exams"
 import { scheduleQuery } from "@/server/schedule"
 
 const FIRST_RETRY_MS = 1000
@@ -50,7 +50,7 @@ export function useExamChanges(examId: string, { defer = false }: { defer?: bool
       return
     }
     const refetchType = document.hidden ? "none" : "active"
-    for (const { queryKey } of [examQuery(examId), scheduleQuery(examId)])
+    for (const queryKey of [...examChangeKeys(examId), scheduleQuery(examId).queryKey])
       void queryClient.invalidateQueries({ queryKey, refetchType })
   })
   useEffect(() => watchExamChanges(`/api/exams/${examId}/changes`, () => onChange()), [examId])
