@@ -151,18 +151,30 @@ function SchedulePage() {
   )
 }
 
+/**
+ * Lokalna chwila odebrania danych. Dane z SSR mają `dataUpdatedAt` z zegara serwera, stąd
+ * przycięcie do [pierwszy bajt dokumentu, teraz]: licznik może się spóźnić, nigdy przyspieszyć.
+ * shortcut: zegar serwera z przodu spóźnia licznik danych z SSR o tę różnicę, najwyżej o czas
+ * od pobrania; przy skargach na spóźnione otwarcie zapisów — lokalny znacznik czasu w danych z SSR.
+ */
+function receivedAt(dataUpdatedAt: number) {
+  const [nav] = performance.getEntriesByType("navigation")
+  const firstByte =
+    performance.timeOrigin + (nav instanceof PerformanceNavigationTiming ? nav.responseStart : 0)
+  return Math.min(Math.max(dataUpdatedAt, firstByte), Date.now())
+}
+
 /** Harmonogram na żywo: sygnały kanału zmian oraz pobranie w chwili otwarcia zapisów wg zegara
  * serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
 function useLiveSchedule(examId: string, { opensAt, now }: Schedule) {
   const queryClient = useQueryClient()
   useExamChanges(examId, [scheduleQuery(examId).queryKey])
   useEffect(() => {
-    const ms = msUntilOpen(opensAt, now)
+    const { queryKey } = scheduleQuery(examId)
+    const dataUpdatedAt = queryClient.getQueryState(queryKey)?.dataUpdatedAt ?? Date.now()
+    const ms = msUntilOpen(opensAt, now, Date.now() - receivedAt(dataUpdatedAt))
     if (ms === null) return
-    const timer = setTimeout(
-      () => void queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
-      ms,
-    )
+    const timer = setTimeout(() => void queryClient.invalidateQueries({ queryKey }), ms)
     return () => clearTimeout(timer)
   }, [queryClient, examId, opensAt, now])
 }

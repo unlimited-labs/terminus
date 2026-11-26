@@ -26,6 +26,13 @@ test("czas do otwarcia zapisów: brak, gdy otwarte; limit setTimeout przy daleki
   expect(msUntilOpen(new Date("2027-10-05T08:00:00Z"), now)).toBe(2_147_483_647)
 })
 
+test("czas do otwarcia odejmuje czas od odebrania danych; po czasie pobranie od razu", () => {
+  expect(msUntilOpen(later, now, 600_000)).toBe(3_000_000)
+  expect(msUntilOpen(later, now, 3_600_000)).toBe(0)
+  expect(msUntilOpen(later, now, 5_000_000)).toBe(0)
+  expect(msUntilOpen(earlier, now, 600_000)).toBeNull()
+})
+
 test("etap zaliczenia: przygotowanie, przed zapisami, w trakcie, zakończone", () => {
   const ready = { entries: 10, lastSlotEnd: later, opensAt: null }
   expect(examPhase({ ...ready, entries: 0 }, now)).toBe("draft")
