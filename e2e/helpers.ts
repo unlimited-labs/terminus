@@ -12,6 +12,7 @@ const state = (): E2EState => e2eStateSchema.parse(JSON.parse(readFileSync(STATE
 
 export const exams = () => state().exams
 export const adminTotp = () => state().adminTotp
+export const databaseUrl = () => state().databaseUrl
 
 const mailsSchema = z.array(z.object({ to: z.string(), subject: z.string(), text: z.string() }))
 const mailsTo = (address: string) =>

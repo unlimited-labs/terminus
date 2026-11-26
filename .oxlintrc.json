@@ -29,7 +29,7 @@
   ],
   "overrides": [
     {
-      "files": ["src/server/**", "prisma.config.ts", "scripts/**", "tests/**"],
+      "files": ["src/server/**", "prisma.config.ts", "scripts/**", "tests/**", "e2e/**"],
       "rules": { "no-restricted-imports": "off" }
     },
     {
