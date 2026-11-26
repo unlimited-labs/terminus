@@ -48,7 +48,7 @@ execSync("pnpm exec prisma migrate deploy", { env, stdio: "inherit" })
 execSync("node scripts/seed-admin.ts", { env, stdio: "inherit" })
 
 const { seed } = await import("./seed.ts")
-writeFileSync(STATE_FILE, JSON.stringify(await seed()))
+writeFileSync(STATE_FILE, JSON.stringify({ ...(await seed()), databaseUrl: env.DATABASE_URL }))
 
 const app = spawn("node", [".output/server/index.mjs"], { env, stdio: "inherit" })
 const stop = async () => {

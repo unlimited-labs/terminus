@@ -12,6 +12,12 @@ export function isEnrollmentOpen(opensAt: Date | null | undefined, now: Date) {
   return !opensAt || opensAt <= now
 }
 
+/** Ile ms do otwarcia zapisów (`null`, gdy otwarte), najwyżej tyle, ile przyjmie `setTimeout`. */
+export function msUntilOpen(opensAt: Date | null | undefined, now: Date) {
+  if (!opensAt || isEnrollmentOpen(opensAt, now)) return null
+  return Math.min(opensAt.getTime() - now.getTime(), 2 ** 31 - 1)
+}
+
 /** Liczniki zaliczenia: zapisane indeksy, ocenieni (sam komentarz to nie ocena) i sloty do wylosowania. */
 export function examCounts(
   exam: {

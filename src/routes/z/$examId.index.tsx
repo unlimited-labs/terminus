@@ -1,7 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 
 import { EnrollForm, EnrollSheet, type PickedSlot } from "@/components/enroll-sheet"
 import { Notice } from "@/components/notice"
@@ -11,7 +11,7 @@ import { ScheduleBoard } from "@/components/schedule-board"
 import { useExamChanges } from "@/components/use-exam-changes"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { isEnrollmentOpen, isFreeTeamSlot } from "@/domain/schedule"
+import { isEnrollmentOpen, isFreeTeamSlot, msUntilOpen } from "@/domain/schedule"
 import { formatSlotWhen, slotNumbering, type SlotNumbering } from "@/domain/time"
 import { errorMessage, STUDENT_LOGIN } from "@/messages.pl"
 import type { Ticket } from "@/server/enrollment.server"
@@ -146,6 +146,20 @@ function SchedulePage() {
   )
 }
 
+/** Pobranie w chwili otwarcia zapisów wg zegara serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
+function useRefetchOnOpening(examId: string, { opensAt, now }: Schedule) {
+  const queryClient = useQueryClient()
+  useEffect(() => {
+    const ms = msUntilOpen(opensAt, now)
+    if (ms === null) return
+    const timer = setTimeout(
+      () => void queryClient.invalidateQueries({ queryKey: scheduleQuery(examId).queryKey }),
+      ms,
+    )
+    return () => clearTimeout(timer)
+  }, [queryClient, examId, opensAt, now])
+}
+
 function OpenSchedule({
   examId,
   schedule,
@@ -163,6 +177,7 @@ function OpenSchedule({
   const [picked, setPickedId] = usePickedSlot(schedule, numbering)
   const [showCount, setShowCount] = useState(0)
   useExamChanges(examId, [scheduleQuery(examId).queryKey])
+  useRefetchOnOpening(examId, schedule)
 
   const mode = entryMode(schedule, picked)
   const title = mine ? "Twój slot" : mode.action

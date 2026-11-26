@@ -36,6 +36,4 @@ export const scheduleQuery = (examId: string) =>
   queryOptions({
     queryKey: ["schedule", examId],
     queryFn: () => getSchedule({ data: { examId } }),
-    // Bramka logowania nie pokazuje harmonogramu: odświeża się przy powrocie do karty, bez odpytywania.
-    refetchInterval: (query) => (query.state.data?.gate === "open" ? 30_000 : false),
   })

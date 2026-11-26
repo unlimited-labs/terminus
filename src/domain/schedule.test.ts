@@ -1,6 +1,6 @@
 import { expect, test } from "vitest"
 
-import { examPhase, fullName, isEnrollmentOpen, isFreeSlot } from "./schedule"
+import { examPhase, fullName, isEnrollmentOpen, isFreeSlot, msUntilOpen } from "./schedule"
 
 const now = new Date("2026-10-05T08:00:00Z")
 const later = new Date("2026-10-05T09:00:00Z")
@@ -17,6 +17,13 @@ test("zapisy otwarte bez daty startu albo od chwili startu", () => {
   expect(isEnrollmentOpen(null, now)).toBe(true)
   expect(isEnrollmentOpen(now, now)).toBe(true)
   expect(isEnrollmentOpen(later, now)).toBe(false)
+})
+
+test("czas do otwarcia zapisów: brak, gdy otwarte; limit setTimeout przy dalekiej dacie", () => {
+  expect(msUntilOpen(null, now)).toBeNull()
+  expect(msUntilOpen(earlier, now)).toBeNull()
+  expect(msUntilOpen(later, now)).toBe(3_600_000)
+  expect(msUntilOpen(new Date("2027-10-05T08:00:00Z"), now)).toBe(2_147_483_647)
 })
 
 test("etap zaliczenia: przygotowanie, przed zapisami, w trakcie, zakończone", () => {
