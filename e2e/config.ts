@@ -44,6 +44,7 @@ const EXAMS = [
   "emailLogin",
   "emailLoginSetup",
   "agent",
+  "liveStudent",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */
