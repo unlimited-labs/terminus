@@ -1,6 +1,5 @@
-import { z } from "zod"
-
 import { Prisma } from "../generated/prisma/client.ts"
+import { examIdSchema } from "../schemas/exam.ts"
 
 import { sessionUser } from "./auth.server.ts"
 import { db } from "./db.server.ts"
@@ -38,7 +37,7 @@ export function getOwnedExam(examId: string, userId: string) {
  * po nim przechodzi własną autoryzację. Odmowa = 403, po której `EventSource` nie wznawia sam.
  */
 export async function serveExamChanges(request: Request, examId: string) {
-  if (!z.uuid().safeParse(examId).success) return new Response(null, { status: 404 })
+  if (!examIdSchema.safeParse({ examId }).success) return new Response(null, { status: 404 })
   const user = await sessionUser(request.headers)
   const teaches = user !== null && (await getOwnedExam(examId, user.id)) !== null
   if (!teaches) {

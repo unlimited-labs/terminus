@@ -14,6 +14,7 @@ import {
   openBoard,
   pool,
   row,
+  sameSessionPage,
   secondBoard,
   tile,
 } from "./helpers.ts"
@@ -125,7 +126,7 @@ test("po zapisie ustawień formularz bierze zmianę drugiego prowadzącego", asy
   await expect(page.getByText("Zapisano zmiany.")).toBeVisible()
   await expect(name).toHaveValue("Ustawienia A E2E")
 
-  const other = await browser.newPage({ storageState: await page.context().storageState() })
+  const other = await sameSessionPage(page, browser)
   await other.goto(url)
   await (await hydrated(other.getByLabel("Opis i miejsce"))).fill("Sala B")
   await other.getByRole("button", { name: "Zapisz", exact: true }).click()

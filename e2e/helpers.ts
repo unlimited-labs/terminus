@@ -45,9 +45,13 @@ export async function openBoard(page: Page, examId: string) {
   await page.getByRole("heading", { name: /tablica zapisów/ }).waitFor()
 }
 
-/** Druga karta tego samego prowadzącego (sesja z `page`) z tablicą zaliczenia. */
+/** Druga karta z sesją `page` (osobny kontekst przeglądarki). */
+export const sameSessionPage = async (page: Page, browser: Browser) =>
+  browser.newPage({ storageState: await page.context().storageState() })
+
+/** Druga karta tego samego prowadzącego z tablicą zaliczenia. */
 export async function secondBoard(page: Page, browser: Browser, examId: string) {
-  const other = await browser.newPage({ storageState: await page.context().storageState() })
+  const other = await sameSessionPage(page, browser)
   await openBoard(other, examId)
   return other
 }

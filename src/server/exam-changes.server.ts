@@ -54,7 +54,6 @@ const PING_MS = 30_000
 const encoder = new TextEncoder()
 const CHANGE = encoder.encode("data: change\n\n")
 const PING = encoder.encode(": ping\n\n")
-const OPEN = encoder.encode(": open\n\n")
 
 /**
  * Odpowiedź SSE z sygnałami zaliczenia (bez danych) i pingiem co 30 s; dostęp sprawdza wołający.
@@ -85,7 +84,7 @@ export function changeStream(examId: string, signal: AbortSignal) {
       if (signal.aborted) return close()
       signal.addEventListener("abort", close)
       // Pierwszy bajt wysyła nagłówki od razu: przeglądarka zgłasza `open` bez czekania na ping.
-      write(OPEN)
+      write(PING)
     },
     cancel: () => stop(),
   })
