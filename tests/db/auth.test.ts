@@ -57,3 +57,14 @@ test("końcówki pluginu admin nie są dostępne przez HTTP", async () => {
     expect(response.status).toBe(404)
   }
 })
+
+test("zmiana własnego nazwiska przez HTTP jest wyłączona", async () => {
+  const response = await auth.handler(
+    new Request("http://localhost:3000/api/auth/update-user", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "x" }),
+    }),
+  )
+  expect(response.status).toBe(404)
+})
