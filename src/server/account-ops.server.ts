@@ -18,6 +18,7 @@ import { auth, disconnectAgents, resetTwoFactor, sessionUser } from "./auth.serv
 import { db } from "./db.server.ts"
 import { emailLoginAvailable } from "./env.server.ts"
 import { blockedTeachersOnly, taughtBy } from "./exam-access.server.ts"
+import { emitExamChange } from "./exam-changes.server.ts"
 import { removeExam } from "./exam-ops.server.ts"
 import {
   deletePasswordLinks,
@@ -46,6 +47,12 @@ const isUniqueViolation = (e: unknown) =>
 const isEmailTaken = (e: unknown) =>
   isUniqueViolation(e) ||
   (isAPIError(e) && e.body?.code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL")
+
+/** Imię i blokada prowadzącego zmieniają stronę studenta jego zaliczeń. */
+async function emitTaughtExams(userId: string) {
+  const exams = await db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
+  for (const { id } of exams) emitExamChange(id)
+}
 
 /** Powtarza middleware `requireAdmin`, żeby odmowę dało się sprawdzić testem każdej operacji. */
 async function assertAdmin(headers: Headers) {
@@ -120,6 +127,7 @@ export async function editAccount(
     await db.user.update({ where: { id: userId }, data: { email, name } })
     // Link wysłany na stary adres mógł trafić pod zły adres.
     if (before.email !== email) await deletePasswordLinks(userId)
+    await emitTaughtExams(userId)
     return { ok: true }
   } catch (e) {
     if (isUniqueViolation(e)) return { ok: false, code: "EMAIL_TAKEN" }
@@ -160,6 +168,7 @@ export async function setBanned(
     : auth.api.unbanUser({ body: { userId }, headers }))
   // Ważny link do hasła pozwoliłby ustawić hasło w czasie blokady.
   if (banned) await Promise.all([deletePasswordLinks(userId), disconnectAgents(userId)])
+  await emitTaughtExams(userId)
   logAction(admin.id, banned ? "blokada" : "odblokowanie", userId)
   return { ok: true }
 }

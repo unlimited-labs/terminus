@@ -5,6 +5,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { examIdSchema } from "../schemas/exam.ts"
 
 import { loadSchedule } from "./exam-state.server.ts"
+import { cachedSchedule } from "./schedule-cache.server.ts"
 import { sessionEmail, studentAccess } from "./student-access.server.ts"
 
 export type Schedule = NonNullable<Awaited<ReturnType<typeof loadSchedule>>>
@@ -20,7 +21,7 @@ const getSchedule = createServerFn()
     // Harmonogram razem z sesją; przy bramce logowania odpowiedź niesie tylko nazwę.
     const [email, schedule] = await Promise.all([
       sessionEmail(getRequestHeaders()),
-      loadSchedule(examId),
+      cachedSchedule(examId, loadSchedule),
     ])
     if (!schedule) return null
     const access = await studentAccess(examId, email, schedule.requireEmailLogin)
@@ -35,6 +36,4 @@ export const scheduleQuery = (examId: string) =>
   queryOptions({
     queryKey: ["schedule", examId],
     queryFn: () => getSchedule({ data: { examId } }),
-    // Bramka logowania nie pokazuje harmonogramu: odświeża się przy powrocie do karty, bez odpytywania.
-    refetchInterval: (query) => (query.state.data?.gate === "open" ? 30_000 : false),
   })

@@ -47,6 +47,7 @@ const EXAMS = [
   "liveStudent",
   "livePick",
   "liveSettings",
+  "liveOpening",
 ] as const
 
 /** Każdy test, który zmienia dane, ma własne zaliczenie — pliki i testy (`-g`) działają osobno. */
@@ -56,6 +57,8 @@ export const e2eStateSchema = z.object({
   exams: z.record(z.enum(EXAMS), z.uuid()),
   /** Adres `otpauth://` aplikacji z kodami superadmina (TOTP włączone w `seed.ts`). */
   adminTotp: z.string(),
+  /** Baza kontenera testów: test przesuwa w niej start zapisów bez sygnału zmiany (`live.spec.ts`). */
+  databaseUrl: z.string(),
 })
 
 export type E2EState = z.infer<typeof e2eStateSchema>

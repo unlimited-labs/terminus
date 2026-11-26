@@ -190,7 +190,7 @@ async function emailLoginExam(name: string, emailLogin: boolean) {
   return id
 }
 
-export async function seed(): Promise<E2EState> {
+export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
   const board = (
     enrolled: [string, number][] = [
       ["500001", 0],
@@ -290,6 +290,14 @@ export async function seed(): Promise<E2EState> {
     liveStudent: await board([["500002", 0]]),
     livePick: await livePickExam(),
     liveSettings: await createExam("Ustawienia na żywo E2E", 1, [], [], []),
+    liveOpening: await createExam(
+      "Otwarcie E2E",
+      1,
+      [["510001", "Olga", "Otwarta"]],
+      [at(23, 9)],
+      [],
+      at(30, 9),
+    ),
   }
   await db.user.create({
     data: {
