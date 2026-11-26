@@ -33,9 +33,9 @@ test("prowadzący zmienia sposób przy otwartej stronie: dane zostają, strona p
   await expect(admin.getByText("Zapisano zmiany.")).toBeVisible()
   await admin.close()
 
-  await page.getByRole("button", { name: "Losuj slot" }).click()
+  // Kanał zmian przełącza otwarty formularz na wybór bez klikania „Losuj slot”.
   const dialog = page.getByRole("dialog")
-  await expect(dialog).toContainText("Prowadzący zmienił sposób zapisu na ręczny")
+  await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeVisible()
   await expect(dialog.getByLabel("Numer indeksu")).toHaveValue("990002")
   await expect(dialog).toContainText("Nie wybrano slotu")
   await expect(dialog.getByRole("button", { name: "Wybierz slot" })).toBeDisabled()
