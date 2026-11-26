@@ -52,7 +52,7 @@ const isEmailTaken = (e: unknown) =>
  * Imię i nazwisko oraz blokada prowadzącego zmieniają strony jego zaliczeń. Zaliczenia czytane przed
  * zapisem: błąd odczytu przerywa operację, zanim cokolwiek się zmieni, a zwrócony sygnał nie rzuca.
  */
-async function signalTaughtExams(userId: string) {
+async function taughtExamsSignal(userId: string) {
   const exams = await db.exam.findMany({ where: taughtBy(userId), select: { id: true } })
   return () => {
     for (const { id } of exams) emitExamChange(id)
@@ -126,7 +126,7 @@ export async function editAccount(
   try {
     const [before, signal] = await Promise.all([
       db.user.findFirst({ where: { id: userId, ...notStudent }, select: { email: true } }),
-      signalTaughtExams(userId),
+      taughtExamsSignal(userId),
     ])
     if (!before) return { ok: false, code: "NOT_FOUND" }
     await db.user.update({ where: { id: userId }, data: { email, name } })
@@ -168,7 +168,7 @@ export async function setBanned(
 ): Promise<Result> {
   const admin = await assertAdmin(headers)
   if (userId === admin.id) return { ok: false, code: "CANNOT_CHANGE_SELF" }
-  const signal = await signalTaughtExams(userId)
+  const signal = await taughtExamsSignal(userId)
   await (banned
     ? auth.api.banUser({ body: { userId }, headers })
     : auth.api.unbanUser({ body: { userId }, headers }))

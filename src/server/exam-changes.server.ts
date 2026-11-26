@@ -73,7 +73,7 @@ export function changeStream(examId: string, signal: AbortSignal) {
       }
       if (signal.aborted) return close()
       signal.addEventListener("abort", close)
-      // Pierwszy bajt wysyła nagłówki od razu: przeglądarka zgłasza `open` bez czekania na ping.
+      // Pierwszy bajt (ping) wysyła nagłówki od razu: `open` bez czekania 30 s na kolejny.
       write(PING)
     },
     cancel: () => stop(),

@@ -1,10 +1,6 @@
 import { afterEach, beforeEach, expect, test, vi } from "vitest"
 
-import { watchExamChanges } from "./use-exam-changes.ts"
-
-// Hook obok importuje funkcje serwerowe, które w teście wymagałyby zmiennych środowiska.
-vi.mock("@/server/exams", () => ({}))
-vi.mock("@/server/schedule", () => ({}))
+import { watchExamChanges } from "./watch-exam-changes.ts"
 
 /** `EventSource` z ręcznie wywoływanymi zdarzeniami; `readyState` jak w przeglądarce. */
 class FakeEventSource extends EventTarget {

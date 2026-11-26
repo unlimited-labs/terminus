@@ -27,7 +27,7 @@ declare global {
   }
 }
 
-/** Śledzi kanał zmian strony (wywołać przed `goto`): czy połączony i ile sygnałów doszło. */
+/** Śledzi kanał zmian strony (wywołać przed `goto`): czy połączony i oczekiwanie na kolejny sygnał. */
 async function watchChannel(page: Page) {
   await page.addInitScript(() => {
     window.EventSource = class extends window.EventSource {
@@ -91,10 +91,7 @@ test("wybrany slot zajmuje ktoś inny → toast, wpisane dane zostają", async (
   expect(await toast.isVisible()).toBe(false)
 })
 
-test("po zapisie ustawień formularz bierze zmianę drugiego prowadzącego", async ({
-  page,
-  browser,
-}) => {
+test("po zapisie ustawień formularz bierze zmianę z drugiej karty", async ({ page, browser }) => {
   const url = `/zaliczenia/${exams().liveSettings}?tab=ustawienia`
   await login(page)
   await page.goto(url)
@@ -155,7 +152,7 @@ test("student się zapisuje → tablica prowadzącego pokazuje go bez przeładow
   await expect(pool(page).getByText("500003")).toHaveCount(0)
 })
 
-test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A nie wracają", async ({
+test("zmiana z drugiej karty dochodzi po kolejce tej karty, jej kafelki nie wracają", async ({
   page,
   browser,
 }) => {
@@ -182,7 +179,7 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
       if (!slot?.textContent?.includes("Celina Cis")) window.flashed = true
     }).observe(document.body, { subtree: true, childList: true, characterData: true })
   })
-  const signal = await channel.nextSignal()
+  const afterSignal = await channel.nextSignal()
 
   const other = await secondBoard(page, browser, examId)
   await dragWithMouse(
@@ -193,7 +190,7 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
   await expect(other.getByText("Zapisano ręcznie.")).toBeVisible()
   await other.close()
 
-  await signal()
+  await afterSignal()
   expect(reads).toEqual([])
   await expect(row(page, "09:20–09:40")).toContainText("wolny")
 
@@ -216,7 +213,7 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   await bartosz.focus()
   await page.keyboard.press("Space")
   await expect(page.getByRole("status")).toContainText("Bartosz Bąk")
-  const signal = await channel.nextSignal()
+  const afterSignal = await channel.nextSignal()
 
   const other = await secondBoard(page, browser, examId)
   const otherTile = tile(other, "Bartosz Bąk")
@@ -224,7 +221,7 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   await expect(other.getByText("Przeniesiono.")).toBeVisible()
   await other.close()
 
-  await signal()
+  await afterSignal()
   await expect(row(page, "09:20–09:40")).toContainText("Bartosz Bąk")
 
   await page.keyboard.press("Escape")
