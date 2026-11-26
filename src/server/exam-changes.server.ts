@@ -2,6 +2,8 @@ import { EventEmitter } from "node:events"
 
 import { consola } from "consola"
 
+import { forgetSchedule } from "./schedule-cache.server.ts"
+
 // shortcut: sygnały w pamięci procesu, jedna instancja aplikacji; przy replikach Postgres LISTEN/NOTIFY.
 const emitter = new EventEmitter()
 // Do ~300 otwartych kart na zaliczenie; ostrzeżenie o „wycieku” przy 11 słuchaczach byłoby fałszywe.
@@ -31,6 +33,7 @@ function closeWindowLater(examId: string) {
 
 /** Sygnał „zaliczenie się zmieniło”: pierwszy od razu, kolejne najwyżej raz na sekundę, ostatni zawsze dochodzi. */
 export function emitExamChange(examId: string) {
+  forgetSchedule(examId)
   if (windows.has(examId)) {
     windows.set(examId, true)
     return
