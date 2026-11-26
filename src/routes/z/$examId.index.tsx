@@ -146,9 +146,11 @@ function SchedulePage() {
   )
 }
 
-/** Pobranie w chwili otwarcia zapisów wg zegara serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
-function useRefetchOnOpening(examId: string, { opensAt, now }: Schedule) {
+/** Harmonogram na żywo: sygnały kanału zmian oraz pobranie w chwili otwarcia zapisów wg zegara
+ * serwera; każde pobranie (nowe `now`) ustawia licznik od nowa. */
+function useLiveSchedule(examId: string, { opensAt, now }: Schedule) {
   const queryClient = useQueryClient()
+  useExamChanges(examId, [scheduleQuery(examId).queryKey])
   useEffect(() => {
     const ms = msUntilOpen(opensAt, now)
     if (ms === null) return
@@ -176,8 +178,7 @@ function OpenSchedule({
   const numbering = slotNumbering(schedule)
   const [picked, setPickedId] = usePickedSlot(schedule, numbering)
   const [showCount, setShowCount] = useState(0)
-  useExamChanges(examId, [scheduleQuery(examId).queryKey])
-  useRefetchOnOpening(examId, schedule)
+  useLiveSchedule(examId, schedule)
 
   const mode = entryMode(schedule, picked)
   const title = mine ? "Twój slot" : mode.action
