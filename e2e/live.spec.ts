@@ -116,7 +116,11 @@ test("dwóch prowadzących: zmiana B dochodzi do A po jego kolejce, kafelki A ni
   const other = await browser.newPage()
   await login(other)
   await openBoard(other, examId)
-  await dragWithMouse(other, pool(other).getByText("500002"), row(other, "09:20–09:40"))
+  await dragWithMouse(
+    other,
+    await hydrated(pool(other).getByText("500002")),
+    row(other, "09:20–09:40"),
+  )
   await expect(other.getByText("Zapisano ręcznie.")).toBeVisible()
   await other.close()
 
@@ -151,7 +155,7 @@ test("w trakcie przeciągania zmiana z zewnątrz czeka na upuszczenie", async ({
   await login(other)
   await openBoard(other, examId)
   const otherTile = other.locator("[aria-roledescription]", { hasText: "Bartosz Bąk" })
-  await dragWithKeyboard(other, otherTile, row(other, "09:40–10:00"))
+  await dragWithKeyboard(other, await hydrated(otherTile), row(other, "09:40–10:00"))
   await expect(other.getByText("Przeniesiono.")).toBeVisible()
   await other.close()
 
