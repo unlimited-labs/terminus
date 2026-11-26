@@ -298,6 +298,9 @@ export async function seed(): Promise<Omit<E2EState, "databaseUrl">> {
       [],
       at(30, 9),
     ),
+    liveBoard: await board([]),
+    liveQueue: await board([["500001", 0]]),
+    liveDrag: await board(),
   }
   await db.user.create({
     data: {
